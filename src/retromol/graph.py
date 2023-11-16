@@ -205,4 +205,4 @@ def resolve_biosynthetic_sequence(
         
         resolved = partially_resolved
 
-    return resolved 
+    return resolved  

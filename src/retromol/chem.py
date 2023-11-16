@@ -1,9 +1,10 @@
 import typing as ty 
 from collections import defaultdict 
+from copy import deepcopy
 
 import numpy as np 
 from rdkit import Chem, DataStructs
-from rdkit.Chem import AllChem 
+from rdkit.Chem import AllChem, Draw
 from rdkit.Chem.rdChemReactions import ChemicalReaction, ReactionFromSmarts 
 
 Tree = ty.Dict[int, ty.Set]
@@ -12,7 +13,7 @@ MonomerGraphMapping = ty.Dict[int, ty.Tuple[int, str]]
 Reaction = ChemicalReaction 
 
 class MolecularPattern:
-    def __init__(self, name: str, smarts: str) -> None:
+    def __init__(self, name: str, smarts: str, as_smiles: bool = False) -> None:
         """
         Create a molecular pattern.
 
@@ -29,9 +30,9 @@ class MolecularPattern:
         """
         self.name = name 
         self.smarts = smarts 
-        self.compiled = self._compile_pattern(self.smarts)
+        self.compiled = self._compile_pattern(self.smarts, as_smiles=as_smiles)
 
-    def _compile_pattern(self, smarts: str) -> Chem.Mol:
+    def _compile_pattern(self, smarts: str, as_smiles: bool = False) -> Chem.Mol:
         """
         Compile a molecular pattern.
         
@@ -45,7 +46,10 @@ class MolecularPattern:
         compiled : Chem.Mol
             Compiled molecular pattern.
         """
-        return Chem.MolFromSmarts(smarts)
+        if as_smiles:
+            return Chem.MolFromSmiles(smarts)
+        else:
+            return Chem.MolFromSmarts(smarts)
     
 class ReactionRule: 
     def __init__(self, name: str, smirks: str) -> None:
@@ -219,6 +223,24 @@ def mol_to_fingerprint(mol: Chem.Mol, radius: int, num_bits: int) -> np.array:
 
     return fp_arr
 
+def tanimoto_similarity(fp1: np.array, fp2: np.array) -> float:
+    """
+    Calculate Tanimoto similarity between two fingerprints.
+
+    Parameters
+    ----------
+    fp1 : np.array
+        First fingerprint.
+    fp2 : np.array
+        Second fingerprint.
+    
+    Returns
+    -------
+    similarity : float
+        Tanimoto similarity.
+    """
+    return np.logical_and(fp1, fp2).sum() / np.logical_or(fp1, fp2).sum()
+
 def mol_to_encoding(
     mol: Chem.Mol, 
     N: int, 
@@ -328,3 +350,54 @@ def greedy_max_set_cover(
             covered_elements.update(uncovered_elements)
 
     return selected_subsets
+
+def get_2d_coordinatates(mol: Chem.Mol) -> ty.Dict[int, ty.Tuple[float, float]]:
+    """
+    Get 2D coordinates of atoms in molecule.
+    
+    Parameters
+    ----------
+    mol : Chem.Mol
+        Molecule.
+    
+    Returns
+    -------
+    coordinates : ty.Dict[int, ty.Tuple[float, float]]
+        Mapping from atom index to 2D coordinate.
+
+    NOTE: set desired atom mapping as atom isotope number.
+    """
+    AllChem.Compute2DCoords(mol)
+
+    coordinates = {}
+    for atom in mol.GetAtoms():
+        atom_idx = atom.GetIdx()
+        position = mol.GetConformer(0).GetAtomPosition(atom_idx)
+        amn = atom.GetIsotope() # Stored atom tracking num as isotope prop.
+        coordinates[amn] = (position.x, position.y)
+
+    return coordinates
+
+def draw_molecule(mol: Chem.Mol, path: str) -> None:
+    """
+    Draw molecule to file with RDKit.
+
+    Parameters
+    ----------
+    mol : Chem.Mol
+        Molecule.
+    path : str
+        Path to output file.
+    
+    Returns
+    ------- 
+    None
+    """
+    mol = deepcopy(mol) # Keep isotop enumbers intact for atom mapping outside of function.
+
+    for atom in mol.GetAtoms():
+        atom.SetIsotope(0)
+
+    # Chem.Kekulize(mol)
+    AllChem.Compute2DCoords(mol)
+    Draw.MolToImageFile(mol, path, size=(1000, 1000))
