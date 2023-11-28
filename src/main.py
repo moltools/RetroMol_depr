@@ -7,20 +7,12 @@ import signal
 import typing as ty 
 
 from retromol.chem import Molecule, MolecularPattern, ReactionRule
-from retromol.parsing import (
-    Result, 
-    parse_reaction_rules, 
-    parse_molecular_patterns, 
-    parse_mol 
-)
+from retromol.parsing import Result, parse_reaction_rules, parse_molecular_patterns, parse_mol 
 
 class TimeoutError(Exception):
     pass 
 
-def timeout(
-    seconds: int = 5, 
-    error_message: str = os.strerror(errno.ETIME)
-) -> ty.Callable:
+def timeout(seconds: int = 5, error_message: str = os.strerror(errno.ETIME)) -> ty.Callable:
     """
     Decorator to raise a TimeoutError when runtime exceeds the specified time.
 
@@ -34,8 +26,10 @@ def timeout(
     Note: Timer only works on UNIX systems; also not thread-safe.
     """
     def decorator(func: ty.Callable) -> ty.Callable:
+
         def _handle_timeout(signum, frame):
             raise TimeoutError(error_message)
+        
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             signal.signal(signal.SIGALRM, _handle_timeout)
@@ -45,7 +39,9 @@ def timeout(
             finally:
                 signal.alarm(0)
             return result
+        
         return wrapper
+    
     return decorator
 
 def cli() -> argparse.Namespace:
@@ -104,17 +100,16 @@ def main() -> None:
     cus = parse_molecular_patterns(args.core_units)
     ous = parse_molecular_patterns(args.other_units)
 
-    match args.mode:
-        case "single":
-            mol = Molecule("input", args.input)
-            result = parse_mol_timed(mol, rxn, cus, ous)
-            print(result.to_json())
-        
-        case "batch":
-            print("Batch mode not implemented yet.")
+    if args.mode == "single":
+        mol = Molecule("input", args.input)
+        result = parse_mol_timed(mol, rxn, cus, ous)
+        print(result.to_json())
 
-        case _:
-            print(f"Invalid mode: {args.mode}")
+    elif args.mode == "batch":
+        print("Batch mode not implemented yet.")
+
+    else:
+        print(f"Invalid mode: {args.mode}")
 
     exit(0)
 
