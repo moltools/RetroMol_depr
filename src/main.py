@@ -2,9 +2,12 @@
 import argparse
 import errno 
 import functools
+import json 
 import os 
 import signal
 import typing as ty 
+
+from rdkit import RDLogger
 
 from retromol.chem import Molecule, MolecularPattern, ReactionRule
 from retromol.parsing import Result, parse_reaction_rules, parse_molecular_patterns, parse_mol 
@@ -50,15 +53,14 @@ def cli() -> argparse.Namespace:
     """
     parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument("-h", "--help", action="help", default=argparse.SUPPRESS, help="Show this help message and exit.")
-    parser.add_argument("-rr", "--reaction-rules", type=str, required=True, help="Path to file containing reaction rules.")
-    parser.add_argument("-cu", "--core-units", type=str, required=True, help="Path to file containing core motif units.")
-    parser.add_argument("-ou", "--other-units", type=str, required=True, help="Path to file containing other monomer units.")
+    parser.add_argument("-r", "--rules", type=str, required=True, help="Path to JSON file containing rules.")
 
     subparsers = parser.add_subparsers(dest="mode", required=True)
     subparser_single_mode = subparsers.add_parser("single")
     subparser_batch_mode = subparsers.add_parser("batch")
 
-    subparser_single_mode.add_argument("-i", "--input", type=str, required=True, help="Input SMILES.")
+    subparser_single_mode.add_argument("-i", "--input", type=str, required=True, help="Input SMILES (between quotes).")
+    subparser_single_mode.add_argument("-o", "--output", type=str, required=True, help="Path to new JSON output file.")
 
     return parser.parse_args()
 
@@ -66,8 +68,7 @@ def cli() -> argparse.Namespace:
 def parse_mol_timed(
     mol: Molecule, 
     reactions: ty.List[ReactionRule],
-    core_units: ty.List[MolecularPattern],
-    other_units: ty.List[MolecularPattern]
+    monomers: ty.List[MolecularPattern],
 ) -> Result:
     """
     Parse molecule.
@@ -78,32 +79,31 @@ def parse_mol_timed(
         Molecule.
     reactions : ty.List[ReactionRule]
         List of reaction rules.
-    core_units : ty.List[MolecularPattern]
+    monomers : ty.List[MolecularPattern]
         List of motif units.
-    other_units : ty.List[MolecularPattern]
-        List of other monomer units.
     
     Returns
     -------
     result : Result
         Result object.
     """
-    return parse_mol(mol, reactions, core_units, other_units)
+    return parse_mol(mol, reactions, monomers)
 
 def main() -> None:
     """
     Driver function.
     """
+    RDLogger.DisableLog("rdApp.*")
     args = cli()
 
-    rxn = parse_reaction_rules(args.reaction_rules)
-    cus = parse_molecular_patterns(args.core_units)
-    ous = parse_molecular_patterns(args.other_units)
+    rules = json.load(open(args.rules, "r"))
+    reactions = parse_reaction_rules(json.dumps(rules["reactions"]))
+    monomers = parse_molecular_patterns(json.dumps(rules["monomers"]))
 
     if args.mode == "single":
         mol = Molecule("input", args.input)
-        result = parse_mol_timed(mol, rxn, cus, ous)
-        print(result.to_json())
+        result = parse_mol_timed(mol, reactions, monomers)
+        with open(args.output, "w") as fo: fo.write(result.to_json())
 
     elif args.mode == "batch":
         print("Batch mode not implemented yet.")
@@ -111,7 +111,7 @@ def main() -> None:
     else:
         print(f"Invalid mode: {args.mode}")
 
-    exit(0)
+    exit("Done.")
 
 if __name__ == "__main__":
     main()

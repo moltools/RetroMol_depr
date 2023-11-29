@@ -127,14 +127,14 @@ class Result:
 
         return result
     
-def parse_reaction_rules(path: str) -> ty.List[ReactionRule]:
+def parse_reaction_rules(src: str) -> ty.List[ReactionRule]:
     """
     Parse reaction rules from file.
     
     Parameters
     ----------
-    path : str
-        Path to file containing reaction rules.
+    src : str 
+        String in JSON format describing reaction rules.
     
     Returns
     -------
@@ -143,8 +143,7 @@ def parse_reaction_rules(path: str) -> ty.List[ReactionRule]:
     """
     reaction_rules = []
     
-    with open(path, "r") as file_open:
-        data = json.load(file_open)
+    data = json.loads(src)
     
     for item in data:
         try:
@@ -157,14 +156,14 @@ def parse_reaction_rules(path: str) -> ty.List[ReactionRule]:
 
     return reaction_rules
 
-def parse_molecular_patterns(path: str, as_smiles: bool = False) -> ty.List[MolecularPattern]:   
+def parse_molecular_patterns(src: str) -> ty.List[MolecularPattern]:   
     """
     Parse molecular patterns from file.
     
     Parameters
     ----------
-    path : str
-        Path to file containing molecular patterns.
+    src : str
+        String in JSON format describing molecular patterns.
     
     Returns
     -------
@@ -173,12 +172,11 @@ def parse_molecular_patterns(path: str, as_smiles: bool = False) -> ty.List[Mole
     """
     molecular_patterns = []
 
-    with open(path, "r") as file_open:
-        data = json.load(file_open)
+    data = json.loads(src)
     
     for item in data:
         try:
-            molecular_pattern = MolecularPattern(item["name"], item["smarts"], as_smiles=as_smiles)
+            molecular_pattern = MolecularPattern(item["name"], item["core"], item["smarts"])
         except Exception as err:
             msg = f"{err}\nError parsing molecular pattern:\n{item}"
             raise Exception(msg)
@@ -190,8 +188,7 @@ def parse_molecular_patterns(path: str, as_smiles: bool = False) -> ty.List[Mole
 def parse_mol(
     mol: Molecule, 
     reactions: ty.List[ReactionRule],
-    core_units: ty.List[MolecularPattern],
-    other_units: ty.List[MolecularPattern],
+    monomers: ty.List[MolecularPattern],
 ) -> Result:
     """
     Parse molecule.
@@ -202,10 +199,8 @@ def parse_mol(
         Molecule.
     reactions : ty.List[ReactionRule]
         List of reaction rules.
-    core_units : ty.List[MolecularPattern]
-        List of motif units.
-    other_units : ty.List[MolecularPattern]
-        List of other monomer units.
+    monomers : ty.List[MolecularPattern]
+        List of monomer units.
     
     Returns
     -------
@@ -215,9 +210,9 @@ def parse_mol(
     substrate, reaction_tree, reaction_mapping = mol.apply_rules(reactions)
     reaction_tree = reaction_tree_to_digraph(reaction_tree)
 
-    monomers = core_units + other_units
+    core_monomers = [m for m in monomers if m.is_core()]
     monomer_graph, monomer_mapping = reaction_tree_to_monomer_graph(mol, reaction_tree, reaction_mapping, monomers)
-    biosynthetic_seq = resolve_biosynthetic_sequence(reaction_tree, reaction_mapping, monomer_graph, monomer_mapping, core_units)
+    biosynthetic_seq = resolve_biosynthetic_sequence(reaction_tree, reaction_mapping, monomer_graph, monomer_mapping, core_monomers)
     score = len(monomer_graph.nodes) - len(monomer_mapping)
     
     result = Result(

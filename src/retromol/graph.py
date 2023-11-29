@@ -171,7 +171,7 @@ def resolve_biosynthetic_sequence(
         # Seed resolved sequences. Every motif at lowest depth can be the first
         # motif in the sequence.
         if not len(resolved):
-            resolved = [[x] for x in unresolved[depth]]
+            resolved = [list(x) for x in itertools.permutations(unresolved[depth])]
             continue 
 
         # Find out which unit from the previous depth is the parent of the

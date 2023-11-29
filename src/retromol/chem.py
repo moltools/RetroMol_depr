@@ -13,7 +13,7 @@ MonomerGraphMapping = ty.Dict[int, ty.Tuple[int, str]]
 Reaction = ChemicalReaction 
 
 class MolecularPattern:
-    def __init__(self, name: str, smarts: str, as_smiles: bool = False) -> None:
+    def __init__(self, name: str, core: bool, smarts: str) -> None:
         """
         Create a molecular pattern.
 
@@ -21,6 +21,8 @@ class MolecularPattern:
         ----------
         name : str
             Name of molecular pattern.
+        core : bool
+            Whether or not molecular pattern is a core unit.
         smarts : str
             SMARTS string of molecular pattern.
         
@@ -29,10 +31,26 @@ class MolecularPattern:
         None
         """
         self.name = name 
+        self.core = core
         self.smarts = smarts 
-        self.compiled = self._compile_pattern(self.smarts, as_smiles=as_smiles)
+        self.compiled = self._compile_pattern(self.smarts)
 
-    def _compile_pattern(self, smarts: str, as_smiles: bool = False) -> Chem.Mol:
+    def is_core(self) -> bool:
+        """
+        Check if molecular pattern is a core unit.
+        
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        is_core : bool
+            Whether or not molecular pattern is a core unit.
+        """
+        return self.core
+
+    def _compile_pattern(self, smarts: str) -> Chem.Mol:
         """
         Compile a molecular pattern.
         
@@ -46,10 +64,7 @@ class MolecularPattern:
         compiled : Chem.Mol
             Compiled molecular pattern.
         """
-        if as_smiles:
-            return Chem.MolFromSmiles(smarts)
-        else:
-            return Chem.MolFromSmarts(smarts)
+        return Chem.MolFromSmarts(smarts)
     
 class ReactionRule: 
     def __init__(self, name: str, smirks: str) -> None:
@@ -186,7 +201,14 @@ class Molecule:
                         reaction_products = list()
 
                         for result in results:
-                            Chem.SanitizeMol(result)
+                            try:
+                                Chem.SanitizeMol(result)
+                                # TODO: log sanitization errors.
+                            except:
+                                # Unable to sanitize molecule. Usually happens because of
+                                # explicit valences not being correct, when reaction rule
+                                # had unintended side effect on molecule.
+                                continue
 
                             result_encoding = mol_to_encoding(result, N, radius, num_bits)
                             reaction_products.append(result_encoding)
