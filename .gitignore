@@ -167,3 +167,9 @@ out/
 
 # Ignore any .joblib file
 *.joblib
+
+NPAtlas_download_*
+parsed_compounds_*
+*.npy
+*.png
+*.fasta

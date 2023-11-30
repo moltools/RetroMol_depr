@@ -3,11 +3,13 @@ import argparse
 import errno 
 import functools
 import json 
+import multiprocessing as mp
 import os 
 import signal
 import typing as ty 
 
 from rdkit import RDLogger
+from tqdm import tqdm 
 
 from retromol.chem import Molecule, MolecularPattern, ReactionRule
 from retromol.parsing import Result, parse_reaction_rules, parse_molecular_patterns, parse_mol 
@@ -62,32 +64,35 @@ def cli() -> argparse.Namespace:
     subparser_single_mode.add_argument("-i", "--input", type=str, required=True, help="Input SMILES (between quotes).")
     subparser_single_mode.add_argument("-o", "--output", type=str, required=True, help="Path to new JSON output file.")
 
+    subparser_batch_mode.add_argument("-i", "--input", type=str, required=True, help="Path to input TSV file as 'name\tSMILES'.")
+    subparser_batch_mode.add_argument("-o", "--output", type=str, required=True, help="Path to new directory for JSON output files.")
+    subparser_batch_mode.add_argument("-n", "--nproc", type=int, default=mp.cpu_count(), help="Number of processes to use.")
+    subparser_batch_mode.add_argument("--header", action="store_true", help="Input file contains a header line.")
+
     return parser.parse_args()
 
-@timeout()
-def parse_mol_timed(
-    mol: Molecule, 
-    reactions: ty.List[ReactionRule],
-    monomers: ty.List[MolecularPattern],
-) -> Result:
+Record = ty.Tuple[Molecule, ty.List[ReactionRule], ty.List[MolecularPattern]]
+
+@timeout(5)
+def parse_mol_timed(record: Record) -> Result:
     """
     Parse molecule.
-
+    
     Parameters
     ----------
-    mol : Molecule
-        Molecule.
-    reactions : ty.List[ReactionRule]
-        List of reaction rules.
-    monomers : ty.List[MolecularPattern]
-        List of motif units.
+    record : Record
+        Tuple containing molecule, reaction rules, and motif units.
     
     Returns
     -------
     result : Result
         Result object.
     """
-    return parse_mol(mol, reactions, monomers)
+    try:
+        mol, reactions, monomers = record
+        return parse_mol(mol, reactions, monomers)
+    except Exception:
+        return Result(mol.name, mol.compiled, False)
 
 def main() -> None:
     """
@@ -102,11 +107,27 @@ def main() -> None:
 
     if args.mode == "single":
         mol = Molecule("input", args.input)
-        result = parse_mol_timed(mol, reactions, monomers)
+        record = (mol, reactions, monomers)
+        result = parse_mol_timed(record)
         with open(args.output, "w") as fo: fo.write(result.to_json())
 
     elif args.mode == "batch":
-        print("Batch mode not implemented yet.")
+        
+        # Parse input file.
+        records = []
+        with open(args.input, "r") as fo:
+            if args.header: next(fo)
+            for line in tqdm(fo, desc="Parsing records from input file"):
+                name, smiles = line.strip().split("\t")
+                mol = Molecule(name, smiles)
+                records.append((mol, reactions, monomers))
+
+        # Parse molecules in parallel.
+        nproc = min(args.nproc, mp.cpu_count())
+        with mp.Pool(processes=nproc) as pool:
+            for result in tqdm(pool.imap_unordered(parse_mol_timed, records)):
+                out_path = os.path.join(args.output, f"{result.name}.json")
+                with open(out_path, "w") as fo: fo.write(result.to_json())
 
     else:
         print(f"Invalid mode: {args.mode}")

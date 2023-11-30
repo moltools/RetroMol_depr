@@ -12,12 +12,13 @@ from retromol.graph import reaction_tree_to_digraph, reaction_tree_to_monomer_gr
 class Result:
     name: str
     substrate: Chem.Mol
-    score: int
-    reaction_tree: nx.DiGraph
-    reaction_mapping: ReactionTreeMapping
-    monomer_graph: nx.Graph
-    monomer_mapping: MonomerGraphMapping
-    biosynthetic_seq: ty.List[ty.Tuple[int, str]]
+    success: bool
+    score: int = None
+    reaction_tree: nx.DiGraph = None
+    reaction_mapping: ReactionTreeMapping = None
+    monomer_graph: nx.Graph = None
+    monomer_mapping: MonomerGraphMapping = None
+    biosynthetic_seq: ty.List[ty.Tuple[int, str]] = None
 
     def to_json(self, indent: int = 4) -> str:
         """
@@ -33,20 +34,27 @@ class Result:
         data : str
             JSON string.
         """
-        reaction_tree_json = nx.readwrite.json_graph.node_link_data(self.reaction_tree)
-        reaction_mapping = self._reaction_mapping_to_json(self.reaction_mapping)
-        monomer_graph_json = nx.readwrite.json_graph.node_link_data(self.monomer_graph)
+        if self.success:
+            reaction_tree_json = nx.readwrite.json_graph.node_link_data(self.reaction_tree)
+            reaction_mapping = self._reaction_mapping_to_json(self.reaction_mapping)
+            monomer_graph_json = nx.readwrite.json_graph.node_link_data(self.monomer_graph)
         
-        # Reformat links so that they are always JSON serializable.
-        monomer_graph_links = []
-        for link in monomer_graph_json["links"]:
-            new_link = {"source": link["source"], "target": link["target"]}
-            monomer_graph_links.append(new_link)
-        monomer_graph_json["links"] = monomer_graph_links
+            # Reformat links so that they are always JSON serializable.
+            monomer_graph_links = []
+            for link in monomer_graph_json["links"]:
+                new_link = {"source": link["source"], "target": link["target"]}
+                monomer_graph_links.append(new_link)
+            monomer_graph_json["links"] = monomer_graph_links
+
+        else:
+            reaction_tree_json = None
+            reaction_mapping = None
+            monomer_graph_json = None
 
         data = {
             "name": self.name,
             "smiles": Chem.MolToSmiles(self.substrate),
+            "success": "true" if self.success else "false",
             "score": self.score,
             "reaction_tree": reaction_tree_json,
             "reaction_mapping": reaction_mapping,
@@ -55,7 +63,7 @@ class Result:
             "biosynthetic_seq": self.biosynthetic_seq
         }
         return json.dumps(data, indent=indent)
-    
+
     def _reaction_mapping_to_json(self, mapping: ReactionTreeMapping) -> str:
         """
         Convert mapping to JSON string.
@@ -96,28 +104,40 @@ class Result:
         with open(path, "r") as file_open:
             data = json.load(file_open)
 
-        self.name = data["name"]
-        self.substrate = Chem.MolFromSmiles(data["smiles"])
-        self.score = data["score"]
+        name = data["name"]
+        substrate = Chem.MolFromSmiles(data["smiles"])
+        success = True if data["success"] == "true" else False
 
-        monomer_graph_json = data["monomer_graph"]
-        monomer_graph = nx.readwrite.json_graph.node_link_graph(monomer_graph_json)
+        if success:
+            score = data["score"]
 
-        monomer_mapping = data["monomer_mapping"]
-        monomer_mapping = {int(k): (int(v), s) for k, (v, s) in monomer_mapping.items()}
+            monomer_graph_json = data["monomer_graph"]
+            monomer_graph = nx.readwrite.json_graph.node_link_graph(monomer_graph_json)
 
-        reaction_tree_json = data["reaction_tree"]
-        reaction_tree = nx.readwrite.json_graph.node_link_graph(reaction_tree_json)
+            monomer_mapping = data["monomer_mapping"]
+            monomer_mapping = {int(k): (int(v), s) for k, (v, s) in monomer_mapping.items()}
 
-        reaction_mapping = data["reaction_mapping"]
-        reaction_mapping = {int(k): Chem.MolFromSmiles(m) for k, m in reaction_mapping.items()}
+            reaction_tree_json = data["reaction_tree"]
+            reaction_tree = nx.readwrite.json_graph.node_link_graph(reaction_tree_json)
 
-        biosynthetic_seq = data["biosynthetic_seq"]
+            reaction_mapping = data["reaction_mapping"]
+            reaction_mapping = {int(k): Chem.MolFromSmiles(m) for k, m in reaction_mapping.items()}
+
+            biosynthetic_seq = data["biosynthetic_seq"]
+        
+        else:
+            score = None
+            reaction_tree = None
+            reaction_mapping = None
+            monomer_graph = None
+            monomer_mapping = None
+            biosynthetic_seq = None
 
         result = Result(
-            self.name,
-            self.substrate,
-            self.score,
+            name,
+            substrate,
+            success,
+            score,
             reaction_tree,
             reaction_mapping,
             monomer_graph,
@@ -218,6 +238,7 @@ def parse_mol(
     result = Result(
         mol.name,
         substrate, 
+        True,
         score,
         reaction_tree,
         reaction_mapping,
