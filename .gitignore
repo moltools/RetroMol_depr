@@ -162,8 +162,8 @@ cython_debug/
 # Mac
 .DS_Store
 
-# Ignore out directory
-out/
+# Ignore out directories
+out*
 
 # Ignore any .joblib file
 *.joblib
@@ -173,3 +173,4 @@ parsed_compounds_*
 *.npy
 *.png
 *.fasta
+inputs
