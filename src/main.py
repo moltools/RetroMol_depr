@@ -1,53 +1,16 @@
 #!/usr/bin/env python3
 import argparse
-import errno 
-import functools
 import json 
 import multiprocessing as mp
 import os 
-import signal
 import typing as ty 
 
 from rdkit import RDLogger
 from tqdm import tqdm 
 
 from retromol.chem import Molecule, MolecularPattern, ReactionRule
+from retromol.helpers import TimeoutError, timeout
 from retromol.parsing import Result, parse_reaction_rules, parse_molecular_patterns, parse_mol 
-
-class TimeoutError(Exception):
-    pass 
-
-def timeout(seconds: int = 5, error_message: str = os.strerror(errno.ETIME)) -> ty.Callable:
-    """
-    Decorator to raise a TimeoutError when runtime exceeds the specified time.
-
-    Parameters
-    ----------
-    seconds : int, optional
-        Timeout in seconds, by default 5.
-    error_message : str, optional
-        Error message to be raised, by default os.strerror(errno.ETIME).
-    
-    Note: Timer only works on UNIX systems; also not thread-safe.
-    """
-    def decorator(func: ty.Callable) -> ty.Callable:
-
-        def _handle_timeout(signum, frame):
-            raise TimeoutError(error_message)
-        
-        @functools.wraps(func)
-        def wrapper(*args, **kwargs):
-            signal.signal(signal.SIGALRM, _handle_timeout)
-            signal.alarm(seconds)
-            try: 
-                result = func(*args, **kwargs)
-            finally:
-                signal.alarm(0)
-            return result
-        
-        return wrapper
-    
-    return decorator
 
 def cli() -> argparse.Namespace:
     """
@@ -73,7 +36,7 @@ def cli() -> argparse.Namespace:
 
 Record = ty.Tuple[Molecule, ty.List[ReactionRule], ty.List[MolecularPattern]]
 
-@timeout(5)
+@timeout(10)
 def parse_mol_timed(record: Record) -> Result:
     """
     Parse molecule.

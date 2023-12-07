@@ -195,6 +195,7 @@ class Molecule:
             mapping[current_encoding] = current 
 
             for reaction in reactions:
+
                 for results in reaction.backward_compiled.RunReactants([current]):
                     if len(results) > 0:
                         

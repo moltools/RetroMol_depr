@@ -83,6 +83,14 @@
         {
             "name": "linearize thiazole",
             "smirks": "[C:1][c:2]1[s:3][c:4][c:5]([C:6])[n:7]1>>([C:1]-[CH0:2]-1(=O).[SH1:3]-[CH2:4]-[CH1:5](-[C:6])-[NH1:7]-1)"
+        },
+        {
+            "name": "dies-alder",
+            "smirks": "[C:1]-1-[C:2]=[C:3]-[C:4]-[C:5]-[C:6]-1>>([C:1]=[C:2]-[C:3]=[C:4].[C:5]=[C:6])"
+        },
+        {
+            "name": "reverse terminal amino acid reduction",
+            "smirks": "[NH1:1]-[CH1:2]-[CH2:3]-[OH:4]>>[NH1:1]-[CH1:2]-[CH0:3](=[O])-[OH:4]"
         }
     ],
     "monomers": [
@@ -299,7 +307,7 @@
         {
             "name": "D8",
             "core": true,
-            "smarts": "[OH][S][CH2][C]([CH2][OH])[C](=[O])[OH]"
+            "smarts": "[OH][S][CH1]([CH3])[CH2][C](=[O])[OH]"
         },
         {
             "name": "D9",
@@ -670,6 +678,11 @@
             "name": "C3:0",
             "core": false,
             "smarts": "[CH3][CH2][C](=[O])[OH]"
+        },
+        {
+            "name": "C3:1=C",
+            "core": false,
+            "smarts": "[CH3][CH0](=[CH2])[C](=[O])[OH]"
         },
         {
             "name": "C10:0",

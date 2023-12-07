@@ -110,7 +110,7 @@ def resolve_biosynthetic_sequence(
     monomer_graph: nx.Graph, 
     monomer_mapping: MonomerGraphMapping,
     motif_units: ty.List[MolecularPattern]
-) -> ty.List[ty.Tuple[str, int, str]]:
+) -> ty.List[ty.Tuple[int, str]]:
     """
     Get depth-based biosynthetic sequence.
     
@@ -129,9 +129,89 @@ def resolve_biosynthetic_sequence(
     
     Returns
     -------
-    order : ty.List[ty.Tuple[str, int, str]]
-        List of tuples containing node, depth, and identity.
+    order : ty.List[ty.Tuple[int, str]]
+        List of tuples containing node id in monomer graph and identity.
     """
+    # # Monomer graph node id to reaction node id.
+    # monomer_to_reaction = {v[0]: k for k, v in monomer_mapping.items()}
+
+    # # Check if node is a core node.
+    # def is_core_node(name: str) -> bool:
+    #     for unit in motif_units:
+    #         if name == unit.name: return True
+    #     return False
+
+    # # Core nodes. 
+    # core_nodes = [
+    #     monomer_id for _, (monomer_id, identity) 
+    #     in monomer_mapping.items() 
+    #     if is_core_node(identity)
+    # ]
+
+    # # Create a monomer graph with only core nodes.
+    # core_monomer_graph = nx.Graph()
+    # for node in core_nodes:
+    #     core_monomer_graph.add_node(node)
+    # for edge in monomer_graph.edges:
+    #     if edge[0] in core_nodes and edge[1] in core_nodes:
+    #         core_monomer_graph.add_edge(edge[0], edge[1])
+    
+    # # Identify all possible paths from core nodes to core nodes.
+    # paths = []
+    # for node in core_nodes:
+    #     for other_node in core_nodes:
+    #         if node == other_node: continue 
+    #         for path in nx.all_simple_paths(core_monomer_graph, node, other_node):
+    #             if len(path) == len(core_monomer_graph.nodes):
+    #                 paths.append(path)
+
+    # # Calculate depth of each monomer graph node in the reaction tree.
+    # depths = dict()
+    # for node in core_monomer_graph.nodes:
+    #     node_id = monomer_to_reaction[node]
+    #     depth = 0
+    #     current_node = node_id
+    #     while current_node in reaction_tree:
+    #         current_node = list(reaction_tree.predecessors(current_node))
+    #         if len(current_node) == 0: break 
+    #         current_node = current_node[0]
+    #         depth += 1
+    #     depths[node] = depth
+
+    # # Get the path that has the longest sequence of monomers where depth 
+    # # increases every step.
+    # path = None
+    # for p in paths:
+    #     if path is None:
+    #         path = p 
+    #         continue 
+    #     if len(p) > len(path):
+    #         path = p 
+    #         continue 
+    #     if len(p) == len(path):
+    #         if all(depths[p[i]] > depths[path[i]] for i in range(len(p))):
+    #             path = p
+
+    # # Get identity of each monomer graph node.
+    # identities = dict()
+    # for node in core_monomer_graph.nodes:
+    #     identities[node] = monomer_mapping[monomer_to_reaction[node]][1]
+    
+    # # Get identities of each monomer graph node in the path.
+    # path = [identities[node] for node in path]
+
+    # print(path)
+
+    # return path
+
+    # # # Get all possible sequences.
+    # # print(path)
+    
+    # # return []
+    
+
+    # # ====
+
     # Get the biosynthetic sequence solely based on depth of motifs in the
     # reaction tree.
     order = []
@@ -205,4 +285,8 @@ def resolve_biosynthetic_sequence(
         
         resolved = partially_resolved
 
-    return resolved  
+    if not len(resolved):
+        return []
+    else:
+        return resolved[0]
+
