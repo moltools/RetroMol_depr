@@ -42,7 +42,8 @@ def parse_gcf(path: str) -> dict:
                     
                     result["proto_clusters"].append(proto_cluster)
 
-        results.append(result)
+        if len(result["proto_clusters"]) != 0:
+            results.append(result)
     
     return results
 
@@ -58,9 +59,12 @@ def main() -> None:
     for i, path in enumerate(Path(args.i).rglob("*.json")):
         try:
             results = parse_gcf(path)
-            out_path = f"{out_dir}/{path.stem}.json"
-            json.dump(results, open(out_path, "w"), indent=4)
-            print(f'{i}'.zfill(10), end="\r")
+
+            # Only write if there are results:
+            if len(results) != 0:
+                out_path = f"{out_dir}/{path.stem}.json"
+                json.dump(results, open(out_path, "w"), indent=4)
+                print(f'{i}'.zfill(10), end="\r")
 
         except:
             failed += 1
