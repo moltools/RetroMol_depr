@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import argparse
 import math
+import os
 import typing as ty
 from dataclasses import dataclass
 
@@ -17,6 +18,7 @@ def cli() -> argparse.Namespace:
     """
     parser = argparse.ArgumentParser()
     parser.add_argument("-i", "--fasta", type=str, required=True, help="Path to FASTA file containing primary sequences.")
+    parser.add_argument("-o", "--out", type=str, required=True, help="Path to output dir.")
     return parser.parse_args()
 
 @dataclass
@@ -102,7 +104,7 @@ def compound_to_position(compound: str) -> ty.Tuple[float, float]:
     if x in ["Val", "bOH-Val", "Aib", "Leu", "3OH-Leu", "Ile/aIle", "NFo-Leu", "NAc-Leu"]: return mapping["small_hydrophobic"] 
     if x in ["Tyr", "bOH-Tyr", "Phe", "Trp", "OH-Trp", "dh-Trp", "Hpg"]: return mapping["bulky_mainly_phenyl_derivatives"]
     if x in ["aThr/Thr", "Ala", "Abu", "dhAbu", "bAla", "Dpr"]: return mapping["small_non_hydrophobic"]
-    if x in ["Pro", "NFo-Pro", "aPro/Pro", "NMe-Hpr"]: return mapping["cyclic_aliphatic"]
+    if x in ["Pro", "NFo-Pro", "aPro/Pro", "NMe-Hpr", "Hpr"]: return mapping["cyclic_aliphatic"]
     if x in ["Cys", "NAc-Cys", "Met"]: return mapping["cysteine"]
     if x in ["Gly"]: return mapping["tiny"]
     else: 
@@ -158,6 +160,7 @@ def main() -> None:
     print(f"Number of records: {len(records)}")
 
     # Create fingerprints.
+    parsed_records = []
     labels, fps, classes = [], [], []
     for i, record in enumerate(records):
         try:
@@ -165,6 +168,7 @@ def main() -> None:
             fps.append(fp)
             labels.append(record.name)
             classes.append(sequence_to_class(record.seq))
+            parsed_records.append(record)
 
         except Exception:
             pass
@@ -197,10 +201,26 @@ def main() -> None:
         x=embedding[:, 0], 
         y=embedding[:, 1], 
         hover_name=labels,
-        color=colors,
+        # color=colors,
         # color=classes
     )
-    fig.show()
+    fig.write_html(os.path.join(args.out, "embedding.html"))
+
+    # Save fingerprints.
+    np.save(os.path.join(args.out, "fingerprints.npy"), fps)
+    # Save labels.
+    with open(os.path.join(args.out, "labels.txt"), "w") as file_open:
+        for label in labels:
+            file_open.write(f"{label}\n")
+
+    # Save embedding.
+    np.save(os.path.join(args.out, "embedding.npy"), embedding)
+
+    # Write out new fasta with only selected sequences in same order as fingerprints.
+    with open(os.path.join(args.out, "selected.fasta"), "w") as file_open:
+        for i, record in enumerate(parsed_records):
+            file_open.write(f">{record.name}\n")
+            file_open.write(f"{'|'.join(record.seq)}\n")
 
     exit(0)
 

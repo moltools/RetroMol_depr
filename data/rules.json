@@ -33,6 +33,10 @@
             "smirks": "[C:1][C:2](=[O:3])[NH1:4][C:5][C:6](=[O:7])[OH:8]>>[C:1][C:2](=[O:3])[OH].[NH2:4][C:5][C:6](=[O:7])[OH:8]"
         },
         {
+            "name": "detach NRPS monomer",
+            "smirks": "[C:1][C:2](=[O:3])[NH0:4][C:5][C:6](=[O:7])[OH:8]>>[C:1][C:2](=[O:3])[OH].[NH1:4][C:5][C:6](=[O:7])[OH:8]"
+        },
+        {
             "name": "break disulfide linkage",
             "smirks": "[C:1][S:2][S:3][C:4]>>[C:1][SH:2].[SH:3][C:4]"
         },
