@@ -9,14 +9,14 @@ import matplotlib.pyplot as plt
 from sankeyflow import Sankey
 
 num_compounds_npatlas = 33372
-num_compounds_selected = 16604
+num_compounds_selected = 8276
 num_compounds_not_selected = num_compounds_npatlas - num_compounds_selected
 
-num_compounds_successfully_parsed = 16402 
-num_compounds_failed_to_parse = 202
+num_compounds_successfully_parsed = 8023 
+num_compounds_failed_to_parse = 254
 
-num_compounds_fully_identified = 885
-num_compounds_fully_unidentified = 7858
+num_compounds_fully_identified = 766
+num_compounds_fully_unidentified = 3068
 num_compounds_partially_identified = num_compounds_successfully_parsed - num_compounds_fully_identified - num_compounds_fully_unidentified
 
 # Make Sankey diagram.

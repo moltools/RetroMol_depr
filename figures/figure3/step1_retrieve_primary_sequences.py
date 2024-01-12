@@ -25,10 +25,10 @@ empty = 0
 out_fo = open(output_path, "w")
 for filepath in tqdm(filepaths, desc="Reading RetroMol results"):
     result = Result.from_json(filepath)
-    if result.success and result.score == 0:
+    if result.success and result.score < 20:
         seq = result.biosynthetic_seq
         if len(seq):
-            seq = [x[1] for x in seq[0]]
+            seq = [x[1] for x in seq]
             smi = Chem.MolToSmiles(result.substrate)
             out_fo.write(f">{result.name}|{smi}\n")
             out_fo.write("|".join(seq) + "\n")
