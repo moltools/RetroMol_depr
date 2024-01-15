@@ -20,14 +20,3 @@ Create and activate environment:
     ```bash
     retromol -h
     ```
-
-## To do (chronological order)
-- [ ] Include stereochemistry (add to monomers and make sure it is recognized, CW, CCW, E, Z, R, S, etc.)
-- [ ] Fully parse sample + write tests
-- [ ] Include all rules from Alan Healy's rule set
-- [ ] Fully pase NPAtlas (PKS/NRPS)
-- [ ] Assess performance of rule set
-- [ ] Mine for sequence fasta file from NPAtlas results
-- [ ] Do some analyses on the fasta sequences
-- [ ] Fully parse dataset from Barbara
-- [ ] Reintroduce logger

@@ -7,7 +7,10 @@ setuptools.setup(
     author_email="david.meijer@wur.nl",
     install_requires=[],
     package_dir={"": "src"},
-    packages=["retromol"],
+    packages=[
+        "retromol",
+        "retromol_miner"
+    ],
     python_requires=">=3.10",
     entry_points={"console_scripts": ["retromol = main:main"]}
 )

@@ -1,3 +1,6 @@
+"""
+Drawing module.
+"""
 import typing as ty 
 from copy import deepcopy
 
@@ -12,15 +15,9 @@ def get_2d_coordinatates(mol: Chem.Mol) -> ty.Dict[int, ty.Tuple[float, float]]:
     """
     Get 2D coordinates of atoms in molecule.
     
-    Parameters
-    ----------
-    mol : Chem.Mol
-        Molecule.
-    
-    Returns
-    -------
-    coordinates : ty.Dict[int, ty.Tuple[float, float]]
-        Mapping from atom index to 2D coordinate.
+    :param Chem.Mol mol: Molecule.
+    :returns: 2D coordinates of atoms in molecule.
+    :rtype: ty.Dict[int, ty.Tuple[float, float]]
 
     NOTE: set desired atom mapping as atom isotope number.
     """
@@ -39,16 +36,9 @@ def draw_molecule(mol: Chem.Mol, path: str) -> None:
     """
     Draw molecule to file with RDKit.
 
-    Parameters
-    ----------
-    mol : Chem.Mol
-        Molecule.
-    path : str
-        Path to output file.
-    
-    Returns
-    ------- 
-    None
+    :param Chem.Mol mol: Molecule.
+    :param str path: Path to output file.
+    :returns: None
     """
     mol = deepcopy(mol) # Keep isotop enumbers intact for atom mapping outside of function.
 
@@ -63,16 +53,9 @@ def visualize_monomer_graph(data: Result, path: ty.Optional[str]) -> None:
     """
     Visualize monomer graph.
     
-    Parameters
-    ----------
-    data : Result
-        Result object.
-    path : ty.Optional[str]
-        Path to output png file.
-    
-    Returns
-    -------
-    None
+    :param Result data: Result object.
+    :param ty.Optional[str] path: Path to output file.
+    :returns: None
     """
     # Get 2D coordinates of atoms in molecule. The atom tracking numbers are 
     # also used to identify nodes in the monomer graph.

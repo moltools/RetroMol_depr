@@ -1,3 +1,6 @@
+"""
+Parsing functions.
+"""
 import json 
 import typing as ty 
 from dataclasses import dataclass
@@ -10,6 +13,21 @@ from retromol.graph import reaction_tree_to_digraph, reaction_tree_to_monomer_gr
 
 @dataclass 
 class Result:
+    """
+    Result object.
+    
+    :param str name: Name of molecule.
+    :param Chem.Mol substrate: Substrate molecule.
+    :param bool success: Whether or not parsing was successful.
+    :param int score: Score.
+    :param nx.DiGraph reaction_tree: Reaction tree.
+    :param ReactionTreeMapping reaction_mapping: Reaction mapping.
+    :param nx.Graph monomer_graph: Monomer graph.
+    :param MonomerGraphMapping monomer_mapping: Monomer mapping.
+    :param ty.List[ty.Tuple[int, str]] biosynthetic_seq: Biosynthetic sequence.
+    :returns: Result object.
+    :rtype: Result
+    """
     name: str
     substrate: Chem.Mol
     success: bool
@@ -24,15 +42,9 @@ class Result:
         """
         Convert result to JSON string.
 
-        Parameters
-        ----------
-        indent : int, optional
-            Indentation level, by default 4.
-
-        Returns
-        -------
-        data : str
-            JSON string.
+        :param int indent: Indentation.
+        :returns: JSON string.
+        :rtype: str
         """
         if self.success:
             reaction_tree_json = nx.readwrite.json_graph.node_link_data(self.reaction_tree)
@@ -68,15 +80,9 @@ class Result:
         """
         Convert mapping to JSON string.
 
-        Parameters
-        ----------
-        mapping : Mapping
-            Mapping.
-        
-        Returns
-        -------
-        data : str
-            JSON string.
+        :param ReactionTreeMapping mapping: Mapping of reaction products to molecules.
+        :returns: JSON string.
+        :rtype: str
         """
         data = {}
     
@@ -91,15 +97,9 @@ class Result:
         """
         Convert JSON string to result.
 
-        Parameters
-        ----------
-        path : str
-            Path to JSON file.
-        
-        Returns
-        -------
-        result : Result
-            Result object.
+        :param str path: Path to JSON file.
+        :returns: Result object.
+        :rtype: Result
         """
         with open(path, "r") as file_open:
             data = json.load(file_open)
@@ -151,15 +151,9 @@ def parse_reaction_rules(src: str) -> ty.List[ReactionRule]:
     """
     Parse reaction rules from file.
     
-    Parameters
-    ----------
-    src : str 
-        String in JSON format describing reaction rules.
-    
-    Returns
-    -------
-    reaction_rules : ty.List[ReactionRule]
-        List of reaction rules.
+    :param str src: String in JSON format describing reaction rules.
+    :returns: List of reaction rules.
+    :rtype: ty.List[ReactionRule]
     """
     reaction_rules = []
     
@@ -180,15 +174,9 @@ def parse_molecular_patterns(src: str) -> ty.List[MolecularPattern]:
     """
     Parse molecular patterns from file.
     
-    Parameters
-    ----------
-    src : str
-        String in JSON format describing molecular patterns.
-    
-    Returns
-    -------
-    molecular_patterns : ty.List[MolecularPattern]
-        List of molecular patterns.
+    :param str src: String in JSON format describing molecular patterns.
+    :returns: List of molecular patterns.
+    :rtype: ty.List[MolecularPattern]
     """
     molecular_patterns = []
 
@@ -213,19 +201,11 @@ def parse_mol(
     """
     Parse molecule.
 
-    Parameters
-    ----------
-    mol : Molecule
-        Molecule.
-    reactions : ty.List[ReactionRule]
-        List of reaction rules.
-    monomers : ty.List[MolecularPattern]
-        List of monomer units.
-    
-    Returns
-    -------
-    result : Result
-        Result object.
+    :param Molecule mol: Molecule.
+    :param ty.List[ReactionRule] reactions: List of reaction rules.
+    :param ty.List[MolecularPattern] monomers: List of molecular patterns.
+    :returns: Result object.
+    :rtype: Result
     """
     substrate, reaction_tree, reaction_mapping = mol.apply_rules(reactions)
     reaction_tree = reaction_tree_to_digraph(reaction_tree)
@@ -236,15 +216,15 @@ def parse_mol(
     score = len(monomer_graph.nodes) - len(monomer_mapping)
     
     result = Result(
-        mol.name,
-        substrate, 
-        True,
-        score,
-        reaction_tree,
-        reaction_mapping,
-        monomer_graph,
-        monomer_mapping,
-        biosynthetic_seq
+        name=mol.name,
+        substrate=substrate, 
+        success=True,
+        score=score,
+        reaction_tree=reaction_tree,
+        reaction_mapping=reaction_mapping,
+        monomer_graph=monomer_graph,
+        monomer_mapping=monomer_mapping,
+        biosynthetic_seq=biosynthetic_seq
     )
 
     return result

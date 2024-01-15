@@ -1,6 +1,8 @@
+"""
+Chemistry module.
+"""
 import typing as ty 
 from collections import defaultdict 
-from copy import deepcopy
 
 import numpy as np 
 from rdkit import Chem, DataStructs
@@ -17,18 +19,10 @@ class MolecularPattern:
         """
         Create a molecular pattern.
 
-        Parameters
-        ----------
-        name : str
-            Name of molecular pattern.
-        core : bool
-            Whether or not molecular pattern is a core unit.
-        smarts : str
-            SMARTS string of molecular pattern.
-        
-        Returns
-        -------
-        None
+        :param str name: Name of molecular pattern.
+        :param bool core: Whether or not molecular pattern is a core unit.
+        :param str smarts: SMARTS string of molecular pattern.
+        :returns: None
         """
         self.name = name 
         self.core = core
@@ -39,14 +33,8 @@ class MolecularPattern:
         """
         Check if molecular pattern is a core unit.
         
-        Parameters
-        ----------
-        None
-
-        Returns
-        -------
-        is_core : bool
-            Whether or not molecular pattern is a core unit.
+        :returns: Whether or not molecular pattern is a core unit.
+        :rtype: bool
         """
         return self.core
 
@@ -54,15 +42,9 @@ class MolecularPattern:
         """
         Compile a molecular pattern.
         
-        Parameters
-        ----------
-        smarts : str
-            SMARTS string of molecular pattern.
-        
-        Returns
-        -------
-        compiled : Chem.Mol
-            Compiled molecular pattern.
+        :param str smarts: SMARTS string of molecular pattern.
+        :returns: Compiled molecular pattern.
+        :rtype: Chem.Mol
         """
         return Chem.MolFromSmarts(smarts)
     
@@ -71,16 +53,9 @@ class ReactionRule:
         """
         Create a reaction rule.
         
-        Parameters
-        ----------
-        name : str
-            Name of reaction rule.
-        smirks : str
-            SMIRKS string of reaction rule.
-        
-        Returns
-        -------
-        None
+        :param str name: Name of reaction rule.
+        :param str smirks: SMIRKS string of reaction rule.
+        :returns: None
         """
         self.name = name 
         self.backward_smirks = smirks 
@@ -92,15 +67,9 @@ class ReactionRule:
         """
         Reverse a SMIRKS string.
         
-        Parameters
-        ----------
-        smirks : str
-            SMIRKS string to reverse.
-        
-        Returns
-        -------
-        reversed_smirks : str
-            Reversed SMIRKS string.
+        :param str smirks: SMIRKS string.
+        :returns: Reversed SMIRKS string.
+        :rtype: str
         """
         return ">>".join(reversed(smirks.split(">>")))
 
@@ -108,15 +77,9 @@ class ReactionRule:
         """
         Compile a reaction rule.
         
-        Parameters
-        ----------
-        smirks : str
-            SMIRKS string of reaction rule.
-        
-        Returns
-        -------
-        compiled : Reaction
-            Compiled reaction rule.
+        :param str smirks: SMIRKS string of reaction rule.
+        :returns: Compiled reaction rule.
+        :rtype: Reaction
         """
         return ReactionFromSmarts(smirks)
     
@@ -125,16 +88,9 @@ class Molecule:
         """
         Create a molecule.
         
-        Parameters
-        ----------
-        name : str
-            Name of molecule.
-        smiles : str
-            SMILES string of molecule.
-        
-        Returns
-        -------
-        None
+        :param str name: Name of molecule.
+        :param str smiles: SMILES string of molecule.
+        :returns: None
         """
         self.name = name 
         self.smiles = smiles 
@@ -144,15 +100,9 @@ class Molecule:
         """
         Compile a molecule.
         
-        Parameters
-        ----------
-        smiles : str
-            SMILES string of molecule.
-        
-        Returns
-        -------
-        compiled : Chem.Mol
-            Compiled molecule.
+        :param str smiles: SMILES string of molecule.
+        :returns: Compiled molecule.
+        :rtype: Chem.Mol
         """
         return Chem.MolFromSmiles(smiles)
     
@@ -163,19 +113,9 @@ class Molecule:
         """
         Apply reaction rules to a molecule.
 
-        Parameters
-        ----------
-        reactions : ty.List[ReactionRule]
-            List of reaction rules.
-        
-        Returns
-        -------
-        substrate : Chem.Mol
-            Substrate.
-        tree : Tree
-            Reaction tree.
-        mapping : ReactionTreeMapping
-            Reaction tree mapping.
+        :param ty.List[ReactionRule] reactions: List of reaction rules.
+        :returns: Reaction products, reaction tree, and mapping of reaction products to molecules.
+        :rtype: ty.Tuple[Chem.Mol, Tree, ReactionTreeMapping]
         """
         radius = 2
         num_bits = 2048
@@ -225,19 +165,11 @@ def mol_to_fingerprint(mol: Chem.Mol, radius: int, num_bits: int) -> np.array:
     """
     Turn a molecule into a fingerprint.
 
-    Parameters
-    ----------
-    mol : Chem.Mol
-        Molecule.
-    radius : int
-        Fingerprint radius.
-    num_bits : int
-        Number of bits in fingerprint.
-    
-    Returns
-    -------
-    fp_arr : np.array
-        Fingerprint.    
+    :param Chem.Mol mol: Molecule.
+    :param int radius: Fingerprint radius.
+    :param int num_bits: Number of bits in fingerprint.
+    :returns: Fingerprint.
+    :rtype: np.array
     """
     fp_arr = np.zeros((0,), dtype=np.int8)
     fp_vec = AllChem.GetMorganFingerprintAsBitVect(mol, radius, nBits=num_bits)
@@ -250,17 +182,10 @@ def tanimoto_similarity(fp1: np.array, fp2: np.array) -> float:
     """
     Calculate Tanimoto similarity between two fingerprints.
 
-    Parameters
-    ----------
-    fp1 : np.array
-        First fingerprint.
-    fp2 : np.array
-        Second fingerprint.
-    
-    Returns
-    -------
-    similarity : float
-        Tanimoto similarity.
+    :param np.array fp1: First fingerprint.
+    :param np.array fp2: Second fingerprint.
+    :returns: Tanimoto similarity.
+    :rtype: float
     """
     return np.logical_and(fp1, fp2).sum() / np.logical_or(fp1, fp2).sum()
 
@@ -273,21 +198,12 @@ def mol_to_encoding(
     """
     Create int hash of reaction product of molecule.
 
-    Parameters
-    ----------
-    mol : Chem.Mol
-        Molecule.
-    N : int
-        Number of atoms in original parent substrate.
-    radius : int
-        Fingerprint radius.
-    num_bits : int
-        Number of bits in fingerprint.
-
-    Returns
-    -------
-    hash : int
-        Hash of reaction product.
+    :param Chem.Mol mol: Molecule.
+    :param int N: Number of atoms in molecule.
+    :param int radius: Fingerprint radius.
+    :param int num_bits: Number of bits in fingerprint.
+    :returns: Int hash of reaction product of molecule.
+    :rtype: int
     """
     amns = [
         atom.GetIsotope() 
@@ -306,17 +222,10 @@ def identify_mol(
     """
     Identify molecule.
     
-    Parameters
-    ----------
-    mol : Chem.Mol
-        Molecule.
-    monomers : ty.List[MolecularPattern]
-        List of monomers.
-    
-    Returns
-    -------
-    name : str
-        Name of monomer.
+    :param Chem.Mol mol: Molecule.
+    :param ty.List[MolecularPattern] monomers: List of molecular patterns.
+    :returns: Name of identified monomer.
+    :rtype: ty.Optional[str]
     """
     for monomer in monomers:
         if mol.HasSubstructMatch(monomer.compiled):
@@ -332,20 +241,11 @@ def greedy_max_set_cover(
     """
     Return a greedy maximum set cover of identified monomers.
 
-    Parameters
-    ----------
-    mol : Chem.Mol
-        Molecule.
-    identified : ty.List[ty.Tuple[int, str]]
-        List of identified monomers.
-    mapping :  ReactionTreeMapping
-        Mapping of reaction products to molecules.
-    
-    Returns
-    -------
-    selected_subsets : ty.List[ty.Tuple[int, str]]
-        List of selected subsets, where each subset is a tuple of the form
-        (node, node_id).
+    :param Chem.Mol mol: Molecule.
+    :param ty.List[ty.Tuple[int, str]] identified: List of identified monomers.
+    :param ReactionTreeMapping mapping: Mapping of reaction products to molecules.
+    :returns: List of selected monomers.
+    :rtype: ty.List[ty.Tuple[int, str]]
     """
     superset = set()
     for atom in mol.GetAtoms():

@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+"""
+Description:    RetroMol command line interface.
+Usage:          python3 main.py -r <path/to/rules.json> <mode> <args>
+"""
 import argparse
 import json 
 import multiprocessing as mp
@@ -15,6 +19,9 @@ from retromol.parsing import Result, parse_reaction_rules, parse_molecular_patte
 def cli() -> argparse.Namespace:
     """
     Command line interface.
+
+    :returns: Command line arguments.
+    :rtype: argparse.Namespace
     """
     parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument("-h", "--help", action="help", default=argparse.SUPPRESS, help="Show this help message and exit.")
@@ -41,15 +48,9 @@ def parse_mol_timed(record: Record) -> Result:
     """
     Parse molecule.
     
-    Parameters
-    ----------
-    record : Record
-        Tuple containing molecule, reaction rules, and motif units.
-    
-    Returns
-    -------
-    result : Result
-        Result object.
+    :param Record record: Record containing molecule, reaction rules, and molecular patterns.
+    :returns: Result object.
+    :rtype: Result
     """
     try:
         mol, reactions, monomers = record
@@ -61,19 +62,25 @@ def main() -> None:
     """
     Driver function.
     """
+    # Disable RDKit logging.
     RDLogger.DisableLog("rdApp.*")
+
+    # Parse command line arguments.
     args = cli()
 
+    # Parse reaction rules and molecular patterns.
     rules = json.load(open(args.rules, "r"))
     reactions = parse_reaction_rules(json.dumps(rules["reactions"]))
     monomers = parse_molecular_patterns(json.dumps(rules["monomers"]))
 
+    # Parse molecule in single mode.
     if args.mode == "single":
         mol = Molecule("input", args.input)
         record = (mol, reactions, monomers)
         result = parse_mol_timed(record)
         with open(args.output, "w") as fo: fo.write(result.to_json())
 
+    # Parse a batch of molecules.
     elif args.mode == "batch":
         
         # Parse input file.
@@ -92,6 +99,7 @@ def main() -> None:
                 out_path = os.path.join(args.output, f"{result.name}.json")
                 with open(out_path, "w") as fo: fo.write(result.to_json())
 
+    # Invalid mode.
     else:
         print(f"Invalid mode: {args.mode}")
 
