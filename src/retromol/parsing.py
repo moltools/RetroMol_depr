@@ -177,7 +177,7 @@ def parse_molecular_patterns(src: str) -> ty.List[MolecularPattern]:
     
     for item in data:
         try:
-            molecular_pattern = MolecularPattern(item["name"], item["core"], item["smarts"])
+            molecular_pattern = MolecularPattern(item["name"], item["smarts"])
         except Exception as err:
             msg = f"{err}\nError parsing molecular pattern:\n{item}"
             raise Exception(msg)

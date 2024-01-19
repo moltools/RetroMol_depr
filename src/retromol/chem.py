@@ -15,28 +15,17 @@ MonomerGraphMapping = ty.Dict[int, ty.Tuple[int, str]]
 Reaction = ChemicalReaction 
 
 class MolecularPattern:
-    def __init__(self, name: str, core: bool, smarts: str) -> None:
+    def __init__(self, name: str, smarts: str) -> None:
         """
         Create a molecular pattern.
 
         :param str name: Name of molecular pattern.
-        :param bool core: Whether or not molecular pattern is a core unit.
         :param str smarts: SMARTS string of molecular pattern.
         :returns: None
         """
         self.name = name 
-        self.core = core
         self.smarts = smarts 
         self.compiled = self._compile_pattern(self.smarts)
-
-    def is_core(self) -> bool:
-        """
-        Check if molecular pattern is a core unit.
-        
-        :returns: Whether or not molecular pattern is a core unit.
-        :rtype: bool
-        """
-        return self.core
 
     def _compile_pattern(self, smarts: str) -> Chem.Mol:
         """
