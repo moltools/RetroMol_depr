@@ -4,18 +4,23 @@
 
 # RetroMol
 
+<img src="./logo.png" alt="logo" width="100">
+
 RetroMol is a Python package for retrosynthetic analysis of molecules.
+
+You can try out RetroMol online [here](https://moltools.bioinformatics.nl/retromol).
 
 ## Installation
 
-Create and activate environment:
+You can install RetroMol with pip from the root of this repository:
     
 ```bash
-conda create -f environment.yml
-conda activate retromol
+pip install .
 ```
 
-## Usage
+## Usage CLI
+
+Run the help function for all available commands:
 
 ```bash
 retromol -h
