@@ -167,10 +167,3 @@ out*
 
 # Ignore any .joblib file
 *.joblib
-
-NPAtlas_download_*
-*.npy
-*.png
-*.fasta
-inputs
-asdb4
