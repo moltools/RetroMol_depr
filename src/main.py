@@ -10,7 +10,6 @@ import os
 import typing as ty 
 
 from rdkit import RDLogger
-from tqdm import tqdm 
 
 from retromol.chem import Molecule, MolecularPattern, ReactionRule
 from retromol.helpers import TimeoutError, timeout
@@ -34,7 +33,7 @@ def cli() -> argparse.Namespace:
     subparser_single_mode.add_argument("-i", "--input", type=str, required=True, help="Input SMILES (between quotes).")
     subparser_single_mode.add_argument("-o", "--output", type=str, required=True, help="Path to new JSON output file.")
 
-    subparser_batch_mode.add_argument("-i", "--input", type=str, required=True, help="Path to input TSV file as 'name\tSMILES'.")
+    subparser_batch_mode.add_argument("-i", "--input", type=str, required=True, help="Path to input CSV or TSV file as 'name,SMILES' per line.")
     subparser_batch_mode.add_argument("-o", "--output", type=str, required=True, help="Path to new directory for JSON output files.")
     subparser_batch_mode.add_argument("-n", "--nproc", type=int, default=mp.cpu_count(), help="Number of processes to use.")
     subparser_batch_mode.add_argument("--header", action="store_true", help="Input file contains a header line.")
@@ -86,18 +85,27 @@ def main() -> None:
         # Parse input file.
         records = []
         with open(args.input, "r") as fo:
+            # Check file extension.
+            sep = {"csv": ",", "tsv": "\t"}.get(args.input.split(".")[-1])
             if args.header: next(fo)
-            for line in tqdm(fo, desc="Parsing records from input file"):
-                name, smiles = line.strip().split("\t")
+            for i, line in enumerate(fo):
+                name, smiles = line.strip().split(sep)
                 mol = Molecule(name, smiles)
                 records.append((mol, reactions, monomers))
+
+                # Report on progress.
+                print(f"Added record {i+1} to queue...", end="\r")
 
         # Parse molecules in parallel.
         nproc = min(args.nproc, mp.cpu_count())
         with mp.Pool(processes=nproc) as pool:
-            for result in tqdm(pool.imap_unordered(parse_mol_timed, records)):
+            for i, result in enumerate(pool.imap_unordered(parse_mol_timed, records)):
                 out_path = os.path.join(args.output, f"{result.name}.json")
                 with open(out_path, "w") as fo: fo.write(result.to_json())
+
+                # Report on progress.
+                percentage_done = round((i+1)/len(records)*100, 2)
+                print(f"Processed {percentage_done}% of records...", end="\r")
 
     # Invalid mode.
     else:

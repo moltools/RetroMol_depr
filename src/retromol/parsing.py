@@ -9,7 +9,7 @@ import networkx as nx
 from rdkit import Chem 
 
 from retromol.chem import Molecule, MolecularPattern, ReactionRule, ReactionTreeMapping, MonomerGraphMapping
-from retromol.graph import reaction_tree_to_digraph, reaction_tree_to_monomer_graph, resolve_biosynthetic_sequence
+from retromol.graph import reaction_tree_to_digraph, reaction_tree_to_monomer_graph
 
 @dataclass 
 class Result:
@@ -24,7 +24,6 @@ class Result:
     :param ReactionTreeMapping reaction_mapping: Reaction mapping.
     :param nx.Graph monomer_graph: Monomer graph.
     :param MonomerGraphMapping monomer_mapping: Monomer mapping.
-    :param ty.List[ty.Tuple[int, str]] biosynthetic_seq: Biosynthetic sequence.
     :returns: Result object.
     :rtype: Result
     """
@@ -36,7 +35,6 @@ class Result:
     reaction_mapping: ReactionTreeMapping = None
     monomer_graph: nx.Graph = None
     monomer_mapping: MonomerGraphMapping = None
-    biosynthetic_seq: ty.List[ty.Tuple[int, str]] = None
 
     def to_json(self, indent: int = 4) -> str:
         """
@@ -72,7 +70,6 @@ class Result:
             "reaction_mapping": reaction_mapping,
             "monomer_graph": monomer_graph_json,
             "monomer_mapping": self.monomer_mapping,
-            "biosynthetic_seq": self.biosynthetic_seq
         }
         return json.dumps(data, indent=indent)
 
@@ -122,8 +119,6 @@ class Result:
 
             reaction_mapping = data["reaction_mapping"]
             reaction_mapping = {int(k): Chem.MolFromSmiles(m) for k, m in reaction_mapping.items()}
-
-            biosynthetic_seq = data["biosynthetic_seq"]
         
         else:
             score = None
@@ -131,7 +126,6 @@ class Result:
             reaction_mapping = None
             monomer_graph = None
             monomer_mapping = None
-            biosynthetic_seq = None
 
         result = Result(
             name,
@@ -141,8 +135,7 @@ class Result:
             reaction_tree,
             reaction_mapping,
             monomer_graph,
-            monomer_mapping,
-            biosynthetic_seq
+            monomer_mapping
         )
 
         return result
@@ -209,10 +202,7 @@ def parse_mol(
     """
     substrate, reaction_tree, reaction_mapping = mol.apply_rules(reactions)
     reaction_tree = reaction_tree_to_digraph(reaction_tree)
-
-    core_monomers = [m for m in monomers if m.is_core()]
     monomer_graph, monomer_mapping = reaction_tree_to_monomer_graph(mol, reaction_tree, reaction_mapping, monomers)
-    biosynthetic_seq = resolve_biosynthetic_sequence(reaction_tree, reaction_mapping, monomer_graph, monomer_mapping, core_monomers)
     score = len(monomer_graph.nodes) - len(monomer_mapping)
     
     result = Result(
@@ -223,8 +213,7 @@ def parse_mol(
         reaction_tree=reaction_tree,
         reaction_mapping=reaction_mapping,
         monomer_graph=monomer_graph,
-        monomer_mapping=monomer_mapping,
-        biosynthetic_seq=biosynthetic_seq
+        monomer_mapping=monomer_mapping
     )
 
     return result

@@ -6,7 +6,7 @@ from collections import defaultdict
 
 import numpy as np 
 from rdkit import Chem, DataStructs
-from rdkit.Chem import AllChem, Draw
+from rdkit.Chem import AllChem
 from rdkit.Chem.rdChemReactions import ChemicalReaction, ReactionFromSmarts 
 
 Tree = ty.Dict[int, ty.Set]
