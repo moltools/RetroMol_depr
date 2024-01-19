@@ -9,7 +9,7 @@ setuptools.setup(
     package_dir={"": "src"},
     packages=[
         "retromol",
-        "retromol_miner"
+        "retromol_sequencing"
     ],
     python_requires=">=3.10",
     entry_points={"console_scripts": ["retromol = main:main"]}

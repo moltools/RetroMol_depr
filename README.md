@@ -10,13 +10,13 @@ RetroMol is a Python package for retrosynthetic analysis of molecules.
 
 Create and activate environment:
     
-    ```bash
-    conda create -f environment.yml
-    conda activate retromol
-    ```
+```bash
+conda create -f environment.yml
+conda activate retromol
+```
 
 ## Usage
 
-    ```bash
-    retromol -h
-    ```
+```bash
+retromol -h
+```

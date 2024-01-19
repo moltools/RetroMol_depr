@@ -10,4 +10,5 @@ dependencies:
     - networkx
     - scikit-learn
     - matplotlib
+    - plotly
     - -e .
