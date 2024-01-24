@@ -121,13 +121,16 @@ class ScoringMatrix:
     """
     Scoring matrix.
     """
-    def __init__(self, scoring_matrix: str) -> None:
+    def __init__(self, scoring_matrix: ty.Optional[str] = None) -> None:
         """
         Initialize a scoring matrix from a string representation.
         
         :param str scoring_matrix: String representation of scoring matrix.
         """
-        self._scores = self._parse(scoring_matrix)
+        if scoring_matrix is not None:
+            self._scores = self._parse(scoring_matrix)
+        else:
+            self._scores = self._parse(CompoundClassMapping.get_scoring_matrix())
 
     def _parse(self, src: str) -> ty.Dict[str, ty.Dict[str, int]]:
         """
@@ -166,21 +169,19 @@ class ScoringMatrix:
 Module = ty.Tuple[CompoundClassMapping, ty.Union[int, None]] # Module with tag.
 
 class ModuleSequence:
-    def __init__(self, name: str, module_sequence: ty.Union[str, ty.List[Module]]) -> None:
+    def __init__(self, name: str, module_sequence: ty.Union[ty.List[str], ty.List[Module]]) -> None:
         """
         Initialize a module sequence.
         
         :param str name: Name of module sequence.
-        :param ty.Union[str, ty.List[Module]] module_sequence: Module sequence.
+        :param ty.Union[ty.List[str], ty.List[Module]] module_sequence: Module sequence.
         """
         self.name = name
 
         if all([isinstance(x, str) for x in module_sequence]):
             self._seq = self.parse(module_sequence)
-        elif all([isinstance(x, Module) for x in module_sequence]):
-            self._seq = module_sequence
         else:
-            raise ValueError("Module sequence must be a list of strings or a list of modules")
+            self._seq = module_sequence
 
     def tag_idx(self) -> None:
         """

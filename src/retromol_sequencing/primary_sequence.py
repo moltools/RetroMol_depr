@@ -8,30 +8,26 @@ import itertools
 from collections import defaultdict 
 from copy import deepcopy 
 
-from retromol.chem import ReactionTreeMapping, MonomerGraphMapping, MolecularPattern, identify_mol
+from retromol.parsing import Result
 
-def resolve_biosynthetic_sequence(
-    reaction_tree: nx.DiGraph,
-    reaction_mapping: ReactionTreeMapping, 
-    monomer_graph: nx.Graph, 
-    monomer_mapping: MonomerGraphMapping,
-    motif_units: ty.List[MolecularPattern]
-) -> ty.List[ty.Tuple[int, str]]:
+def resolve_biosynthetic_sequence(result: Result, is_primary_motif: ty.Callable) -> ty.List[ty.Tuple[int, str]]:
     """
     Get depth-based biosynthetic sequence.
     
-    :param nx.DiGraph reaction_tree: Reaction tree.
-    :param ReactionTreeMapping reaction_mapping: Mapping of reaction products to molecules.
-    :param nx.Graph monomer_graph: Monomer graph.
-    :param MonomerGraphMapping monomer_mapping: Mapping of monomer graph nodes to molecules.
-    :param ty.List[MolecularPattern] motif_units: List of molecular patterns.
+    :param Result result: RetroMol result.
+    :param ty.Callable is_primary_motif: Function that returns True if a motif is a primary motif.
     :returns: List of monomers in biosynthetic sequence.
-    :rtype: ty.List[ty.Tuple[int, str]]
+    :rtype: ty.List[ty.Tuple[str, Chem.Mol]]
     """
+    reaction_tree = result.reaction_tree 
+    reaction_mapping = result.reaction_mapping
+    monomer_graph = result.monomer_graph
+    monomer_mapping = result.monomer_mapping
+
     order = []
 
     for node in reaction_tree.nodes:
-        if identity := identify_mol(reaction_mapping[node], motif_units):
+        if identity := is_primary_motif(reaction_mapping[node]):
             
             depth = 0
             current_node = node 
@@ -102,4 +98,16 @@ def resolve_biosynthetic_sequence(
     if not len(resolved):
         return []
     else:
-        return resolved[0]
+        # Return first resolved sequence.
+        seq = resolved[0]
+
+        # Make mapping to retrieve mol describing monomer (can be retrieved by monomer mapping id).
+        monomer_to_mol = {
+            t[0]: reaction_mapping[unique_hash]
+            for unique_hash, t in monomer_mapping.items()
+        }
+
+        # Return list of monomer mappings with mols. 
+        seq = [(t[1], monomer_to_mol[t[0]]) for t in seq]
+
+        return seq

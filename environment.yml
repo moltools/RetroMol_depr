@@ -11,4 +11,5 @@ dependencies:
     - scikit-learn
     - matplotlib
     - plotly
+    - umap-learn
     - -e .

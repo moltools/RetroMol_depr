@@ -38,6 +38,12 @@ def calculate_center_of_mass(coords: np.ndarray, weights: ty.List[float]) -> np.
 
 def calculate_moments_of_inertia_and_axes(coords: np.ndarray, weights: ty.List[float]) -> np.ndarray:
     """
+    Calculate principal moments of inertia and principal axes of a set of coordinates.
+
+    :param np.ndarray coords: Coordinates.
+    :param ty.List[float] weights: Weights.
+    :returns: Principal moments of inertia and principal axes.
+    :rtype: np.ndarray
     """
     # Check if weights is a list of length n.
     if not isinstance(weights, list):

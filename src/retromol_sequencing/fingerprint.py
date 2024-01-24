@@ -6,6 +6,8 @@ import typing as ty
 from enum import Enum
 
 import numpy as np
+from rdkit import Chem
+from rdkit.Chem import Descriptors, Crippen, Lipinski, GraphDescriptors
 
 class CompoundClassMapping(Enum):
     """
@@ -25,7 +27,7 @@ class CompoundClassMapping(Enum):
     Bulky =                 (-0.959, -0.282)
     CyclicAliphatic =       (-0.142, -0.990)
     SulfurContaining =      ( 0.415, -0.910)
-    Undefined =              ( 0.000,  0.000)
+    Undefined =             ( 0.000,  0.000)
 
     def get_mapping(item: str) -> ty.Tuple[float, float]:
         """
@@ -37,6 +39,28 @@ class CompoundClassMapping(Enum):
         :raises ValueError: If item is not a valid motif class.
         """
         return CompoundClassMapping[item].value
+    
+    @classmethod
+    def get_scoring_matrix(cls) -> str:
+        """
+        Get scoring matrix for motif classes.
+        
+        :return: Scoring matrix.
+        :rtype: str
+        """
+        return """A,B,C,D,PolarAndCharged,SmallHydrophobic,SmallNonHydrophobic,Tiny,Bulky,CyclicAliphatic,SulfurContaining,Undefined
+A,3,2,2,2,0,0,0,0,0,0,0,-2
+B,2,3,2,2,0,0,0,0,0,0,0,-2
+C,2,2,3,2,0,0,0,0,0,0,0,-2
+D,2,2,2,3,0,0,0,0,0,0,0,-2
+PolarAndCharged,0,0,0,0,3,2,2,2,2,2,2,-2
+SmallHydrophobic,0,0,0,0,2,3,2,2,2,2,2,-2
+SmallNonHydrophobic,0,0,0,0,2,2,3,2,2,2,2,-2
+Tiny,0,0,0,0,2,2,2,3,2,2,2,-2
+Bulky,0,0,0,0,2,2,2,2,3,2,2,-2
+CyclicAliphatic,0,0,0,0,2,2,2,2,2,3,2,-2
+SulfurContaining,0,0,0,0,2,2,2,2,2,2,3,-2
+Undefined,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,3"""
     
 def get_biosynthetic_fingerprint(seq: ty.List[str]) -> np.ndarray:
     """
@@ -84,3 +108,83 @@ def get_biosynthetic_fingerprint(seq: ty.List[str]) -> np.ndarray:
     fingerprint = fingerprint / np.linalg.norm(fingerprint)
 
     return fingerprint
+
+def get_amino_acid_fingerprint(mol: Chem.Mol) -> np.ndarray:
+    """
+    Get fingerprint for molecule.
+    
+    :param Chem.Mol mol: Molecule.
+    :returns: Fingerprint.
+    :rtype: np.ndarray
+    """
+    def feat_num_heavy_atoms(mol):
+        return float(sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() not in [1]))
+    
+    def feat_num_sulfur_atoms(mol):
+        return float(sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() in [16]))
+
+    def feat_num_3_rings(mol):
+        sssr = Chem.GetSSSR(mol)
+        return float(sum(1 for ring in sssr if len(ring) == 3))
+
+    def feat_num_5_rings(mol):
+        sssr = Chem.GetSSSR(mol)
+        return float(sum(1 for ring in sssr if len(ring) == 5))
+
+    def feat_num_6_rings(mol):
+        sssr = Chem.GetSSSR(mol)
+        return float(sum(1 for ring in sssr if len(ring) == 6))
+
+    # More information: https://www.rdkit.org/docs/source/rdkit.Chem.Lipinski.html
+    def feat_num_hydrogen_bond_acceptors(mol):
+        return float(Lipinski.NumHAcceptors(mol))
+
+    # More information: https://www.rdkit.org/docs/source/rdkit.Chem.Lipinski.html
+    def feat_num_hydrogen_bond_donors(mol):
+        return float(Lipinski.NumHDonors(mol))
+
+    # More information: https://www.rdkit.org/docs/source/rdkit.Chem.GraphDescriptors.html
+    def feat_bertzct(mol):
+        return float(GraphDescriptors.BertzCT(mol))
+
+    # More information: https://www.rdkit.org/docs/source/rdkit.Chem.Lipinski.html
+    def feat_num_nhs_ohs(mol):
+        return float(Lipinski.NHOHCount(mol))
+    
+    def feat_mol_weight(mol):
+        return float(Descriptors.ExactMolWt(mol))
+    
+    def feat_logp(mol):
+        return float(Crippen.MolLogP(mol))
+
+    return np.array([
+        feat_num_heavy_atoms(mol),
+        feat_num_sulfur_atoms(mol),
+        feat_num_3_rings(mol),
+        feat_num_5_rings(mol),
+        feat_num_6_rings(mol),
+        feat_num_hydrogen_bond_acceptors(mol),
+        feat_num_hydrogen_bond_donors(mol),
+        feat_bertzct(mol),
+        feat_num_nhs_ohs(mol),
+        feat_mol_weight(mol),
+        feat_logp(mol),
+    ])
+
+def amino_acid_class_to_label(classification: int) -> str:
+    """
+    Convert amino acid class to label.
+
+    :param int classification: Classification.
+    :return: Label.
+    :rtype: str
+    """
+    return {
+        0: "PolarAndCharged",
+        1: "SmallHydrophobic",
+        2: "Bulky",
+        3: "SmallNonHydrophobic",
+        4: "CyclicAliphatic",
+        5: "Tiny",
+        6: "SulfurContaining"
+    }[classification]
