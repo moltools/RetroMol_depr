@@ -5,11 +5,15 @@ Usage:          python3 find_nearest_neighbors.py -i <path/to/embedding> -m <pat
 """
 import argparse
 import joblib 
+import json 
+import requests 
 
 import numpy as np
 from sklearn.neighbors import KDTree
 
 from retromol_sequencing.fingerprint import get_biosynthetic_fingerprint
+
+# url = r"https://antismash.secondarymetabolites.org/upload/example/NC_003888.3.json"
 
 def cli() -> argparse.Namespace:
     """
@@ -35,8 +39,13 @@ def main() -> None:
     labels = np.loadtxt(args.labels, dtype=str)
     embedder = joblib.load(args.embedder)
 
+    # # Read text from url as JSON.
+    # response = requests.get(url)
+    # data = json.loads(response.text)
+    # print(data)
+
     # Deorphanization.
-    seq = [""]
+    seq = ["B", "B", "A", "D", "B"]
     query = embedder.transform([get_biosynthetic_fingerprint(seq)])
     
     # Find nearest neighbors with KDTree.
