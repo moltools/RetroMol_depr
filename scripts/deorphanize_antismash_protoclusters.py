@@ -45,7 +45,7 @@ def main() -> None:
     # print(data)
 
     # Deorphanization.
-    seq = ["B", "B", "A", "D", "B"]
+    seq = ["D", "B", "A", "C", "B", "A", "D", "C", "C", "C", "B", "B", "D", "A", "CyclicAliphatic"]
     query = embedder.transform([get_biosynthetic_fingerprint(seq)])
     
     # Find nearest neighbors with KDTree.

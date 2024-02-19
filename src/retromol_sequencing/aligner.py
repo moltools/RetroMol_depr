@@ -174,7 +174,7 @@ class ModuleSequence:
         Initialize a module sequence.
         
         :param str name: Name of module sequence.
-        :param ty.Union[ty.List[str], ty.List[Module]] module_sequence: Module sequence.
+        :param ty.Union[ty.List[str, ty.List[Module]] module_sequence: Module sequence.
         """
         self.name = name
 

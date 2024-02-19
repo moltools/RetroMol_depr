@@ -10,12 +10,17 @@ from copy import deepcopy
 
 from retromol.parsing import Result
 
-def resolve_biosynthetic_sequence(result: Result, is_primary_motif: ty.Callable) -> ty.List[ty.Tuple[int, str]]:
+def resolve_biosynthetic_sequence(
+    result: Result, 
+    is_primary_motif: ty.Callable,
+    return_monomer_id: bool = False
+) -> ty.List[ty.Tuple[int, str]]:
     """
     Get depth-based biosynthetic sequence.
     
     :param Result result: RetroMol result.
     :param ty.Callable is_primary_motif: Function that returns True if a motif is a primary motif.
+    :param bool return_monomer_id: Return monomer id instead of monomer name.
     :returns: List of monomers in biosynthetic sequence.
     :rtype: ty.List[ty.Tuple[str, Chem.Mol]]
     """
@@ -106,8 +111,13 @@ def resolve_biosynthetic_sequence(result: Result, is_primary_motif: ty.Callable)
             t[0]: reaction_mapping[unique_hash]
             for unique_hash, t in monomer_mapping.items()
         }
-
-        # Return list of monomer mappings with mols. 
-        seq = [(t[1], monomer_to_mol[t[0]]) for t in seq]
-
-        return seq
+        
+        if not return_monomer_id:
+            # Return list of monomer mappings with mols. 
+            seq = [(t[1], monomer_to_mol[t[0]]) for t in seq]
+            return seq
+        
+        else:
+            # Return list of monomer mappings with monomer ids.
+            seq = [(t[1], monomer_to_mol[t[0]], t[0]) for t in seq]
+            return seq
