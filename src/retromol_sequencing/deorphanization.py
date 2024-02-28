@@ -1,4 +1,0 @@
-"""
-Deorphanization module.
-"""
-

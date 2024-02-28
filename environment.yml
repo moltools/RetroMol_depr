@@ -8,9 +8,4 @@ dependencies:
   - pip:
     - rdkit
     - networkx
-    - scikit-learn
-    - matplotlib
-    - plotly
-    - umap-learn
-    - requests
     - -e .

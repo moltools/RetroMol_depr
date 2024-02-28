@@ -25,3 +25,11 @@ Run the help function for all available commands:
 ```bash
 retromol -h
 ```
+
+## Run tests 
+
+Run tests:
+
+```bash
+python -m unittest discover
+```

@@ -1,6 +1,3 @@
-"""
-Helper functions.
-"""
 import errno 
 import functools
 import os 
@@ -8,19 +5,11 @@ import signal
 import typing as ty
 
 class TimeoutError(Exception):
-    """
-    Timeout error.
-    """
     pass 
 
 def timeout(seconds: int = 5, error_message: str = os.strerror(errno.ETIME)) -> ty.Callable:
     """
     Decorator to raise a TimeoutError when runtime exceeds the specified time.
-
-    :param int seconds: Number of seconds before raising TimeoutError.
-    :param str error_message: Error message to raise.
-    :returns: Decorator.
-    :rtype: ty.Callable
     """
     def decorator(func: ty.Callable) -> ty.Callable:
 

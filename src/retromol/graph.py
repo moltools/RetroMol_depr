@@ -1,6 +1,3 @@
-"""
-Graph algorithms.
-"""
 import typing as ty 
 
 import networkx as nx 
@@ -14,10 +11,6 @@ from retromol.chem import (
 def reaction_tree_to_digraph(tree: Tree) -> nx.DiGraph:
     """
     Convert reaction tree to directed graph.
-
-    :param Tree tree: Reaction tree.
-    :returns: Directed graph.
-    :rtype: nx.DiGraph
     """
     digraph = nx.DiGraph()
 
@@ -40,13 +33,6 @@ def reaction_tree_to_monomer_graph(
 ) -> ty.Tuple[nx.Graph, MonomerGraphMapping]:
     """
     Convert reaction tree to monomer graph.
-
-    :param Molecule mol: Molecule.
-    :param nx.DiGraph tree: Reaction tree.
-    :param ReactionTreeMapping mapping: Mapping of reaction products to molecules.
-    :param ty.List[MolecularPattern] monomers: List of molecular patterns.
-    :returns: Monomer graph and mapping.
-    :rtype: ty.Tuple[nx.Graph, MonomerGraphMapping]
     """
     identified = []
     for node in tree.nodes:
