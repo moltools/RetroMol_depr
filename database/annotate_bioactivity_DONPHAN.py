@@ -30,7 +30,8 @@ def main() -> None:
             connectivity = inchikey.split("-")[0]
 
             bioactivities = items[2:]
-            bioactivities = set([h.split("_")[0] for h, b in bioactivities if b != ""])
+            bioactivities = set([h for h, b in bioactivities if b != ""])
+            bioactivities = [x[:-3] if x.endswith("_np") else x for x in bioactivities]
             
             bioactivity_library[connectivity].update(bioactivities)
 
