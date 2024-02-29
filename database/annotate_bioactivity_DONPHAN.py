@@ -1,9 +1,6 @@
 import argparse 
-import json 
-import typing as ty
 from collections import defaultdict
-from dataclasses import dataclass
-from neo4j import Session, GraphDatabase
+from neo4j import GraphDatabase
 
 from rdkit import Chem, RDLogger
 from tqdm import tqdm 
@@ -17,12 +14,6 @@ def cli() -> argparse.Namespace:
     parser.add_argument("--authentication", default=None, nargs=2, help="Neo4j authentication as '<username> <password>'.")
     return parser.parse_args()
 
-@dataclass
-class CompoundBioactivityRecord:
-    donphan_id: str
-    inchikey: str
-    bioactivities: ty.List[str]
-
 def main() -> None:
     args = cli()
 
@@ -31,16 +22,17 @@ def main() -> None:
     with open(args.input, "r") as file_open:
         header = file_open.readline().strip().split(",")    
 
-        for line in file_open:
+        for line in tqdm(file_open):
             items = list(zip(header, line.strip().split(",")))
             
             smiles = items[1][1]
             inchikey = Chem.MolToInchiKey(Chem.MolFromSmiles(smiles))
+            connectivity = inchikey.split("-")[0]
 
             bioactivities = items[2:]
             bioactivities = set([h.split("_")[0] for h, b in bioactivities if b != ""])
             
-            bioactivity_library[inchikey].update(bioactivities)
+            bioactivity_library[connectivity].update(bioactivities)
 
     # Connect to Neo4j and see if Compound nodes exist in the bioactivity library. 
     # If so, add bioactivity node and relationship to Compound node.
@@ -50,30 +42,31 @@ def main() -> None:
         db = GraphDatabase.driver(f"bolt://localhost:{args.port}")
 
     with db.session() as session:
-        for conn_hash, bioactivities in tqdm(bioactivity_library.items()):
+        for connectivity, bioactivities in tqdm(bioactivity_library.items()):
             query = """
-            MATCH (c:Compound {inchikey: $inchikey})
-            RETURN c.npatlas_id AS npatlas_id
+            MATCH (c:Compound {connectivity: $connectivity})
+            RETURN c.identifier AS identifier
             """
-            result = session.run(query, inchikey=conn_hash)
-            retrieved = result.single()
+            result = session.run(query, connectivity=connectivity)
             
-            if retrieved is not None:
-                npatlas_id = retrieved["npatlas_id"]
+            for retrieved in result:
+                identifier = retrieved["identifier"]
 
-                if npatlas_id:
+                if identifier is not None:
                     for bioactivity in bioactivities:
                         query = """
-                        MERGE (b:Bioactivity {name: $bioactivity})
+                        MERGE (b:Bioactivity {name: $bioactivity, source: "DONPHAN"})
                         """
                         session.run(query, bioactivity=bioactivity)
 
                         query = """
-                        MATCH (c:Compound {npatlas_id: $npatlas_id})
+                        MATCH (c:Compound {identifier: $identifier})
                         MATCH (b:Bioactivity {name: $bioactivity})
                         MERGE (c)-[:HAS_BIOACTIVITY]->(b)
                         """
-                        session.run(query, npatlas_id=npatlas_id, bioactivity=bioactivity)
+                        session.run(query, identifier=identifier, bioactivity=bioactivity)
+
+    db.close()
 
 if __name__ == "__main__":
     main()

@@ -10,19 +10,21 @@ from retromol.graph import reaction_tree_to_digraph, reaction_tree_to_monomer_gr
 @dataclass 
 class Result:
     identifier: str
-    substrate: Chem.Mol
+    mol: Chem.Mol
     success: bool
     score: int = None
     reaction_tree: ty.Dict[int, ty.List[int]] = None 
+    applied_reactions: ty.List[str] = None
     monomer_graph: ty.Dict[str, ty.Any] = None
 
     def to_json(self, indent: int = 4) -> str:
         return json.dumps({
             "identifier": self.identifier,
-            "smiles": Chem.MolToSmiles(self.substrate),
+            "smiles": Chem.MolToSmiles(self.mol),
             "success": "true" if self.success else "false",
             "score": self.score,
             "reaction_tree": self.reaction_tree,
+            "applied_reactions": self.applied_reactions,
             "monomer_graph": self.monomer_graph
         }, indent=indent)
     
@@ -31,14 +33,26 @@ class Result:
         with open(path, "r") as file_open:
             data = json.load(file_open)
 
+        reaction_tree = data["reaction_tree"]
+        if reaction_tree is not None:
+            reaction_tree = {int(k): v for k, v in reaction_tree.items()}
+
+        monomer_graph = data["monomer_graph"]
+        if monomer_graph is not None:
+            monomer_graph = {int(k): v for k, v in monomer_graph.items()}
+
         return Result(
             identifier=data["identifier"],
-            substrate=Chem.MolFromSmiles(data["smiles"]),
-            succes=True if data["success"] == "true" else False,
+            mol=Chem.MolFromSmiles(data["smiles"]),
+            success=True if data["success"] == "true" else False,
             score=data["score"],
-            reaction_tree=data["reaction_tree"],
-            monomer_graph=data["monomer_graph"],
+            reaction_tree=reaction_tree,
+            applied_reactions=data["applied_reactions"],
+            monomer_graph=monomer_graph,
         )
+    
+    def has_identified_monomers(self) -> bool:
+        return any([x["identity"] is not None for _, x in self.monomer_graph.items()])
     
 def parse_reaction_rules(src: str) -> ty.List[ReactionRule]:
     data = json.loads(src)
@@ -74,7 +88,8 @@ def parse_mol(
     monomers: ty.List[MolecularPattern],
 ) -> Result:
     name = mol.name
-    substrate, reaction_tree, reaction_mapping = mol.apply_rules(reactions)
+    reactant, reaction_tree, reaction_mapping = mol.apply_rules(reactions)
+    applied_reactions = list(set([reaction for _, reactions in reaction_tree.items() for reaction in reactions]))
     reaction_tree = reaction_tree_to_digraph(reaction_tree)
     monomer_graph, monomer_mapping = reaction_tree_to_monomer_graph(mol, reaction_tree, reaction_mapping, monomers)
 
@@ -120,9 +135,10 @@ def parse_mol(
     # Create result object.
     return Result(
         identifier=name,
-        substrate=substrate, 
+        mol=reactant, 
         success=True,
         score=None,
         reaction_tree=new_reaction_tree,
+        applied_reactions=applied_reactions,
         monomer_graph=new_monomer_graph,
     )

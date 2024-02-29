@@ -66,7 +66,7 @@ class Molecule:
                                     mols.append(result)
 
                             tree[current_encoding][reaction_rules.identifier].add(frozenset(reaction_products))
-        
+
         return self.compiled, tree, mapping
 
 def mol_to_fingerprint(mol: Chem.Mol, radius: int, num_bits: int) -> np.array:

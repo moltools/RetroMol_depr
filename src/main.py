@@ -15,13 +15,9 @@ from retromol.chem import Molecule, MolecularPattern, ReactionRule
 from retromol.helpers import TimeoutError, timeout
 from retromol.parsing import Result, parse_reaction_rules, parse_molecular_patterns, parse_mol 
 
-def cli() -> argparse.Namespace:
-    """
-    Command line interface.
+RDLogger.DisableLog("rdApp.*")
 
-    :returns: Command line arguments.
-    :rtype: argparse.Namespace
-    """
+def cli() -> argparse.Namespace:
     parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument("-h", "--help", action="help", default=argparse.SUPPRESS, help="Show this help message and exit.")
     parser.add_argument("-r", "--rules", type=str, required=True, help="Path to JSON file containing rules.")
@@ -44,13 +40,6 @@ Record = ty.Tuple[Molecule, ty.List[ReactionRule], ty.List[MolecularPattern]]
 
 @timeout(10)
 def parse_mol_timed(record: Record) -> Result:
-    """
-    Parse molecule.
-    
-    :param Record record: Record containing molecule, reaction rules, and molecular patterns.
-    :returns: Result object.
-    :rtype: Result
-    """
     try:
         mol, reactions, monomers = record
         return parse_mol(mol, reactions, monomers)
@@ -98,9 +87,10 @@ def main() -> None:
 
         # Parse molecules in parallel.
         nproc = min(args.nproc, mp.cpu_count())
+        print(f"\nUsing {nproc} processes...")
         with mp.Pool(processes=nproc) as pool:
             for i, result in enumerate(pool.imap_unordered(parse_mol_timed, records)):
-                out_path = os.path.join(args.output, f"{result.name}.json")
+                out_path = os.path.join(args.output, f"{result.identifier}.json")
                 with open(out_path, "w") as fo: fo.write(result.to_json())
 
                 # Report on progress.
@@ -111,7 +101,7 @@ def main() -> None:
     else:
         print(f"Invalid mode: {args.mode}")
 
-    exit("Done.")
+    exit("\nDone.")
 
 if __name__ == "__main__":
     main()

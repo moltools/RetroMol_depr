@@ -19,6 +19,7 @@ def reaction_tree_to_digraph(tree: Tree) -> nx.DiGraph:
 
         for reaction, children in reactions.items():
             for child in children:
+
                 for product in child:
                     digraph.add_node(product)
                     digraph.add_edge(parent, product, reaction=reaction)

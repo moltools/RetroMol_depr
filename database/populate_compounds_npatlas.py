@@ -15,17 +15,19 @@ def cli() -> argparse.Namespace:
 
 @dataclass
 class CompoundRecord:
-    npatlas_id: str
+    identifier: str
     inchi: str
     inchikey: str
     biosynthetic_pathway: ty.List[str]
     ncbi_ids: ty.List[str]
 
 def add_compound(session: Session, record: CompoundRecord) -> None:
+    connectivity = record.inchikey.split("-")[0]
+
     query = """
-    CREATE (c:Compound {npatlas_id: $npatlas_id, inchi: $inchi, inchikey: $inchikey})
+    CREATE (c:Compound {identifier: $identifier, connectivity: $connectivity, inchi: $inchi, inchikey: $inchikey})
     """
-    session.run(query, npatlas_id=record.npatlas_id, inchi=record.inchi, inchikey=record.inchikey)
+    session.run(query, identifier=record.identifier, connectivity=connectivity, inchi=record.inchi, inchikey=record.inchikey)
 
     for pathway in record.biosynthetic_pathway:
 
@@ -37,11 +39,11 @@ def add_compound(session: Session, record: CompoundRecord) -> None:
 
         # Create relationship between compound and pathway.
         query = """
-        MATCH (c:Compound {npatlas_id: $npatlas_id})
+        MATCH (c:Compound {identifier: $identifier})
         MATCH (b:Pathway {name: $pathway})
         MERGE (c)-[:BELONGS_TO]->(b)
         """
-        session.run(query, npatlas_id=record.npatlas_id, pathway=pathway)
+        session.run(query, identifier=record.identifier, pathway=pathway)
 
     for ncbi_id in record.ncbi_ids:
 
@@ -53,11 +55,11 @@ def add_compound(session: Session, record: CompoundRecord) -> None:
 
         # Create relationship between compound and organism.
         query = """
-        MATCH (c:Compound {npatlas_id: $npatlas_id})
+        MATCH (c:Compound {identifier: $identifier})
         MATCH (o:Organism {ncbi_id: $ncbi_id})
         MERGE (c)-[:PRODUCED_BY]->(o)
         """
-        session.run(query, npatlas_id=record.npatlas_id, ncbi_id=ncbi_id)
+        session.run(query, identifier=record.identifier, ncbi_id=ncbi_id)
 
 def main() -> None:
     args = cli()
@@ -84,7 +86,7 @@ def main() -> None:
                 pathways = []
 
             record = CompoundRecord(
-                npatlas_id=compound["npaid"],
+                identifier=compound["npaid"],
                 inchi=compound["inchi"],
                 inchikey=compound["inchikey"],
                 biosynthetic_pathway=pathways,
@@ -92,6 +94,8 @@ def main() -> None:
             )
 
             add_compound(session, record)
+    
+    db.close()
 
 if __name__ == "__main__":
     main()
