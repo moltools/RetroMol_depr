@@ -35,7 +35,8 @@ with db.session() as session:
     gap_cost = 2
     end_gap_cost = 1
 
-    id_a = "NPA009987"
+    # id_a = "NPA009987"
+    id_a = "NPA005497"
     seq_a = ModuleSequence(id_a, parse_primary_sequence(retrieve_primary_sequence(session, id_a)))
 
     # Return 
@@ -75,5 +76,16 @@ with db.session() as session:
     print(f"Empties: {empties}")
 
     print(top_10)
+
+    # Get associated bioactivities, if any, for the top 10 sequences.
+    print("Top 10 sequences and their bioactivities:")
+    for id_b, score in top_10:
+        query = """
+        MATCH (a:PrimarySequence {identifier: $identifier})-[:HAS_BIOACTIVITY]->(b:Bioactivity)
+        RETURN b
+        """
+        result = session.run(query, identifier=id_b)
+        for record in result:
+            print(record["b"])
 
 db.close()
