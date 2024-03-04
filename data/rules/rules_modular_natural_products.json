@@ -649,16 +649,6 @@
     {
       "type": "peptide",
       "patterns": [
-        "[CH3][O][CH]1[CH]([OH])[O][CH]([CH3])[CH]([OH])[CH]1[OH]"
-      ],
-      "properties": {
-        "pubchem_cid": 5179954,
-        "classification": "polar and charged"
-      }
-    },
-    {
-      "type": "peptide",
-      "patterns": [
         "[CH3][CH]([C]([NH2])=[O])[CH]([CH3])[CH]([NH2])[C](=[O])[OH]"
       ],
       "properties": {
@@ -764,16 +754,6 @@
       "properties": {
         "pubchem_cid": 125578,
         "classification": "polar and charged"
-      }
-    },
-    {
-      "type": "peptide",
-      "patterns": [
-        "[CH3][CH]([CH3])[CH2][CH]([OH])[C](=[O])[OH]"
-      ],
-      "properties": {
-        "pubchem_cid": 92779,
-        "classification": "small hydrophobic"
       }
     },
     {
@@ -979,16 +959,6 @@
     {
       "type": "peptide",
       "patterns": [
-        "[OH][CH]1[CH2][O][CH]([OH])[CH]([OH])[CH]1[OH]"
-      ],
-      "properties": {
-        "pubchem_cid": 229,
-        "classification": "polar and charged"
-      }
-    },
-    {
-      "type": "peptide",
-      "patterns": [
         "[NH2][C]([NH2])=[N][CH2][CH2][CH2][CH]([NH2])[C](=[O])[OH]"
       ],
       "properties": {
@@ -1084,16 +1054,6 @@
       "properties": {
         "pubchem_cid": 148708,
         "classification": "bulky"
-      }
-    },
-    {
-      "type": "peptide",
-      "patterns": [
-        "[O]=[C]([OH])[c]1[cH][cH][cH][cH][cH]1"
-      ],
-      "properties": {
-        "pubchem_cid": 243,
-        "classification": "small hydrophobic"
       }
     },
     {
@@ -1339,16 +1299,6 @@
     {
       "type": "peptide",
       "patterns": [
-        "[OH][CH2][CH]1[O][CH]([OH])[CH]([OH])[CH]([OH])[CH]1[OH]"
-      ],
-      "properties": {
-        "pubchem_cid": 206,
-        "classification": "polar and charged"
-      }
-    },
-    {
-      "type": "peptide",
-      "patterns": [
         "[NH2][C](=[O])[CH2][CH2][CH]([NH2])[C](=[O])[OH]"
       ],
       "properties": {
@@ -1374,16 +1324,6 @@
       "properties": {
         "pubchem_cid": 750,
         "classification": "tiny"
-      }
-    },
-    {
-      "type": "peptide",
-      "patterns": [
-        "[CH3][CH]([C](=[O])[OH])[C](=[O])[CH2][OH]"
-      ],
-      "properties": {
-        "pubchem_cid": 88029300,
-        "classification": "polar and charged"
       }
     },
     {
@@ -1419,41 +1359,11 @@
     {
       "type": "peptide",
       "patterns": [
-        "[CH3][CH]([C](=[O])[OH])[C](=[O])[CH]([OH])[CH]([CH3])[CH3]"
-      ],
-      "properties": {
-        "pubchem_cid": 18942657,
-        "classification": "small hydrophobic"
-      }
-    },
-    {
-      "type": "peptide",
-      "patterns": [
         "[NH2][CH]([CH2][c]1[cH][n][cH][nH]1)[C](=[O])[OH]"
       ],
       "properties": {
         "pubchem_cid": 773,
         "classification": "bulky"
-      }
-    },
-    {
-      "type": "peptide",
-      "patterns": [
-        "[CH3][CH]([CH3])[CH]([OH])[C](=[O])[OH]"
-      ],
-      "properties": {
-        "pubchem_cid": 99823,
-        "classification": "small hydrophobic"
-      }
-    },
-    {
-      "type": "peptide",
-      "patterns": [
-        "[CH3][CH2][CH]([CH3])[CH]([OH])[C](=[O])[OH]"
-      ],
-      "properties": {
-        "pubchem_cid": 164623,
-        "classification": "small hydrophobic"
       }
     },
     {
@@ -1483,16 +1393,6 @@
       ],
       "properties": {
         "pubchem_cid": 102530,
-        "classification": "bulky"
-      }
-    },
-    {
-      "type": "peptide",
-      "patterns": [
-        "[O]=[C]([OH])[C](=[O])[c]1[cH][cH][c]([OH])[cH][cH]1"
-      ],
-      "properties": {
-        "pubchem_cid": 355,
         "classification": "bulky"
       }
     },
@@ -1639,16 +1539,6 @@
     {
       "type": "peptide",
       "patterns": [
-        "[CH3][CH]([OH])[C](=[O])[OH]"
-      ],
-      "properties": {
-        "pubchem_cid": 612,
-        "classification": "small non-hydrophobic"
-      }
-    },
-    {
-      "type": "peptide",
-      "patterns": [
         "[CH3][CH]([CH3])[CH2][CH]([NH2])[C](=[O])[OH]"
       ],
       "properties": {
@@ -1769,16 +1659,6 @@
     {
       "type": "peptide",
       "patterns": [
-        "[CH3][CH]1[O][CH]([OH])[CH2][CH]([OH])[CH]1[OH]"
-      ],
-      "properties": {
-        "pubchem_cid": 325714,
-        "classification": "polar and charged"
-      }
-    },
-    {
-      "type": "peptide",
-      "patterns": [
         "[NH2][CH2][CH2][CH2][CH]([NH2])[C](=[O])[OH]"
       ],
       "properties": {
@@ -1799,41 +1679,11 @@
     {
       "type": "peptide",
       "patterns": [
-        "[O]=[C]([OH])[CH2][CH2][CH2][C](=[O])[OH]"
-      ],
-      "properties": {
-        "pubchem_cid": 743,
-        "classification": "small hydrophobic"
-      }
-    },
-    {
-      "type": "peptide",
-      "patterns": [
-        "[O]=[C]([OH])[CH]([OH])[CH2][c]1[cH][cH][cH][cH][cH]1"
-      ],
-      "properties": {
-        "pubchem_cid": 3848,
-        "classification": "bulky"
-      }
-    },
-    {
-      "type": "peptide",
-      "patterns": [
         "[NH2][CH]([C](=[O])[OH])[CH]([OH])[c]1[cH][cH][cH][cH][cH]1"
       ],
       "properties": {
         "pubchem_cid": 94134,
         "classification": "bulky"
-      }
-    },
-    {
-      "type": "peptide",
-      "patterns": [
-        "[O]=[C]([OH])[CH2][c]1[cH][cH][cH][cH][cH]1"
-      ],
-      "properties": {
-        "pubchem_cid": 999,
-        "classification": "small hydrophobic"
       }
     },
     {
@@ -1909,31 +1759,11 @@
     {
       "type": "peptide",
       "patterns": [
-        "[CH3][C](=[O])[C](=[O])[OH]"
-      ],
-      "properties": {
-        "pubchem_cid": 1060,
-        "classification": "small hydrophobic"
-      }
-    },
-    {
-      "type": "peptide",
-      "patterns": [
         "[O]=[C]1[CH2][CH2][CH2][NH]1"
       ],
       "properties": {
         "pubchem_cid": 12025,
         "classification": "cyclic aliphatic"
-      }
-    },
-    {
-      "type": "peptide",
-      "patterns": [
-        "[CH3][CH]1[O][CH]([OH])[CH]([OH])[CH]([OH])[CH]1[OH]"
-      ],
-      "properties": {
-        "pubchem_cid": 840,
-        "classification": "polar and charged"
       }
     },
     {
@@ -1984,26 +1814,6 @@
       "properties": {
         "pubchem_cid": 3387569,
         "classification": "bulky"
-      }
-    },
-    {
-      "type": "peptide",
-      "patterns": [
-        "[O]=[C]([OH])[CH2][CH2][C](=[O])[OH]"
-      ],
-      "properties": {
-        "pubchem_cid": 1110,
-        "classification": "small hydrophobic"
-      }
-    },
-    {
-      "type": "peptide",
-      "patterns": [
-        "[CH3][CH]=[C]([CH3])[C](=[O])[OH]"
-      ],
-      "properties": {
-        "pubchem_cid": 6656,
-        "classification": "small hydrophobic"
       }
     },
     {
@@ -2799,16 +2609,6 @@
     {
       "type": "peptide",
       "patterns": [
-        "[O]=[C]([OH])[c]1[cH][cH][cH][c]([OH])[c]1[OH]"
-      ],
-      "properties": {
-        "pubchem_cid": 19,
-        "classification": "bulky"
-      }
-    },
-    {
-      "type": "peptide",
-      "patterns": [
         "[NH2][CH]([CH2][c]1[cH][cH][c]([OH])[c]([OH])[cH]1)[C](=[O])[OH]"
       ],
       "properties": {
@@ -2849,16 +2649,6 @@
     {
       "type": "peptide",
       "patterns": [
-        "[CH3][CH]([CH3])[CH2][C](=[O])[C](=[O])[OH]"
-      ],
-      "properties": {
-        "pubchem_cid": 70,
-        "classification": "small hydrophobic"
-      }
-    },
-    {
-      "type": "peptide",
-      "patterns": [
         "[CH3][CH]1[CH2][C]1([NH2])[C](=[O])[OH]"
       ],
       "properties": {
@@ -2883,16 +2673,6 @@
       ],
       "properties": {
         "pubchem_cid": 978,
-        "classification": "small hydrophobic"
-      }
-    },
-    {
-      "type": "peptide",
-      "patterns": [
-        "[O]=[C]([OH])[c]1[cH][cH][c]([OH])[cH][cH]1"
-      ],
-      "properties": {
-        "pubchem_cid": 135,
         "classification": "small hydrophobic"
       }
     },
