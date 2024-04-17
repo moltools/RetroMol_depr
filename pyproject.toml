@@ -26,8 +26,9 @@ dependencies = [
 [project.optional-dependencies]
 # development dependency groups
 test = [
-    "pytest >= 8.1.1",
     "coverage",
+    "pylint",
+    "pytest >= 8.1.1",
     "pytest-cov",
 ]
 publishing = ["build", "twine", "wheel"]
