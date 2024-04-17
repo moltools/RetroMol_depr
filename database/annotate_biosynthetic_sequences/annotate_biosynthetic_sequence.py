@@ -8,7 +8,7 @@ from tqdm import tqdm
 from rdkit import RDLogger
 
 from retromol.parsing import Result
-from retromol_sequencing.sequencing import parse_modular_natural_product
+from retromol.sequencing import parse_modular_natural_product
 
 RDLogger.DisableLog("rdApp.*")
 
