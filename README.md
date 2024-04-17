@@ -31,5 +31,5 @@ retromol -h
 Run tests:
 
 ```bash
-python -m unittest discover
+python3 -m pytest tests
 ```
