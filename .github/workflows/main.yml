@@ -26,4 +26,4 @@ jobs:
         python3 -m pytest --cov=retromol tests
     - name: Check style with Pylint
       run: |
-        python3 -m pylint --reports=y inflammation
+        python3 -m pylint --reports=y retromol
