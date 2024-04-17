@@ -20,9 +20,7 @@ jobs:
     - name: Install Python dependencies
       run: |
         python3 -m pip install --upgrade pip
-        python3 -m pip install poetry
-        virtualenvs.in-project = true
-        poetry install
+        python3 -m pip install -r requirements.txt
     - name: Test with PyTest
       run: |
         python3 -m pytest --cov=retromol tests

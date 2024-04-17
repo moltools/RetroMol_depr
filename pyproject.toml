@@ -1,21 +1,47 @@
-[tool.poetry]
-name = "retromol"
-version = "1.0.0"
-description = "RetroMol: A Python package for retrosbiosynthetic analysis of natural product compounds"
-authors = ["David Meijer <david.meijer@wur.nl>"]
-license = "MIT"
-readme = "README.md"
-
-[tool.poetry.dependencies]
-python = "^3.12"
-numpy = "^1.26.4"
-rdkit = "^2023.9.5"
-
-[tool.poetry.group.dev.dependencies]
-pylint = "^3.1.0"
-pytest = "^8.1.1"
-pytest-cov = "^5.0.0"
-
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "retromol"
+version = "0.1.0"
+description = ""
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [
+    { name = "David Meijer", email = "david.meijer@wur.nl" },
+]
+license = { text = "MIT" }
+classifiers = [
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Natural Language :: English",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+]
+dependencies = [
+    "numpy >= 1.26.4",
+    "rdkit >= 2023.9.5",
+]
+
+[project.optional-dependencies]
+# development dependency groups
+test = [
+    "pytest >= 8.1.1",
+    "coverage",
+    "pytest-cov",
+]
+publishing = ["build", "twine", "wheel"]
+
+[project.urls]
+Documentation = ""
+Repository = "https://github.com/moltools/RetroMol"
+Changelog = ""
+
+[tool.coverage.run]
+branch = true
+source = ["retromol"]
+
+[tool.setuptools.packages.find]
+include = ["retromol"]
+exclude = ["tests", "tests*", "*tests.*", "*tests"]
