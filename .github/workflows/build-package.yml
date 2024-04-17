@@ -4,7 +4,7 @@ name: CI
 on: push
 
 jobs:
-  build:
+  build-package:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
@@ -21,7 +21,7 @@ jobs:
       run: |
         python3 -m pip install --upgrade pip
         # Install the package in editable mode with the dev dependencies
-        python3 -m pip install .[dev]
+        python3 -m pip install .[test]
     - name: Test with PyTest
       run: |
         python3 -m pytest --cov=retromol tests

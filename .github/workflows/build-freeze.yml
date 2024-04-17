@@ -4,7 +4,7 @@ name: CI
 on: push
 
 jobs:
-  build:
+  build-freeze:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
