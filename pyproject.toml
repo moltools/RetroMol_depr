@@ -19,8 +19,11 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
 ]
 dependencies = [
+    "matplotlib >= 3.8.4",
+    "networkx >= 3.3",
     "numpy >= 1.26.4",
     "rdkit >= 2023.9.5",
+    "scipy >= 1.13.0",
 ]
 
 [project.optional-dependencies]
@@ -30,6 +33,10 @@ test = [
     "pylint",
     "pytest >= 8.1.1",
     "pytest-cov",
+]
+database = [
+    "neo4j",
+    "tqdm",
 ]
 publishing = ["build", "twine", "wheel"]
 
