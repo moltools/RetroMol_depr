@@ -43,6 +43,9 @@ publishing = ["build", "twine", "wheel"]
 [project.urls]
 Repository = "https://github.com/moltools/RetroMol"
 
+[project.scripts]
+retromol = "retromol.cli:main"
+
 [tool.coverage.run]
 branch = true
 source = ["retromol"]
