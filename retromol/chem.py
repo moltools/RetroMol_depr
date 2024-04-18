@@ -54,8 +54,8 @@ class Molecule:
     :type smiles: str
     """
     def __init__(self, name: str, smiles: str) -> None:
-        self.name = name 
-        self.smiles = smiles 
+        self.name = name
+        self.smiles = smiles
         self.compiled = Chem.MolFromSmiles(smiles)
 
     def apply_rules(self, reactions: ty.List[ReactionRule]) -> ty.Tuple[Chem.Mol, Tree, ReactionTreeMapping]:
@@ -168,7 +168,7 @@ def identify_mol(mol: Chem.Mol, monomers: ty.List[MolecularPattern]) -> ty.Optio
     return None
 
 def greedy_max_set_cover(
-    mol: Chem.Mol, 
+    mol: Chem.Mol,
     identified: ty.List[ty.Tuple[int, str]],
     mapping: ReactionTreeMapping
 ) -> ty.List[ty.Tuple[int, str]]:
