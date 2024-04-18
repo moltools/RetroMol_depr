@@ -1,20 +1,35 @@
-import argparse 
-import json 
+#!/usr/bin/env python
+"""This script populates the Neo4j database with compounds from the NPAtlas 
+database.
+"""
+import argparse
+import json
 import typing as ty
 from dataclasses import dataclass
 from neo4j import Session, GraphDatabase
 
-from tqdm import tqdm 
+from tqdm import tqdm
 
 def cli() -> argparse.Namespace:
+    """Parse command-line arguments.
+
+    :return: Command-line arguments.
+    :rtype: argparse.Namespace
+    """
     parser = argparse.ArgumentParser()
     parser.add_argument("--input", required=True, help="Path to NPAtlas JSON database file.")
     parser.add_argument("--port", default=7687, type=int, help="Neo4j port.")
-    parser.add_argument("--authentication", default=None, nargs=2, help="Neo4j authentication as '<username> <password>'.")
+    parser.add_argument(
+        "--authentication", 
+        default=None,
+        nargs=2,
+        help="Neo4j authentication as '<username> <password>'."
+    )
     return parser.parse_args()
 
 @dataclass
 class CompoundRecord:
+    """Dataclass to store compound information."""
     identifier: str
     inchi: str
     inchikey: str
@@ -22,12 +37,28 @@ class CompoundRecord:
     ncbi_ids: ty.List[str]
 
 def add_compound(session: Session, record: CompoundRecord) -> None:
+    """
+    Add compound to the Neo4j database.
+    
+    :param session: Neo4j session.
+    :type session: Session
+    :param record: Compound record.
+    :type record: CompoundRecord
+    :return: None
+    :rtype: None
+    """
     connectivity = record.inchikey.split("-")[0]
 
     query = """
     CREATE (c:Compound {identifier: $identifier, connectivity: $connectivity, inchi: $inchi, inchikey: $inchikey})
     """
-    session.run(query, identifier=record.identifier, connectivity=connectivity, inchi=record.inchi, inchikey=record.inchikey)
+    session.run(
+        query,
+        identifier=record.identifier,
+        connectivity=connectivity,
+        inchi=record.inchi,
+        inchikey=record.inchikey
+    )
 
     for pathway in record.biosynthetic_pathway:
 
@@ -62,24 +93,27 @@ def add_compound(session: Session, record: CompoundRecord) -> None:
         session.run(query, identifier=record.identifier, ncbi_id=ncbi_id)
 
 def main() -> None:
+    """Driver function."""
     args = cli()
-    data = json.load(open(args.input, "r"))
+    data = json.load(open(args.input, "r", encoding="utf-8"))
 
     if args.authentication:
         db = GraphDatabase.driver(f"bolt://localhost:{args.port}", auth=tuple(args.authentication))
     else:
         db = GraphDatabase.driver(f"bolt://localhost:{args.port}")
-    
+
     with db.session() as session:
         for compound in tqdm(data):
-            
+
             try:
                 ncbi_id = compound["origin_organism"]["taxon"]["ncbi_id"]
-                if ncbi_id is not None: ncbi_ids = [ncbi_id]
+                if ncbi_id is not None:
+                    ncbi_ids = [ncbi_id]
                 else: ncbi_ids = []
+
             except Exception:
                 ncbi_ids = []
-            
+
             try:
                 pathways = compound["npclassifier"]["pathway_results"]
             except Exception:
@@ -94,7 +128,7 @@ def main() -> None:
             )
 
             add_compound(session, record)
-    
+
     db.close()
 
 if __name__ == "__main__":

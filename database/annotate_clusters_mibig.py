@@ -1,18 +1,31 @@
-import argparse 
-import json 
-import os 
+#!/usr/bin/env python3
+"""This script annotates MIBiG clusters in the Neo4j database."""
+import argparse
+import json
+import os
 
 from neo4j import GraphDatabase
 from tqdm import tqdm
 
 def cli() -> argparse.Namespace:
+    """Parse command-line arguments.
+    
+    :return: Command-line arguments.
+    :rtype: argparse.Namespace
+    """
     parser = argparse.ArgumentParser()
     parser.add_argument("--input", type=str, required=True, help="Path to dir containing MIBiG JSON files.")
     parser.add_argument("--port", default=7687, type=int, help="Neo4j port.")
-    parser.add_argument("--authentication", default=None, nargs=2, help="Neo4j authentication as '<username> <password>'.")
+    parser.add_argument(
+        "--authentication", 
+        default=None,
+        nargs=2,
+        help="Neo4j authentication as '<username> <password>'."
+    )
     return parser.parse_args()
 
 def main() -> None:
+    """Driver function."""
     args = cli()
 
     if args.authentication:
@@ -22,16 +35,16 @@ def main() -> None:
 
     # Get full paths of all MIBiG JSON files.
     paths = [os.path.join(args.input, f) for f in os.listdir(args.input) if f.endswith(".json")]
-    
+
     with db.session() as session:
         for path in tqdm(paths):
 
-            data = json.load(open(path, "r"))
+            data = json.load(open(path, "r", encoding="utf-8"))
             cluster = data["cluster"]
 
             # Add BGC node.
             mibig_id = cluster["mibig_accession"]
-            
+
             query = """
             MERGE (m:BGC {identifier: $mibig_id})
             """
@@ -48,8 +61,12 @@ def main() -> None:
 
             pathways = []
             mibig_pathways = cluster["biosyn_class"]
-            if "Polyketide" in mibig_pathways: pathways.append("Polyketides")
-            if "NRP" in mibig_pathways: pathways.append("Amino acids and Peptides")
+            if "Polyketide" in mibig_pathways:
+                pathways.append("Polyketides")
+
+            if "NRP" in mibig_pathways:
+                pathways.append("Amino acids and Peptides")
+
             for pathway in pathways:
                 query = """
                 MATCH (m:BGC {identifier: $mibig_id})
@@ -57,7 +74,7 @@ def main() -> None:
                 MERGE (m)-[:BELONGS_TO]->(p)
                 """
                 session.run(query, mibig_id=mibig_id, pathway=pathway)
-            
+
             # Add compounds with annotated bioactivites. These will be parsed later on into sequences as well.
             if compounds := cluster.get("compounds", None):
                 for compound in compounds:
@@ -71,7 +88,7 @@ def main() -> None:
                         for database_id in database_ids:
                             database, npatlas_id = database_id.split(":")
                             if database == "npatlas":
-                                
+
                                 # Link to BGC.
                                 query = """
                                 MERGE (c:Compound {npatlas_id: $npatlas_id})
@@ -88,7 +105,7 @@ def main() -> None:
                                     MERGE (c)-[:HAS_BIOACTIVITY]->(b)
                                     """
                                     session.run(query, npatlas_id=npatlas_id, bioactivity=bioactivity)
-                
+
     db.close()
 
 if __name__ == "__main__":
