@@ -1,20 +1,30 @@
+"""This module contains functions for retrieving monomer sequences from 
+monomer graphs.
+"""
 import typing as ty
 
-import networkx as nx 
+import networkx as nx
 
-from retromol.parsing import Result 
+from retromol.parsing import Result
 
 def parse_modular_natural_product(rec: Result) -> ty.List[ty.List[ty.Any]]:
+    """Parse a monomer graph to retrieve a modular natural product sequence.
+    
+    :param rec: The RetroMol Result object.
+    :type rec: Result
+    :return: The modular natural product sequence.
+    :rtype: ty.List[ty.List[ty.Any]]
+    """
     # Map reaction_tree_id to monomer_id.
     monomer_mapping = {}
     for monomer_id, items in rec.monomer_graph.items():
         if items["identity"] is not None:
             monomer_mapping[items["reaction_tree_id"]] = monomer_id
-    
+
     # Turn the monomer graph into an undirected graph.
     monomer_graph = {}
     for _, items in rec.monomer_graph.items():
-        if items["identity"] is not None:   
+        if items["identity"] is not None:
             node = items["reaction_tree_id"]
             monomer_graph[node] = []
 
@@ -30,7 +40,7 @@ def parse_modular_natural_product(rec: Result) -> ty.List[ty.List[ty.Any]]:
         reaction_tree.add_node(node)
         for child in children:
             reaction_tree.add_edge(node, child)
-    
+
     # Get root from reaction tree.
     root = [node for node, degree in reaction_tree.in_degree() if degree == 0][0]
 

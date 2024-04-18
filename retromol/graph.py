@@ -1,16 +1,21 @@
-import typing as ty 
+"""This module contains functions for converting reaction trees to graphs."""
+import typing as ty
 
-import networkx as nx 
+import networkx as nx
 
 from retromol.chem import (
-    Tree, ReactionTreeMapping, MonomerGraphMapping, Molecule, MolecularPattern, 
+    Tree, ReactionTreeMapping, MonomerGraphMapping, Molecule, MolecularPattern,
     identify_mol,
     greedy_max_set_cover
 )
 
 def reaction_tree_to_digraph(tree: Tree) -> nx.DiGraph:
-    """
-    Convert reaction tree to directed graph.
+    """Convert reaction tree to directed graph.
+
+    :param tree: Reaction tree.
+    :type tree: Tree
+    :return: Directed graph.
+    :rtype: nx.DiGraph
     """
     digraph = nx.DiGraph()
 
@@ -27,19 +32,29 @@ def reaction_tree_to_digraph(tree: Tree) -> nx.DiGraph:
     return digraph
 
 def reaction_tree_to_monomer_graph(
-    mol: Molecule, 
+    mol: Molecule,
     tree: nx.DiGraph,
     mapping: ReactionTreeMapping,
     monomers: ty.List[MolecularPattern]
 ) -> ty.Tuple[nx.Graph, MonomerGraphMapping]:
-    """
-    Convert reaction tree to monomer graph.
+    """Convert reaction tree to monomer graph.
+
+    :param mol: Molecule.
+    :type mol: Molecule
+    :param tree: Reaction tree.
+    :type tree: nx.DiGraph
+    :param mapping: Reaction tree mapping.
+    :type mapping: ReactionTreeMapping
+    :param monomers: Monomers.
+    :type monomers: ty.List[MolecularPattern]
+    :return: Monomer graph and monomer graph mapping.
+    :rtype: ty.Tuple[nx.Graph, MonomerGraphMapping]
     """
     identified = []
     for node in tree.nodes:
         if identity := identify_mol(mapping[node], monomers):
             identified.append((node, identity))
-    
+
     subgraphs = greedy_max_set_cover(mol.compiled, identified, mapping)
 
     # All atoms in the substrate have a valid atom map number as isotope.
@@ -51,7 +66,7 @@ def reaction_tree_to_monomer_graph(
             bond.GetBeginAtom().GetIsotope(),
             bond.GetEndAtom().GetIsotope()
         )
-    
+
     monomer_graph_mapping = dict()
     for subgraph in subgraphs:
         amns = [
@@ -69,8 +84,7 @@ def reaction_tree_to_monomer_graph(
                 amn,
                 self_loops=False
             )
-        
+
         monomer_graph_mapping[subgraph[0]] = (amns[0], subgraph[1])
 
-    return monomer_graph, monomer_graph_mapping 
-
+    return monomer_graph, monomer_graph_mapping
