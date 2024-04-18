@@ -54,6 +54,7 @@ def parse_modular_natural_product(rec: Result) -> ty.List[ty.List[ty.Any]]:
     shallowest = min(monomer_depths, key=monomer_depths.get)
 
     # Find non-overlapping path from shallowest to all other nodes.
+    monomer_graph = nx.Graph(monomer_graph)
     path = [x for x in nx.dfs_preorder_nodes(monomer_graph, shallowest)]
     path = path[::-1]
 
