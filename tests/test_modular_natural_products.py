@@ -1,4 +1,4 @@
-"""Integration tests for the package."""
+"""Integration tests for parsing and sequencing modular natural products."""
 
 import json
 import os
