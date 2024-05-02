@@ -3,6 +3,7 @@ JSON and vice versa.
 """
 
 import json
+import logging
 import typing as ty
 from dataclasses import dataclass
 
@@ -10,6 +11,7 @@ from rdkit import Chem
 
 from retromol.chem import Molecule, MolecularPattern, ReactionRule
 from retromol.graph import reaction_tree_to_digraph, reaction_tree_to_monomer_graph
+from retromol.sequencing import parse_modular_natural_product
 
 
 @dataclass
@@ -22,23 +24,23 @@ class Result:
     :type mol: Chem.Mol
     :param success: Whether the RetroMol run was successful.
     :type success: bool
-    :param score: The score of the molecule.
-    :type score: int
     :param reaction_tree: The reaction tree.
     :type reaction_tree: ty.Dict[int, ty.List[int]]
     :param applied_reactions: The applied reactions.
     :type applied_reactions: ty.List[str]
     :param monomer_graph: The monomer graph.
     :type monomer_graph: ty.Dict[str, ty.Any]
+    :param sequences: The modular natural product sequences.
+    :type sequences: ty.List[ty.List[str]]
     """
 
     identifier: str
     mol: Chem.Mol
     success: bool
-    score: int = None
     reaction_tree: ty.Dict[int, ty.List[int]] = None
     applied_reactions: ty.List[str] = None
     monomer_graph: ty.Dict[str, ty.Any] = None
+    sequences: ty.List[ty.List[str]] = None
 
     def to_json(self, indent: int = 4) -> str:
         """Convert the result to JSON.
@@ -53,10 +55,10 @@ class Result:
                 "identifier": self.identifier,
                 "smiles": Chem.MolToSmiles(self.mol),
                 "success": "true" if self.success else "false",
-                "score": self.score,
                 "reaction_tree": self.reaction_tree,
                 "applied_reactions": self.applied_reactions,
                 "monomer_graph": self.monomer_graph,
+                "sequences": self.sequences
             },
             indent=indent,
         )
@@ -85,10 +87,10 @@ class Result:
             identifier=data["identifier"],
             mol=Chem.MolFromSmiles(data["smiles"]),
             success=True if data["success"] == "true" else False,
-            score=data["score"],
             reaction_tree=reaction_tree,
             applied_reactions=data["applied_reactions"],
             monomer_graph=monomer_graph,
+            sequences=data["sequences"]
         )
 
     def has_identified_monomers(self) -> bool:
@@ -100,50 +102,51 @@ class Result:
         return any([x["identity"] is not None for _, x in self.monomer_graph.items()])
 
 
-def parse_reaction_rules(src: str) -> ty.List[ReactionRule]:
+def parse_reaction_rules(data: ty.Dict[str, str]) -> ty.List[ReactionRule]:
     """Parse reaction rules from JSON.
 
-    :param src: The JSON source.
-    :type src: str
+    :param data: The JSON source.
+    :type data: str
     :return: The reaction rules.
     :rtype: ty.List[ReactionRule]
     """
-    data = json.loads(src)
-
     reaction_rules = []
     for item in data:
-        try:
-            reaction_rule = ReactionRule(
-                item["identifier"], item["reaction_patterns"], item["properties"]
-            )
-        except Exception as err:
-            msg = f"{err}\nError parsing reaction rule:\n{item}"
-            raise Exception(msg)
+        name = item.get("name", None)
+        pattern = item.get("pattern", None)
 
+        if name is None or pattern is None:
+            raise Exception(
+                "Reaction item invalid: 'name' and/or 'pattern' is not " "provided."
+            )
+
+        reaction_rule = ReactionRule(name, pattern)
         reaction_rules.append(reaction_rule)
 
     return reaction_rules
 
 
-def parse_molecular_patterns(src: str) -> ty.List[MolecularPattern]:
+def parse_molecular_patterns(data: str) -> ty.List[MolecularPattern]:
     """Parse molecular patterns from JSON.
 
-    :param src: The JSON source.
-    :type src: str
+    :param data: The JSON source.
+    :type datta: str
     :return: The molecular patterns.
     :rtype: ty.List[MolecularPattern]
+    :raises Exception: If 'name' and/or 'pattern' is not provided for JSON
+        item.
     """
-    data = json.loads(src)
-
     molecular_patterns = []
     for item in data:
-        try:
-            molecular_pattern = MolecularPattern(
-                item["type"], item["patterns"], item["properties"]
+        name = item.get("name", None)
+        pattern = item.get("pattern", None)
+
+        if name is None or pattern is None:
+            raise Exception(
+                "Monomer item invalid: 'name' and/or 'pattern' is not " "provided."
             )
-        except Exception as err:
-            msg = f"{err}\nError parsing molecular pattern:\n{item}"
-            raise Exception(msg)
+
+        molecular_pattern = MolecularPattern(name, pattern)
         molecular_patterns.append(molecular_pattern)
 
     return molecular_patterns
@@ -165,6 +168,8 @@ def parse_mol(
     :return: The result.
     :rtype: Result
     """
+    logger = logging.getLogger(__name__)
+
     name = mol.name
     reactant, reaction_tree, reaction_mapping = mol.apply_rules(reactions)
     applied_reactions = list(
@@ -217,13 +222,33 @@ def parse_mol(
                 "neighbors": neighbors,
             }
 
+    if logger.isEnabledFor(logging.DEBUG):
+        logger.debug(f" Parsing was successful for {name}.")
+        
+        for node, items in new_monomer_graph.items():
+            if items["identity"] is not None:
+                logger.debug(f"Found identity for {node}: {items['identity']}")
+
+    try:
+        seqs = parse_modular_natural_product(new_reaction_tree, new_monomer_graph)
+    except Exception as e:
+        logger.error(f" Error while parsing modular natural product: {e}")
+    finally:
+        if logger.isEnabledFor(logging.DEBUG):
+            if not len(seqs):
+                logger.debug(f"No modular natural product sequence found.")
+            for seq in seqs:
+                logger.debug(f"Modular natural product sequence: {seq}")
+
     # Create result object.
-    return Result(
+    result = Result(
         identifier=name,
         mol=reactant,
         success=True,
-        score=None,
         reaction_tree=new_reaction_tree,
         applied_reactions=applied_reactions,
         monomer_graph=new_monomer_graph,
+        sequences=seqs
     )
+
+    return result 

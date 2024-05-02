@@ -17,37 +17,32 @@ Reaction = ChemicalReaction
 class MolecularPattern:
     """A class to represent a molecular pattern.
 
-    :param identifier: The identifier of the molecular pattern.
-    :type identifier: str
-    :param patterns: The list of SMARTS patterns.
-    :type patterns: ty.List[str]
-    :param properties: The properties of the molecular pattern.
-    :type properties: ty.Any
+    :param name: The name of the molecular pattern.
+    :type name: str
+    :param pattern: The SMARTS pattern.
+    :type pattern: str
     """
 
-    def __init__(self, identifier: str, patterns: ty.List[str], properties) -> None:
-        self.identifier = identifier
-        self.patterns = patterns
-        self.properties = properties
-        self.compiled = [Chem.MolFromSmarts(pattern) for pattern in patterns]
+    def __init__(self, name: str, pattern: str) -> None:
+        self.name = name
+        self.pattern = pattern
+        self.compiled = Chem.MolFromSmarts(pattern)
 
 
 class ReactionRule:
     """A class to represent a reaction rule.
 
-    :param identifier: The identifier of the reaction rule.
-    :type identifier: str
-    :param patterns: The list of SMARTS patterns.
-    :type patterns: ty.List[str]
-    :param properties: The properties of the reaction rule.
+    :param name: The name of the reaction rule.
+    :type name: str
+    :param pattern: The SMARTS reaction pattern.
+    :type pattern: str
     :type properties: ty.Any
     """
 
-    def __init__(self, identifier: str, patterns: ty.List[str], properties) -> None:
-        self.identifier = identifier
-        self.patterns = patterns
-        self.properties = properties
-        self.compiled = [ReactionFromSmarts(pattern) for pattern in patterns]
+    def __init__(self, name: str, pattern: str) -> None:
+        self.name = name
+        self.patterns = pattern
+        self.compiled = ReactionFromSmarts(pattern)
 
 
 class Molecule:
@@ -90,28 +85,27 @@ class Molecule:
             tree[current_encoding]
             mapping[current_encoding] = current
 
-            for reaction_rules in reactions:
-                for reaction_rule in reaction_rules.compiled:
-                    for results in reaction_rule.RunReactants([current]):
-                        if len(results) > 0:
-                            reaction_products = list()
-                            for result in results:
-                                try:
-                                    Chem.SanitizeMol(result)
-                                except Exception:
-                                    continue
+            for reaction in reactions:
+                for results in reaction.compiled.RunReactants([current]):
+                    if len(results) > 0:
+                        reaction_products = list()
+                        for result in results:
+                            try:
+                                Chem.SanitizeMol(result)
+                            except Exception:
+                                continue
 
-                                result_encoding = mol_to_encoding(
-                                    result, N, radius, num_bits
-                                )
-                                reaction_products.append(result_encoding)
-
-                                if result_encoding not in tree:
-                                    mols.append(result)
-
-                            tree[current_encoding][reaction_rules.identifier].add(
-                                frozenset(reaction_products)
+                            result_encoding = mol_to_encoding(
+                                result, N, radius, num_bits
                             )
+                            reaction_products.append(result_encoding)
+
+                            if result_encoding not in tree:
+                                mols.append(result)
+
+                        tree[current_encoding][reaction.name].add(
+                            frozenset(reaction_products)
+                        )
 
         return self.compiled, tree, mapping
 
@@ -180,12 +174,9 @@ def identify_mol(
     :rtype: ty.Optional[str]
     """
     for monomer in monomers:
-        for compiled_pattern in monomer.compiled:
-            if mol.HasSubstructMatch(compiled_pattern):
-                return {
-                    "identifier": monomer.identifier,
-                    "properties": monomer.properties,
-                }
+        if mol.HasSubstructMatch(monomer.compiled):
+            return monomer.name
+
     return None
 
 

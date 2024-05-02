@@ -2,76 +2,187 @@
 monomer graphs.
 """
 
+import logging
 import typing as ty
 
 import networkx as nx
+from rdkit import Chem
 
-from retromol.parsing import Result
 
-
-def parse_modular_natural_product(rec: Result) -> ty.List[ty.List[ty.Any]]:
+def parse_modular_natural_product(
+    reaction_tree: ty.Dict[int, ty.List[int]],
+    monomer_graph: ty.Dict[str, ty.Any],
+    core_types: ty.List[str] = ["polyketide", "peptide"]
+) -> ty.List[ty.Tuple[Chem.Mol, ty.List[str]]]:
     """Parse a monomer graph to retrieve a modular natural product sequence.
 
-    :param rec: The RetroMol Result object.
-    :type rec: Result
-    :return: The modular natural product sequence.
-    :rtype: ty.List[ty.List[ty.Any]]
+    :param reaction_tree: The reaction tree.
+    :type reaction_tree: ty.Dict[int, ty.List[int]]
+    :param monomer_graph: The monomer graph.
+    :type monomer_graph: ty.Dict[str, ty.Any]
+    :param core_types: The core types to consider.
+    :type core_types: ty.List[str]
+    :return: The modular natural product sequences.
+    :rtype: ty.List[ty.Tuple[Chem.Mol, ty.List[str]]]
     """
-    # Map reaction_tree_id to monomer_id.
+    logger = logging.getLogger(__name__)
+
+    # Get all identified monomers as Chem.Mol objects.
+    monomer_ids = []
+    for _, props in monomer_graph.items():
+        identity = props["identity"]
+        if identity is not None:
+            if identity.split("|")[0] not in core_types:
+                continue
+            monomer_ids.append((props["reaction_tree_id"], identity))
+    subs = [(Chem.MolFromSmiles(reaction_tree[x]["smiles"]), identity) for x, identity in monomer_ids]
+
+    # Retrieve the original AMNs of the identified core type monomers.
+    monomer_amns = set()
     monomer_mapping = {}
-    for monomer_id, items in rec.monomer_graph.items():
-        if items["identity"] is not None:
-            print(items)
-            monomer_mapping[items["reaction_tree_id"]] = monomer_id
+    for sub, identity in subs:
+        for atom in sub.GetAtoms():
+            amn = atom.GetAtomMapNum()
+            if amn > 0:
+                monomer_amns.add(amn)
+                monomer_mapping[amn] = identity
 
-    # Turn the monomer graph into an undirected graph.
-    monomer_graph = {}
-    for _, items in rec.monomer_graph.items():
-        if items["identity"] is not None:
-            node = items["reaction_tree_id"]
-            monomer_graph[node] = []
+    # Filter reaction tree for nodes that contain all core type AMNs.
+    mols = []
+    for _, props in reaction_tree.items():
+        mol = Chem.MolFromSmiles(props["smiles"])
+        amns = set()
+        for atom in mol.GetAtoms():
+            amn = atom.GetAtomMapNum()
+            if amn > 0: 
+                amns.add(amn)
+        if monomer_amns.issubset(amns):
+            mols.append(mol)
 
-            for neighbor in items["neighbors"]:
-                if rec.monomer_graph[neighbor]["identity"] is not None:
-                    neighbor_node = rec.monomer_graph[neighbor]["reaction_tree_id"]
-                    monomer_graph[node].append(neighbor_node)
+    # Get num of cycles for every filtered out molecule.
+    mols_with_num_cycles = []
+    for mol in mols:
+        ssr = Chem.GetSymmSSSR(mol)
+        num_cycles = len(ssr)
+        mols_with_num_cycles.append((mol, num_cycles))
 
-    print(monomer_graph)
+    # Get all molecules with the minimum number of cycles.
+    min_num_cycles = min([num_cycles for _, num_cycles in mols_with_num_cycles])
+    mols = [mol for mol, num_cycles in mols_with_num_cycles if num_cycles == min_num_cycles]
 
-    # Turn reaction tree into digraph.
-    reaction_tree = nx.DiGraph()
-    for node, items in rec.reaction_tree.items():
-        children = items["children"]
-        reaction_tree.add_node(node)
-        for child in children:
-            reaction_tree.add_edge(node, child)
+    # If there are no molecules left, return an empty list.
+    found_seqs = []
 
-    # Get root from reaction tree.
-    root = [node for node, degree in reaction_tree.in_degree() if degree == 0][0]
+    # Loop over left over molecules and create a monomer graph for each.
+    for mol in mols:
+        # Create a monomer graph.
+        temp_monomer_graph = nx.Graph()
+        for atom in mol.GetAtoms():
+            amn = atom.GetAtomMapNum()
+            if amn > 0 and amn in monomer_amns:
+                temp_monomer_graph.add_node(amn)
+        for bond in mol.GetBonds():
+            begin_amn = bond.GetBeginAtom().GetAtomMapNum()
+            end_amn = bond.GetEndAtom().GetAtomMapNum()
+            if (
+                begin_amn > 0 
+                and end_amn > 0
+                and begin_amn in monomer_amns
+                and end_amn in monomer_amns
+            ):
+                temp_monomer_graph.add_edge(begin_amn, end_amn)
 
-    # Get depths for all identified monomers.
-    monomer_depths = {}
-    for node in monomer_graph:
-        depth = nx.shortest_path_length(reaction_tree, source=root, target=node)
-        monomer_depths[node] = depth
+        # Check if temp_monomer_graph is connected. If not, skip it.
+        # This implies that a part of the linear molecule was not identified.
+        if not nx.is_connected(temp_monomer_graph):
+            logger.debug(f"Found linearized monomer graph that is not connected.")
+            continue
+        
+        contracted_nodes = {}
+        for sub, _ in subs:
+            sub_amns = []
+            for atom in sub.GetAtoms():
+                amn = atom.GetAtomMapNum()
+                if amn > 0:
+                    sub_amns.append(amn)
+            
+            contracted_nodes[sub_amns[0]] = sub_amns
+            # temp_monomer_graph.add_node(amns[0])
+            for sub_amn in sub_amns[1:]:
+                temp_monomer_graph = nx.contracted_nodes(
+                    temp_monomer_graph, 
+                    sub_amns[0], 
+                    sub_amn, 
+                    self_loops=False
+                )
+        
+        # Check if the monomer graph is linear. If not, skip it.
+        # The monomer graph is linear if it has one less edge than nodes.
+        if temp_monomer_graph.number_of_edges() != temp_monomer_graph.number_of_nodes() - 1:
+            logger.debug(f"Found linearized monomer graph that is not linear.")
+            continue
 
-    print(len(reaction_tree))
+        # Check which side is the start and which side is the end.
+        # First get both ends, these are the nodes that only have one edge.
+        ends = [node for node, degree in temp_monomer_graph.degree() if degree == 1]
+        
+        # As sanity check, there should be exactly two ends.
+        if len(ends) != 2:
+            logger.debug(f"Found linearized monomer graph with more than two ends.")
+            continue
 
-    # Get shallowest node.
-    shallowest = min(monomer_depths, key=monomer_depths.get)
+        # Get the AMNS of both ends.
+        amns_a = contracted_nodes[ends[0]]
+        amns_b = contracted_nodes[ends[1]]
 
-    # Find non-overlapping path from shallowest to all other nodes.
-    monomer_graph = nx.Graph(monomer_graph)
-    path = [x for x in nx.dfs_preorder_nodes(monomer_graph, shallowest)]
-    path = path[::-1]
+        # COOH highlights the end of the molecule. Find the end that has a COOH.
+        # First find all COOH groups in the linearized molecule.
+        coohs = []
+        pattern = Chem.MolFromSmarts("*-[C](-[OH])=[O]")
+        for match_atom_inds in mol.GetSubstructMatches(pattern):
+            cooh = []
+            for atom_ind in match_atom_inds:
+                atom = mol.GetAtomWithIdx(atom_ind)
+                amn = atom.GetAtomMapNum()
+                if amn > 0:
+                    cooh.append(amn)
+            coohs.append(cooh)
 
-    # Check if there are left-over nodes.
-    if len(path) != len(monomer_graph):
-        return []  # TODO: implement this.
+        # Check if a and b have a COOH group.
+        a_has_cooh = any([set(cooh).issubset(amns_a) for cooh in coohs])
+        b_has_cooh = any([set(cooh).issubset(amns_b) for cooh in coohs])
 
-    else:
-        monomer_ids = [monomer_mapping[node] for node in path]
-        monomer_props = [
-            rec.monomer_graph[monomer_id]["identity"] for monomer_id in monomer_ids
-        ]
-        return [monomer_props]
+        # If both have a COOH group, skip this molecule.
+        if a_has_cooh and b_has_cooh:
+            logger.debug(f"Found linearized monomer graph with two ends with COOH.")
+            continue
+
+        # If none have a COOH group, skip this molecule.
+        if not a_has_cooh and not b_has_cooh:
+            logger.debug(f"Found linearized monomer graph with two ends without COOH.")
+            continue
+
+        # If a has a COOH group, a is the end.
+        if a_has_cooh:
+            start_monomer = ends[1]
+            end_monomer = ends[0]
+        else:
+            start_monomer = ends[0]
+            end_monomer = ends[1]
+
+        # Get the path between start and end in temp_monomer_graph.
+        path = nx.shortest_path(temp_monomer_graph, start_monomer, end_monomer)
+
+        # Get identities of the monomers in the path.
+        identities = [monomer_mapping[amn] for amn in path]
+
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f"Found linearized molecule: {Chem.MolToSmiles(mol)}")
+            logger.debug(f"Found monomer sequence for molecule: {identities}")
+
+        found_seqs.append(dict(
+            smiles=Chem.MolToSmiles(mol),
+            motif_code=identities
+        ))
+    
+    return found_seqs

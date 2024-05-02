@@ -9,7 +9,7 @@ import signal
 import typing as ty
 
 
-class TimeoutError(Exception):
+class RetroMolTimeout(Exception):
     """Custom exception to raise when a function exceeds the specified time."""
 
     pass
@@ -18,7 +18,7 @@ class TimeoutError(Exception):
 def timeout(
     seconds: int = 5, error_message: str = os.strerror(errno.ETIME)
 ) -> ty.Callable:
-    """Raise a TimeoutError when runtime exceeds the specified time.
+    """Raise a RetroMolTimeout when runtime exceeds the specified time.
 
     :param seconds: The number of seconds before the function times out.
     :type seconds: int
@@ -32,7 +32,7 @@ def timeout(
     def decorator(func: ty.Callable) -> ty.Callable:
 
         def _handle_timeout(signum, frame):
-            raise TimeoutError(error_message)
+            raise RetroMolTimeout(error_message)
 
         @functools.wraps(func)
         def wrapper(*args, **kwargs):

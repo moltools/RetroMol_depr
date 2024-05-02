@@ -2,6 +2,7 @@
 """This module contains the command line interface for the RetroMol package."""
 import argparse
 import json
+import logging
 import multiprocessing as mp
 import os
 import typing as ty
@@ -10,9 +11,7 @@ from rdkit import RDLogger
 
 from retromol.chem import Molecule, MolecularPattern, ReactionRule
 
-# Need to import custom TimeoutError in order to override the default
-# TimeoutError.
-from retromol.helpers import TimeoutError, timeout
+from retromol.helpers import timeout
 from retromol.parsing import (
     Result,
     parse_reaction_rules,
@@ -21,6 +20,8 @@ from retromol.parsing import (
 )
 
 RDLogger.DisableLog("rdApp.*")
+
+logger = logging.getLogger(__name__)
 
 
 def cli() -> argparse.Namespace:
@@ -39,10 +40,24 @@ def cli() -> argparse.Namespace:
     )
     parser.add_argument(
         "-r",
-        "--rules",
+        "--reactions",
         type=str,
         required=True,
-        help="Path to JSON file containing rules.",
+        help="Path to JSON file containing reaction.",
+    )
+    parser.add_argument(
+        "-m",
+        "--monomers",
+        type=str,
+        required=True,
+        help="Path to JSON file containing monomer patterns.",
+    )
+    parser.add_argument(
+        "-l",
+        "--logger-level",
+        type=str,
+        default="INFO",
+        help="Logger verbosity level.",
     )
 
     subparsers = parser.add_subparsers(dest="mode", required=True)
@@ -114,10 +129,17 @@ def main() -> None:
     # Parse command line arguments.
     args = cli()
 
+    # Set logger verbosity.
+    logging.basicConfig(level=args.logger_level)
+
     # Parse reaction rules and molecular patterns.
-    rules = json.load(open(args.rules, "r", encoding="utf-8"))
-    reactions = parse_reaction_rules(json.dumps(rules["reactions"]))
-    monomers = parse_molecular_patterns(json.dumps(rules["monomers"]))
+    reactions_src = json.load(open(args.reactions, "r", encoding="utf-8"))
+    reactions = parse_reaction_rules(reactions_src)
+
+    monomers_src = json.load(open(args.monomers, "r", encoding="utf-8"))
+    monomers = parse_molecular_patterns(monomers_src)
+    
+    logger.debug(f"Parsed {len(reactions)} reactions and {len(monomers)} monomers.")
 
     # Parse molecule in single mode.
     if args.mode == "single":
@@ -126,6 +148,8 @@ def main() -> None:
         result = parse_mol_timed(record)
         with open(args.output, "w", encoding="utf-8") as fo:
             fo.write(result.to_json())
+        logger.debug(f"Processed single molecule.")
+        exit(0)
 
     # Parse a batch of molecules.
     elif args.mode == "batch":
@@ -157,12 +181,13 @@ def main() -> None:
                 # Report on progress.
                 percentage_done = round((i + 1) / len(records) * 100, 2)
                 print(f"Processed {percentage_done}% of records...", end="\r")
+        logger.info(f"Processed {len(records)} records.")
+        exit(0)
 
     # Invalid mode.
     else:
         print(f"Invalid mode: {args.mode}")
-
-    exit("\nDone.")
+        exit(1)
 
 
 if __name__ == "__main__":
