@@ -1,24 +1,34 @@
-"""This module contains helper functions and decorators for the retromol package."""
+"""This module contains helper functions and decorators for the retromol
+package.
+"""
+
 import errno
 import functools
 import os
 import signal
 import typing as ty
 
+
 class TimeoutError(Exception):
     """Custom exception to raise when a function exceeds the specified time."""
+
     pass
 
-def timeout(seconds: int = 5, error_message: str = os.strerror(errno.ETIME)) -> ty.Callable:
-    """Decorator to raise a TimeoutError when runtime exceeds the specified time.
+
+def timeout(
+    seconds: int = 5, error_message: str = os.strerror(errno.ETIME)
+) -> ty.Callable:
+    """Raise a TimeoutError when runtime exceeds the specified time.
 
     :param seconds: The number of seconds before the function times out.
     :type seconds: int
-    :param error_message: The error message to display when the function times out.
+    :param error_message: The error message to display when the function times
+        out.
     :type error_message: str
     :return: Decorator.
     :rtype: ty.Callable
     """
+
     def decorator(func: ty.Callable) -> ty.Callable:
 
         def _handle_timeout(signum, frame):

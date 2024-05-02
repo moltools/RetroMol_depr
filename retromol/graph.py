@@ -1,13 +1,19 @@
 """This module contains functions for converting reaction trees to graphs."""
+
 import typing as ty
 
 import networkx as nx
 
 from retromol.chem import (
-    Tree, ReactionTreeMapping, MonomerGraphMapping, Molecule, MolecularPattern,
+    Tree,
+    ReactionTreeMapping,
+    MonomerGraphMapping,
+    Molecule,
+    MolecularPattern,
     identify_mol,
-    greedy_max_set_cover
+    greedy_max_set_cover,
 )
+
 
 def reaction_tree_to_digraph(tree: Tree) -> nx.DiGraph:
     """Convert reaction tree to directed graph.
@@ -31,11 +37,12 @@ def reaction_tree_to_digraph(tree: Tree) -> nx.DiGraph:
 
     return digraph
 
+
 def reaction_tree_to_monomer_graph(
     mol: Molecule,
     tree: nx.DiGraph,
     mapping: ReactionTreeMapping,
-    monomers: ty.List[MolecularPattern]
+    monomers: ty.List[MolecularPattern],
 ) -> ty.Tuple[nx.Graph, MonomerGraphMapping]:
     """Convert reaction tree to monomer graph.
 
@@ -63,8 +70,7 @@ def reaction_tree_to_monomer_graph(
         monomer_graph.add_node(atom.GetIsotope())
     for bond in mol.compiled.GetBonds():
         monomer_graph.add_edge(
-            bond.GetBeginAtom().GetIsotope(),
-            bond.GetEndAtom().GetIsotope()
+            bond.GetBeginAtom().GetIsotope(), bond.GetEndAtom().GetIsotope()
         )
 
     monomer_graph_mapping = dict()
@@ -79,10 +85,7 @@ def reaction_tree_to_monomer_graph(
         monomer_graph.add_node(amns[0])
         for amn in amns[1:]:
             monomer_graph = nx.contracted_nodes(
-                monomer_graph,
-                amns[0],
-                amn,
-                self_loops=False
+                monomer_graph, amns[0], amn, self_loops=False
             )
 
         monomer_graph_mapping[subgraph[0]] = (amns[0], subgraph[1])

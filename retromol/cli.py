@@ -9,67 +9,90 @@ import typing as ty
 from rdkit import RDLogger
 
 from retromol.chem import Molecule, MolecularPattern, ReactionRule
-# Need to import custom TimeoutError in order to override the default TimeoutError.
+
+# Need to import custom TimeoutError in order to override the default
+# TimeoutError.
 from retromol.helpers import TimeoutError, timeout
-from retromol.parsing import Result, parse_reaction_rules, parse_molecular_patterns, parse_mol
+from retromol.parsing import (
+    Result,
+    parse_reaction_rules,
+    parse_molecular_patterns,
+    parse_mol,
+)
 
 RDLogger.DisableLog("rdApp.*")
 
+
 def cli() -> argparse.Namespace:
     """Parse command line arguments.
-    
+
     :return: The parsed command line arguments.
     :rtype: argparse.Namespace
     """
     parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument(
-        "-h", 
-        "--help", 
+        "-h",
+        "--help",
         action="help",
         default=argparse.SUPPRESS,
-        help="Show this help message and exit."
+        help="Show this help message and exit.",
     )
-    parser.add_argument("-r", "--rules", type=str, required=True, help="Path to JSON file containing rules.")
+    parser.add_argument(
+        "-r",
+        "--rules",
+        type=str,
+        required=True,
+        help="Path to JSON file containing rules.",
+    )
 
     subparsers = parser.add_subparsers(dest="mode", required=True)
     subparser_single_mode = subparsers.add_parser("single")
     subparser_batch_mode = subparsers.add_parser("batch")
 
-    subparser_single_mode.add_argument("-i", "--input", type=str, required=True, help="Input SMILES (between quotes).")
-    subparser_single_mode.add_argument("-o", "--output", type=str, required=True, help="Path to new JSON output file.")
+    subparser_single_mode.add_argument(
+        "-i", "--input", type=str, required=True, help="Input SMILES (between quotes)."
+    )
+    subparser_single_mode.add_argument(
+        "-o", "--output", type=str, required=True, help="Path to new JSON output file."
+    )
 
     subparser_batch_mode.add_argument(
-        "-i", 
-        "--input", 
+        "-i",
+        "--input",
         type=str,
         required=True,
-        help="Path to input CSV or TSV file as 'name,SMILES' per line."
+        help="Path to input CSV or TSV file as 'name,SMILES' per line.",
     )
     subparser_batch_mode.add_argument(
-        "-o", 
-        "--output", 
+        "-o",
+        "--output",
         type=str,
         required=True,
-        help="Path to new directory for JSON output files."
+        help="Path to new directory for JSON output files.",
     )
     subparser_batch_mode.add_argument(
-        "-n", 
+        "-n",
         "--nproc",
         type=int,
         default=mp.cpu_count(),
-        help="Number of processes to use."
+        help="Number of processes to use.",
     )
-    subparser_batch_mode.add_argument("--header", action="store_true", help="Input file contains a header line.")
+    subparser_batch_mode.add_argument(
+        "--header", action="store_true", help="Input file contains a header line."
+    )
 
     return parser.parse_args()
 
+
 Record = ty.Tuple[Molecule, ty.List[ReactionRule], ty.List[MolecularPattern]]
+
 
 @timeout(10)
 def parse_mol_timed(record: Record) -> Result:
     """Parse a molecule with a timeout.
-    
-    :param record: The record containing the molecule, reaction rules, and molecular patterns.
+
+    :param record: The record containing the molecule, reaction rules, and
+        molecular patterns.
     :type record: Record
     :return: The result of the parsing.
     :rtype: Result
@@ -79,6 +102,7 @@ def parse_mol_timed(record: Record) -> Result:
         return parse_mol(mol, reactions, monomers)
     except Exception:
         return Result(mol.name, mol.compiled, False)
+
 
 def main() -> None:
     """
@@ -131,7 +155,7 @@ def main() -> None:
                     fo.write(result.to_json())
 
                 # Report on progress.
-                percentage_done = round((i+1)/len(records)*100, 2)
+                percentage_done = round((i + 1) / len(records) * 100, 2)
                 print(f"Processed {percentage_done}% of records...", end="\r")
 
     # Invalid mode.
@@ -139,6 +163,7 @@ def main() -> None:
         print(f"Invalid mode: {args.mode}")
 
     exit("\nDone.")
+
 
 if __name__ == "__main__":
     main()

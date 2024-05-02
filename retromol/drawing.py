@@ -1,4 +1,5 @@
 """This module contains functions for drawing molecules and monomer graphs."""
+
 import typing as ty
 from copy import deepcopy
 
@@ -8,6 +9,7 @@ from rdkit import Chem
 from rdkit.Chem import AllChem, Draw
 
 from retromol.parsing import Result
+
 
 def get_2d_coordinatates(mol: Chem.Mol) -> ty.Dict[int, ty.Tuple[float, float]]:
     """Get 2D coordinates of atoms in molecule.
@@ -24,10 +26,11 @@ def get_2d_coordinatates(mol: Chem.Mol) -> ty.Dict[int, ty.Tuple[float, float]]:
     for atom in mol.GetAtoms():
         atom_idx = atom.GetIdx()
         position = mol.GetConformer(0).GetAtomPosition(atom_idx)
-        amn = atom.GetIsotope() # Stored atom tracking num as isotope prop.
+        amn = atom.GetIsotope()  # Stored atom tracking num as isotope prop.
         coordinates[amn] = (position.x, position.y)
 
     return coordinates
+
 
 def draw_molecule(mol: Chem.Mol, path: str) -> None:
     """Draw molecule to file.
@@ -37,7 +40,9 @@ def draw_molecule(mol: Chem.Mol, path: str) -> None:
     :param path: The path to save the image to.
     :type path: str
     """
-    mol = deepcopy(mol) # Keep isotope numbers intact for atom mapping outside of function.
+    mol = deepcopy(
+        mol
+    )  # Keep isotope numbers intact for atom mapping outside of function.
 
     for atom in mol.GetAtoms():
         atom.SetIsotope(0)
@@ -45,10 +50,12 @@ def draw_molecule(mol: Chem.Mol, path: str) -> None:
     AllChem.Compute2DCoords(mol)
     Draw.MolToImageFile(mol, path, size=(1000, 1000))
 
+
 def visualize_monomer_graph(data: Result, path: ty.Optional[str]) -> None:
-    """Visualize monomer graph. 
-    
-    :param data: The data object containing the monomer graph and monomer mapping.
+    """Visualize monomer graph.
+
+    :param data: The data object containing the monomer graph and monomer
+        mapping.
     :type data: Result
     :param path: The path to save the image to.
     :type path: ty.Optional[str]
@@ -80,8 +87,24 @@ def visualize_monomer_graph(data: Result, path: ty.Optional[str]) -> None:
 
     # Create legend.
     legend_elements = [
-        plt.Line2D([0], [0], marker="o", color="w", label="Atom", markerfacecolor="blue", markersize=15),
-        plt.Line2D([0], [0], marker="o", color="w", label="Monomer", markerfacecolor="red", markersize=15),
+        plt.Line2D(
+            [0],
+            [0],
+            marker="o",
+            color="w",
+            label="Atom",
+            markerfacecolor="blue",
+            markersize=15,
+        ),
+        plt.Line2D(
+            [0],
+            [0],
+            marker="o",
+            color="w",
+            label="Monomer",
+            markerfacecolor="red",
+            markersize=15,
+        ),
     ]
 
     plt.legend(handles=legend_elements)

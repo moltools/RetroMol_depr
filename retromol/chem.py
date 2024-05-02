@@ -13,9 +13,10 @@ ReactionTreeMapping = ty.Dict[int, Chem.Mol]
 MonomerGraphMapping = ty.Dict[int, ty.Tuple[int, str]]
 Reaction = ChemicalReaction
 
+
 class MolecularPattern:
     """A class to represent a molecular pattern.
-    
+
     :param identifier: The identifier of the molecular pattern.
     :type identifier: str
     :param patterns: The list of SMARTS patterns.
@@ -23,15 +24,17 @@ class MolecularPattern:
     :param properties: The properties of the molecular pattern.
     :type properties: ty.Any
     """
+
     def __init__(self, identifier: str, patterns: ty.List[str], properties) -> None:
         self.identifier = identifier
         self.patterns = patterns
         self.properties = properties
         self.compiled = [Chem.MolFromSmarts(pattern) for pattern in patterns]
 
+
 class ReactionRule:
     """A class to represent a reaction rule.
-    
+
     :param identifier: The identifier of the reaction rule.
     :type identifier: str
     :param patterns: The list of SMARTS patterns.
@@ -39,28 +42,33 @@ class ReactionRule:
     :param properties: The properties of the reaction rule.
     :type properties: ty.Any
     """
+
     def __init__(self, identifier: str, patterns: ty.List[str], properties) -> None:
         self.identifier = identifier
         self.patterns = patterns
         self.properties = properties
         self.compiled = [ReactionFromSmarts(pattern) for pattern in patterns]
 
+
 class Molecule:
     """A class to represent a molecule.
-    
+
     :param name: The name of the molecule.
     :type name: str
     :param smiles: The SMILES representation of the molecule.
     :type smiles: str
     """
+
     def __init__(self, name: str, smiles: str) -> None:
         self.name = name
         self.smiles = smiles
         self.compiled = Chem.MolFromSmiles(smiles)
 
-    def apply_rules(self, reactions: ty.List[ReactionRule]) -> ty.Tuple[Chem.Mol, Tree, ReactionTreeMapping]:
+    def apply_rules(
+        self, reactions: ty.List[ReactionRule]
+    ) -> ty.Tuple[Chem.Mol, Tree, ReactionTreeMapping]:
         """Apply the reaction rules to the molecule.
-        
+
         :param reactions: The list of reaction rules.
         :type reactions: ty.List[ReactionRule]
         :return: The reaction tree.
@@ -93,19 +101,24 @@ class Molecule:
                                 except Exception:
                                     continue
 
-                                result_encoding = mol_to_encoding(result, N, radius, num_bits)
+                                result_encoding = mol_to_encoding(
+                                    result, N, radius, num_bits
+                                )
                                 reaction_products.append(result_encoding)
 
                                 if result_encoding not in tree:
                                     mols.append(result)
 
-                            tree[current_encoding][reaction_rules.identifier].add(frozenset(reaction_products))
+                            tree[current_encoding][reaction_rules.identifier].add(
+                                frozenset(reaction_products)
+                            )
 
         return self.compiled, tree, mapping
 
+
 def mol_to_fingerprint(mol: Chem.Mol, radius: int, num_bits: int) -> np.array:
     """Convert a molecule to a fingerprint.
-    
+
     :param mol: The molecule.
     :type mol: Chem.Mol
     :param radius: The radius of the fingerprint.
@@ -120,9 +133,10 @@ def mol_to_fingerprint(mol: Chem.Mol, radius: int, num_bits: int) -> np.array:
     DataStructs.ConvertToNumpyArray(fp_vec, fp_arr)
     return fp_arr
 
+
 def tanimoto_similarity(fp1: np.array, fp2: np.array) -> float:
     """Calculate the Tanimoto similarity between two fingerprints.
-    
+
     :param fp1: The first fingerprint.
     :type fp1: np.array
     :param fp2: The second fingerprint.
@@ -131,6 +145,7 @@ def tanimoto_similarity(fp1: np.array, fp2: np.array) -> float:
     :rtype: float
     """
     return np.logical_and(fp1, fp2).sum() / np.logical_or(fp1, fp2).sum()
+
 
 def mol_to_encoding(mol: Chem.Mol, N: int, radius: int, num_bits: int) -> np.array:
     """Convert a molecule to an encoding.
@@ -151,9 +166,12 @@ def mol_to_encoding(mol: Chem.Mol, N: int, radius: int, num_bits: int) -> np.arr
     fp = mol_to_fingerprint(mol, radius, num_bits)
     return hash(np.hstack([fp, amns]).data.tobytes())
 
-def identify_mol(mol: Chem.Mol, monomers: ty.List[MolecularPattern]) -> ty.Optional[str]:
+
+def identify_mol(
+    mol: Chem.Mol, monomers: ty.List[MolecularPattern]
+) -> ty.Optional[str]:
     """Identify the molecule.
-    
+
     :param mol: The molecule.
     :type mol: Chem.Mol
     :param monomers: The list of molecular patterns.
@@ -164,13 +182,15 @@ def identify_mol(mol: Chem.Mol, monomers: ty.List[MolecularPattern]) -> ty.Optio
     for monomer in monomers:
         for compiled_pattern in monomer.compiled:
             if mol.HasSubstructMatch(compiled_pattern):
-                return {"identifier": monomer.identifier, "properties": monomer.properties}
+                return {
+                    "identifier": monomer.identifier,
+                    "properties": monomer.properties,
+                }
     return None
 
+
 def greedy_max_set_cover(
-    mol: Chem.Mol,
-    identified: ty.List[ty.Tuple[int, str]],
-    mapping: ReactionTreeMapping
+    mol: Chem.Mol, identified: ty.List[ty.Tuple[int, str]], mapping: ReactionTreeMapping
 ) -> ty.List[ty.Tuple[int, str]]:
     """Return a greedy maximum set cover of identified monomers.
 
@@ -191,11 +211,9 @@ def greedy_max_set_cover(
     subsets = list()
     for node, node_id in identified:
         submol = mapping[node]
-        amns = set([
-            atom.GetIsotope()
-            for atom in submol.GetAtoms()
-            if atom.GetIsotope() > 0
-        ])
+        amns = set(
+            [atom.GetIsotope() for atom in submol.GetAtoms() if atom.GetIsotope() > 0]
+        )
         subsets.append((amns, (node, node_id)))
 
     sorted_subsets = sorted(subsets, key=lambda x: len(x[0]), reverse=True)

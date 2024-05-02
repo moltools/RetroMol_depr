@@ -1,4 +1,5 @@
 """This module contains functions for sequence alignment."""
+
 import typing as ty
 from dataclasses import dataclass
 from enum import Enum, auto
@@ -6,28 +7,34 @@ from enum import Enum, auto
 from scipy.spatial.distance import pdist
 from scipy.cluster.hierarchy import linkage
 
+
 class Motif:
     """Base class for motifs."""
+
     ...
+
 
 class PolyketideType(Enum):
     """Enum for polyketide types."""
+
     A = auto()
     B = auto()
     C = auto()
     D = auto()
     Undefined = auto()
 
+
 class PeptideType(Enum):
     """Enum for peptide types."""
-    PolarAndCharged         = auto()
-    SmallHydrophobic        = auto()
-    SmallNonHydrophobic     = auto()
-    Tiny                    = auto()
-    Bulky                   = auto()
-    CyclicAliphatic         = auto()
-    CysteineLike            = auto()
-    Undefined               = auto()
+
+    PolarAndCharged = auto()
+    SmallHydrophobic = auto()
+    SmallNonHydrophobic = auto()
+    Tiny = auto()
+    Bulky = auto()
+    CyclicAliphatic = auto()
+    CysteineLike = auto()
+    Undefined = auto()
 
     def __str__(self) -> str:
         return self.name
@@ -35,16 +42,18 @@ class PeptideType(Enum):
     def __repr__(self) -> str:
         return self.name
 
+
 @dataclass
 class PolyketideMotif(Motif):
     """Dataclass for polyketide motifs."""
+
     type: PolyketideType
     decoration_type: int | None
 
     @classmethod
     def from_dict(cls, data: ty.Dict[str, ty.Any]) -> "PolyketideMotif":
         """Create a PolyketideMotif object from a dictionary.
-        
+
         :param data: Dictionary with polyketide motif data.
         :type data: ty.Dict[str, ty.Any]
         :return: Polyketide motif object.
@@ -91,15 +100,17 @@ class PolyketideMotif(Motif):
     def __repr__(self) -> str:
         return f"{self.type}{self.decoration_type}"
 
+
 @dataclass
 class PeptideMotif(Motif):
     """Dataclass for peptide motifs."""
+
     type: PeptideType | None
 
     @classmethod
     def from_dict(cls, data: ty.Dict[str, ty.Any]) -> "PeptideMotif":
         """Create a PeptideMotif object from a dictionary.
-        
+
         :param data: Dictionary with peptide motif data.
         :type data: ty.Dict[str, ty.Any]
         :return: Peptide motif object.
@@ -139,17 +150,22 @@ class PeptideMotif(Motif):
     def __repr__(self) -> str:
         return f"{self.type}"
 
+
 class UndefinedMotif(Motif):
     """Class for undefined motifs."""
+
     ...
+
 
 class Gap(Motif):
     """Class for gaps."""
+
     ...
+
 
 def score_motif_similarity(motif1: Motif, motif2: Motif) -> int:
     """Score the similarity between two motifs.
-    
+
     :param motif1: First motif.
     :type motif1: Motif
     :param motif2: Second motif.
@@ -167,9 +183,15 @@ def score_motif_similarity(motif1: Motif, motif2: Motif) -> int:
 
     # Both are any polyketide motif.
     if isinstance(motif1, PolyketideMotif) and isinstance(motif2, PolyketideMotif):
-        if motif1.type == motif2.type and motif1.decoration_type == motif2.decoration_type:
+        if (
+            motif1.type == motif2.type
+            and motif1.decoration_type == motif2.decoration_type
+        ):
             return 3
-        elif motif1.type == motif2.type and motif1.decoration_type != motif2.decoration_type:
+        elif (
+            motif1.type == motif2.type
+            and motif1.decoration_type != motif2.decoration_type
+        ):
             return 2
         else:
             return 1
@@ -183,17 +205,20 @@ def score_motif_similarity(motif1: Motif, motif2: Motif) -> int:
 
     # One is a polyketide motif and the other is a peptide motif.
     if (
-        isinstance(motif1, PolyketideMotif) and isinstance(motif2, PeptideMotif)
-        or isinstance(motif1, PeptideMotif) and isinstance(motif2, PolyketideMotif)
+        isinstance(motif1, PolyketideMotif)
+        and isinstance(motif2, PeptideMotif)
+        or isinstance(motif1, PeptideMotif)
+        and isinstance(motif2, PolyketideMotif)
     ):
         return -1
 
     return 0
 
+
 def parse_primary_sequence(sequence: ty.Dict[str, ty.Any]) -> "ModuleSequence":
     """
     Parse primary sequence from dictionary.
-    
+
     :param sequence: Dictionary with primary sequence data.
     :type sequence: ty.Dict[str, ty.Any]
     :return: ModuleSequence object.
@@ -214,14 +239,16 @@ def parse_primary_sequence(sequence: ty.Dict[str, ty.Any]) -> "ModuleSequence":
 
     return module_list
 
+
 class Matrix:
     """Base class for matrices.
-    
+
     :param nrows: Number of rows.
     :type nrows: int
     :param ncols: Number of columns.
     :type ncols: int
     """
+
     def __init__(self, nrows: int, ncols: int) -> None:
         self._matrix = None
         self._nrows = nrows
@@ -239,7 +266,7 @@ class Matrix:
 
     def transpose(self) -> ty.List[ty.List[ty.Union[int, float]]]:
         """Transpose the matrix.
-        
+
         :return: Transposed matrix.
         :rtype: ty.List[ty.List[ty.Union[int, float]]]
         """
@@ -254,13 +281,10 @@ class Matrix:
         return self._matrix
 
     def add(
-        self,
-        row: int,
-        col: int,
-        value: ty.Union[int, float]
+        self, row: int, col: int, value: ty.Union[int, float]
     ) -> ty.List[ty.List[ty.Union[int, float]]]:
         """Add a value to the matrix.
-        
+
         :param row: Row index.
         :type row: int
         :param col: Column index.
@@ -275,7 +299,7 @@ class Matrix:
 
     def get(self, row: int, col: int) -> ty.Union[int, float]:
         """Get a value from the matrix.
-        
+
         :param row: Row index.
         :type row: int
         :param col: Column index.
@@ -285,6 +309,7 @@ class Matrix:
         """
         return self._matrix[row][col]
 
+
 class AlignmentMatrix(Matrix):
     """Matrix for sequence alignment.
 
@@ -293,8 +318,10 @@ class AlignmentMatrix(Matrix):
     :param ncols: Number of columns.
     :type ncols: int
     """
+
     def __init__(self, ncols: int, nrows: int) -> None:
         super().__init__(ncols, nrows)
+
 
 class PairwiseScoreMatrix(Matrix):
     """Matrix for pairwise scores.
@@ -304,34 +331,40 @@ class PairwiseScoreMatrix(Matrix):
     :param nrows: Number of rows.
     :type nrows: int
     """
+
     def __init__(self, ncols: int, nrows: int) -> None:
         super().__init__(ncols, nrows)
 
-Module = ty.Tuple[Motif, ty.Union[int, None]] # Module with tag.
+
+Module = ty.Tuple[Motif, ty.Union[int, None]]  # Module with tag.
+
 
 class ModuleSequence:
     """Class for module sequences.
-    
+
     :param name: Name of the sequence.
     :type name: str
     :param module_sequence: Sequence of modules.
     :type module_sequence: ty.List[Module]
     """
+
     def __init__(self, name: str, module_sequence: ty.List[Module]) -> None:
         self.name = name
         self._seq = module_sequence
 
     def tag_idx(self) -> None:
         """Tag the modules with their original index in the sequence.
-        
+
         :return: None
         :rtype: None
         """
-        self._seq = [(module, module_idx) for module_idx, (module, _) in enumerate(self._seq)]
+        self._seq = [
+            (module, module_idx) for module_idx, (module, _) in enumerate(self._seq)
+        ]
 
     def clear_tags(self) -> None:
         """Clear the tags from the modules.
-        
+
         :return: None
         :rtype: None
         """
@@ -339,7 +372,7 @@ class ModuleSequence:
 
     def insert(self, idx: int, module: Module) -> None:
         """Insert a module at a specific index.
-        
+
         :param idx: Index to insert the module.
         :type idx: int
         :param module: Module to insert.
@@ -350,13 +383,10 @@ class ModuleSequence:
         self._seq.insert(idx, module)
 
     def alignment_matrix(
-        self,
-        other: "ModuleSequence",
-        gap_cost: int,
-        end_gap_cost: int
+        self, other: "ModuleSequence", gap_cost: int, end_gap_cost: int
     ) -> AlignmentMatrix:
         """Create an alignment matrix.
-        
+
         :param other: Other sequence.
         :type other: ModuleSequence
         :param gap_cost: Gap cost.
@@ -384,7 +414,9 @@ class ModuleSequence:
             for row in range(1, nrows):
 
                 # Calculate pairwise score..
-                cost = score_motif_similarity(self._seq[row - 1][0], other._seq[col - 1][0])
+                cost = score_motif_similarity(
+                    self._seq[row - 1][0], other._seq[col - 1][0]
+                )
 
                 # Calculate penalty score.
                 if col == len(other._seq) or row == len(self._seq):
@@ -393,11 +425,17 @@ class ModuleSequence:
                     penalty = gap_cost
 
                 # Calculate final score and fill in.
-                mat.add(row, col, max([
-                    mat.get(row - 1, col) - penalty,    # Vertical
-                    mat.get(row, col - 1) - penalty,    # Horizontal
-                    mat.get(row - 1, col - 1) + cost    # Diagonal
-                ]))
+                mat.add(
+                    row,
+                    col,
+                    max(
+                        [
+                            mat.get(row - 1, col) - penalty,  # Vertical
+                            mat.get(row, col - 1) - penalty,  # Horizontal
+                            mat.get(row - 1, col - 1) + cost,  # Diagonal
+                        ]
+                    ),
+                )
 
         return mat
 
@@ -408,10 +446,10 @@ class ModuleSequence:
         col: int,
         mat: AlignmentMatrix,
         gap_cost: int,
-        end_gap_cost: int
+        end_gap_cost: int,
     ) -> ty.List[Module]:
         """Traceback through the alignment matrix.
-        
+
         :param other: Other sequence.
         :type other: ModuleSequence
         :param row: Row index.
@@ -447,21 +485,29 @@ class ModuleSequence:
 
         # Traceback defined by conditions for every direction.
         if (
-            self._seq[row - 1][0] == other._seq[col - 1][0] or
-            diagonal > max([horizontal, vertical]) or
-            (vertical - current != penalty and horizontal - current != penalty)
+            self._seq[row - 1][0] == other._seq[col - 1][0]
+            or diagonal > max([horizontal, vertical])
+            or (vertical - current != penalty and horizontal - current != penalty)
         ):
-            return self.traceback(other, row - 1, col - 1, mat, gap_cost, end_gap_cost) + [self._seq[row - 1]]
+            return self.traceback(
+                other, row - 1, col - 1, mat, gap_cost, end_gap_cost
+            ) + [self._seq[row - 1]]
 
         if horizontal > vertical:
-            return self.traceback(other, row, col - 1, mat, gap_cost, end_gap_cost) + [(Gap, None)]
+            return self.traceback(other, row, col - 1, mat, gap_cost, end_gap_cost) + [
+                (Gap, None)
+            ]
 
         if vertical >= horizontal:
-            return self.traceback(other, row - 1, col, mat, gap_cost, end_gap_cost) + [self._seq[row - 1]]
+            return self.traceback(other, row - 1, col, mat, gap_cost, end_gap_cost) + [
+                self._seq[row - 1]
+            ]
 
-    def optimal_alignment(self, other: "ModuleSequence", gap_cost: int, end_gap_cost: int) -> "PairwiseAlignment":
+    def optimal_alignment(
+        self, other: "ModuleSequence", gap_cost: int, end_gap_cost: int
+    ) -> "PairwiseAlignment":
         """Calculate the optimal alignment between two sequences.
-        
+
         :param other: Other sequence.
         :type other: ModuleSequence
         :param gap_cost: Gap cost.
@@ -472,9 +518,13 @@ class ModuleSequence:
         :rtype: PairwiseAlignment
         """
         mat = self.alignment_matrix(other, gap_cost, end_gap_cost)
-        aligned_self = self.traceback(other, len(self._seq), len(other._seq), mat, gap_cost, end_gap_cost)
+        aligned_self = self.traceback(
+            other, len(self._seq), len(other._seq), mat, gap_cost, end_gap_cost
+        )
         mat.transpose()
-        aligned_other = other.traceback(self, len(other._seq), len(self._seq), mat, gap_cost, end_gap_cost)
+        aligned_other = other.traceback(
+            self, len(other._seq), len(self._seq), mat, gap_cost, end_gap_cost
+        )
         alignment_score = mat.get(-1, -1)
         alignment = PairwiseAlignment(
             self.name,
@@ -483,13 +533,14 @@ class ModuleSequence:
             aligned_other,
             alignment_score,
             gap_cost,
-            end_gap_cost
+            end_gap_cost,
         )
         return alignment
 
+
 class PairwiseAlignment:
     """Class for pairwise alignment.
-    
+
     :param name1: Name of the first sequence.
     :type name1: str
     :param aligned1: Aligned sequence 1.
@@ -505,6 +556,7 @@ class PairwiseAlignment:
     :param end_gap_cost: End gap cost.
     :type end_gap_cost: int
     """
+
     def __init__(
         self,
         name1: str,
@@ -513,7 +565,7 @@ class PairwiseAlignment:
         aligned2: ty.List[Module],
         score: int,
         gap_cost: int,
-        end_gap_cost: int
+        end_gap_cost: int,
     ) -> None:
         self.name_seq1 = name1
         self.seq1 = aligned1
@@ -525,15 +577,18 @@ class PairwiseAlignment:
 
     def aligned_sequences(self) -> ty.Tuple["ModuleSequence", "ModuleSequence"]:
         """Get the aligned sequences.
-        
+
         :return: Aligned sequences.
         :rtype: ty.Tuple[ModuleSequence, ModuleSequence]
         """
-        return (ModuleSequence(self.name_seq1, self.seq1), ModuleSequence(self.name_seq2, self.seq2))
+        return (
+            ModuleSequence(self.name_seq1, self.seq1),
+            ModuleSequence(self.name_seq2, self.seq2),
+        )
 
     def percentage_identity(self) -> float:
         """Calculate the percentage identity of the alignment.
-        
+
         :return: Percentage identity.
         :rtype: float
         """
@@ -541,9 +596,10 @@ class PairwiseAlignment:
         same = sum([(ab == ba) for ((ab, _), (ba, _)) in zipped_alignment])
         return (same / len(zipped_alignment)) * 100
 
+
 class MultipleSequenceAlignment:
     """Class for multiple sequence alignment.
-    
+
     :param seqs: List of sequences.
     :type seqs: ty.List[ModuleSequence]
     :param gap_cost: Gap cost.
@@ -551,7 +607,10 @@ class MultipleSequenceAlignment:
     :param gap_end_cost: End gap cost.
     :type gap_end_cost: int
     """
-    def __init__(self, seqs: ty.List[ModuleSequence], gap_cost: int, gap_end_cost: int) -> None:
+
+    def __init__(
+        self, seqs: ty.List[ModuleSequence], gap_cost: int, gap_end_cost: int
+    ) -> None:
         self._seqs = seqs
         self.gap = gap_cost
         self.end = gap_end_cost
@@ -559,14 +618,17 @@ class MultipleSequenceAlignment:
 
     def _align(self) -> None:
         """Align the sequences.
-        
-        Based on: 'Progressive Sequence Alignment as a Prerequisite to Correct 
+
+        Based on: 'Progressive Sequence Alignment as a Prerequisite to Correct
         Phylogenetic Trees' by Feng and Doolittle, 1987
         """
-        def all_pairwise_scores(seqs1: ty.List[ModuleSequence], seqs2: ty.List[ModuleSequence]) -> ty.List[Motif]:
+
+        def all_pairwise_scores(
+            seqs1: ty.List[ModuleSequence], seqs2: ty.List[ModuleSequence]
+        ) -> ty.List[Motif]:
             """
             Calculate all pairwise scores between two sets of sequences.
-            
+
             :param seqs1: First set of sequences.
             :type seqs1: ty.List[ModuleSequence]
             :param seqs2: Second set of sequences.
@@ -578,7 +640,8 @@ class MultipleSequenceAlignment:
             mat.build(0.0)
             for idx1, seq1 in enumerate(seqs1):
                 for idx2, seq2 in enumerate(seqs2):
-                    # Skip second calculation since matrix is mirrored around the diagonal:
+                    # Skip second calculation since matrix is mirrored around
+                    # the diagonal:
                     if idx2 < idx1:
                         continue
                     if idx1 == idx2:
@@ -592,19 +655,21 @@ class MultipleSequenceAlignment:
 
         # Create a dictionary of all records
         if len(self._seqs) == 0:
-            msa = {0: [ModuleSequence("", "")]} # Return empty alignment.
+            msa = {0: [ModuleSequence("", "")]}  # Return empty alignment.
         elif len(self._seqs) == 1:
-            msa = {0: self._seqs} # Return seq if single.
+            msa = {0: self._seqs}  # Return seq if single.
         else:
             # Identification of most closely related pair.
             mat = all_pairwise_scores(self._seqs, self._seqs)
             guide_tree = linkage(pdist(mat._matrix), method="ward")
             msa = {seq_idx: [seq] for seq_idx, seq in enumerate(self._seqs)}
 
-            # Progressive insertion of neutral elements (can create new gaps, but cannot remove existing gaps).
+            # Progressive insertion of neutral elements (can create new gaps,
+            # but cannot remove existing gaps).
             for pair_idx, pair in enumerate(guide_tree):
 
-                # Every pair in the guide tree can be a new pair that needs seed alignment or it is a leaf connecting
+                # Every pair in the guide tree can be a new pair that needs
+                # seed alignment or it is a leaf connecting
                 # to existing alignment.
                 j1, j2 = int(pair[0]), int(pair[1])
                 new_idx = pair_idx + len(self._seqs)
@@ -620,15 +685,19 @@ class MultipleSequenceAlignment:
                     else:
                         leaf, seqs = msa[j2][0], msa[j1]
 
-                    # Tag already aligned sequences with original location for insertion possible gaps after annealing
-                    # new seq.
+                    # Tag already aligned sequences with original location for
+                    # insertion possible gaps after annealing new seq.
                     front_seq = seqs[0]
                     front_seq.tag_idx()
                     back_seq = seqs[-1]
                     back_seq.tag_idx()
 
-                    front_alignment = front_seq.optimal_alignment(leaf, self.gap, self.end)
-                    back_alignment = back_seq.optimal_alignment(leaf, self.gap, self.end)
+                    front_alignment = front_seq.optimal_alignment(
+                        leaf, self.gap, self.end
+                    )
+                    back_alignment = back_seq.optimal_alignment(
+                        leaf, self.gap, self.end
+                    )
                     front_score = front_alignment.percentage_identity()
                     back_score = back_alignment.percentage_identity()
 
@@ -641,7 +710,7 @@ class MultipleSequenceAlignment:
 
                     anchor, new = align_to.aligned_sequences()
                     for m_idx, (_, m_tag) in enumerate(anchor._seq):
-                        if m_tag is None: # New insertion.
+                        if m_tag is None:  # New insertion.
                             for seq in other_seqs:
                                 seq.insert(m_idx, (Gap, None))
 
@@ -651,16 +720,19 @@ class MultipleSequenceAlignment:
 
                     if front_score >= back_score:
                         new_msa = [new, anchor] + other_seqs
-                    else: new_msa = other_seqs + [anchor, new]
+                    else:
+                        new_msa = other_seqs + [anchor, new]
 
                     msa[new_idx] = new_msa
 
                 elif len(msa[j1]) != 1 and len(msa[j2]) != 1:
-                    # First we need to decide which MSA comes on top. To determine this we need to score the top of
-                    # msa1 with the bottom of msa2 and vica versa.
+                    # First we need to decide which MSA comes on top. To
+                    # determine this we need to score the top of msa1 with the
+                    # bottom of msa2 and vica versa.
                     msa1, msa2 = msa[j1], msa[j2]
 
-                    # Tag already aligned sequences with original location for insertion possible gaps after annealing
+                    # Tag already aligned sequences with original location for
+                    # insertion possible gaps after annealing
                     # new seq.
                     msa1_top, msa1_bottom = msa1[0], msa1[-1]
                     msa2_top, msa2_bottom = msa2[0], msa2[-1]
@@ -669,27 +741,35 @@ class MultipleSequenceAlignment:
                     msa2_top.tag_idx()
                     msa2_bottom.tag_idx()
 
-                    msa1_top_alignment = msa1_bottom.optimal_alignment(msa2_top, self.gap, self.end)
-                    msa2_top_alignment = msa2_bottom.optimal_alignment(msa1_top, self.gap, self.end)
+                    msa1_top_alignment = msa1_bottom.optimal_alignment(
+                        msa2_top, self.gap, self.end
+                    )
+                    msa2_top_alignment = msa2_bottom.optimal_alignment(
+                        msa1_top, self.gap, self.end
+                    )
                     msa1_top_score = msa1_top_alignment.percentage_identity()
                     msa2_top_score = msa2_top_alignment.percentage_identity()
 
                     if msa1_top_score >= msa2_top_score:
-                        msa1_align_to, msa2_align_to = msa1_top_alignment.aligned_sequences()
+                        msa1_align_to, msa2_align_to = (
+                            msa1_top_alignment.aligned_sequences()
+                        )
                         msa1_other_seqs = msa1[:-1]
                         msa2_other_seqs = msa2[1:]
                     else:
-                        msa2_align_to, msa1_align_to = msa2_top_alignment.aligned_sequences()
+                        msa2_align_to, msa1_align_to = (
+                            msa2_top_alignment.aligned_sequences()
+                        )
                         msa1_other_seqs = msa1[1:]
                         msa2_other_seqs = msa2[:-1]
 
                     for m_idx, (_, m_tag) in enumerate(msa1_align_to._seq):
-                        if m_tag is None: # New insertion.
+                        if m_tag is None:  # New insertion.
                             for seq in msa1_other_seqs:
                                 seq.insert(m_idx, (Gap, None))
 
                     for m_idx, (_, m_tag) in enumerate(msa2_align_to._seq):
-                        if m_tag is None: # New insertion.
+                        if m_tag is None:  # New insertion.
                             for seq in msa2_other_seqs:
                                 seq.insert(m_idx, (Gap, None))
 
@@ -701,14 +781,22 @@ class MultipleSequenceAlignment:
                     msa2_align_to.clear_tags()
 
                     if msa1_top_score >= msa2_top_score:
-                        new_msa = msa1_other_seqs + [msa1_align_to, msa2_align_to] + msa2_other_seqs
+                        new_msa = (
+                            msa1_other_seqs
+                            + [msa1_align_to, msa2_align_to]
+                            + msa2_other_seqs
+                        )
                     else:
-                        new_msa = msa2_other_seqs + [msa2_align_to, msa1_align_to] + msa1_other_seqs
+                        new_msa = (
+                            msa2_other_seqs
+                            + [msa2_align_to, msa1_align_to]
+                            + msa1_other_seqs
+                        )
 
                     msa[new_idx] = new_msa
 
                 else:
-                    raise IndexError('aligned sequences from guide tree failed')
+                    raise IndexError("aligned sequences from guide tree failed")
 
                 del msa[j1]
                 del msa[j2]
@@ -717,7 +805,7 @@ class MultipleSequenceAlignment:
 
     def get_alignment(self) -> ty.List[ty.List[Module]]:
         """Get the alignment.
-        
+
         :return: Alignment.
         :rtype: ty.List[ty.List[Module]]
         """
