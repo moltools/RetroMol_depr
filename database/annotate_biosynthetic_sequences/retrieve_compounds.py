@@ -17,7 +17,6 @@ def cli() -> argparse.Namespace:
     :rtype: argparse.Namespace
     """
     parser = argparse.ArgumentParser()
-    parser.add_argument("--rules", type=str, required=True, help="Path to JSON file containing rules.")
     parser.add_argument("--out", type=str, required=True, help="Path to output file.")
     parser.add_argument("--port", default=7687, type=int, help="Neo4j port.")
     parser.add_argument(
@@ -38,17 +37,17 @@ def main() -> None:
         db = GraphDatabase.driver(f"bolt://localhost:{args.port}")
 
     with open(args.out, "w", encoding="utf-8") as out_file:
-        out_file.write("npatlas_id\tsmiles\n")
+        out_file.write("identifier\tsmiles\n")
 
         with db.session() as session:
             query = """
             MATCH (c:Compound)-[:BELONGS_TO]->(p:Pathway {name: 'Polyketides'})
-            RETURN c.npatlas_id AS npatlas_id, c.inchi AS inchi
+            RETURN c.identifier AS identifier, c.inchi AS inchi
             """
             result = session.run(query, fetch_size=100)
 
             for record in tqdm(result):
-                npatlas_id = record["npatlas_id"]
+                npatlas_id = record["identifier"]
                 inchi = record["inchi"]
 
                 try:

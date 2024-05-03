@@ -2,6 +2,7 @@
 """Annotate biosynthetic sequences in the Neo4j database."""
 import argparse
 import os
+import re
 import typing as ty
 from neo4j import GraphDatabase
 
@@ -40,45 +41,41 @@ def cli() -> argparse.Namespace:
     )
     return parser.parse_args()
 
-def parse_motif(i: int, motif: ty.Dict[str, ty.Any]) -> str:
+def parse_motif(i: int, motif: str) -> str:
     """Parse a motif into a Cypher query.
     
     :param i: Index of motif.
     :type i: int
     :param motif: Motif to parse.
-    :type motif: ty.Dict[str, ty.Any]
+    :type motif: str
     :return: Cypher query.
     :rtype: str
     """
-    motif_type = motif["identifier"]
-
-    if motif_type == "polyketide":
-        props = motif["properties"]
-        accessory_domains = props["accessory_domains"]
-        decoration_type = props["decoration_type"]
+    if match := re.match(r"polyketide\|([A-D])(\d{1,2})", motif):
+        accessory_domains = match.group(1)
+        decoration_type = int(match.group(2))
 
         return (
             f"(u{i + 1}:Motif {{"
-            f"identifier: '{motif_type}', "
-            f"accessory_domains: {accessory_domains}, "
+            f"identifier: 'polyketide', "
+            f"accessory_domains: '{accessory_domains}', "
             f"decoration_type: '{decoration_type}'"
             f"}})"
         )
-
-    if motif_type == "peptide":
-        props = motif["properties"]
-        pubchem_cid = props["pubchem_cid"]
-        classification = props["classification"]
+    
+    elif match := re.match(r"peptide\|(\w+)\|(.+)", motif):
+        source = match.group(1)
+        cid = match.group(2)
 
         return (
             f"(u{i + 1}:Motif {{"
-            f"identifier: '{motif_type}', "
-            f"pubchem_cid: '{pubchem_cid}', "
-            f"classification: '{classification}'"
+            f"identifier: 'peptide', "
+            f"source: '{source}', "
+            f"cid: '{cid}'"
             f"}})"
         )
 
-    return f"(u{i + 1}:Motif {{identifier: '{motif_type}'}})"
+    return f"(u{i + 1}:Motif {{identifier: 'unknown'}})"
 
 def main() -> None:
     """Driver function."""
@@ -103,12 +100,9 @@ def main() -> None:
             if result.success is False:
                 continue
 
-            if not result.has_identified_monomers():
-                continue
-
             identifier = result.identifier # We assume that the identifier is the NPAtlas ID.
             applied_reactions = result.applied_reactions
-            sequences = parse_modular_natural_product(result)
+            sequences = result.sequences
 
             # Add biosynthetic fingerprint to graph.
             for accession, sequence in enumerate(sequences):
