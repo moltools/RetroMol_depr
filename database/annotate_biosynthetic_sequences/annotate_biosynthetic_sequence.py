@@ -111,7 +111,7 @@ def main() -> None:
                 query_begin = """
                 CREATE (s:PrimarySequence {identifier: $identifier, accession: $accession, applied_reactions: $applied_reactions})-[:START]->
                 """
-                query_end = "-[:NEXT]->".join([parse_motif(i, motif) for i, motif in enumerate(sequence)])
+                query_end = "-[:NEXT]->".join([parse_motif(i, motif) for i, motif in enumerate(sequence["motif_code"])])
                 session.run(
                     query_begin + query_end,
                     identifier=identifier,
