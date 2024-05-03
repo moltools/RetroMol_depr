@@ -4,9 +4,12 @@ monomer graphs.
 
 import logging
 import typing as ty
+from collections import defaultdict
 
 import networkx as nx
 from rdkit import Chem
+
+from retromol.chem import mol_to_fingerprint, tanimoto_similarity
 
 
 def parse_modular_natural_product(
@@ -70,6 +73,10 @@ def parse_modular_natural_product(
     min_num_cycles = min([num_cycles for _, num_cycles in mols_with_num_cycles])
     mols = [mol for mol, num_cycles in mols_with_num_cycles if num_cycles == min_num_cycles]
 
+    if len(mols) == 0:
+        logger.debug(f"Found no molecules with the minimum number of cycles.")
+        return []
+
     # If there are no molecules left, return an empty list.
     found_seqs = []
 
@@ -91,6 +98,12 @@ def parse_modular_natural_product(
                 and end_amn in monomer_amns
             ):
                 temp_monomer_graph.add_edge(begin_amn, end_amn)
+
+        # Check if temp_monomer_graph has any nodes.
+        # If not, skip it.
+        if temp_monomer_graph.number_of_nodes() == 0:
+            logger.debug(f"Found monomer graph with no nodes.")
+            continue
 
         # Check if temp_monomer_graph is connected. If not, skip it.
         # This implies that a part of the linear molecule was not identified.
@@ -181,8 +194,34 @@ def parse_modular_natural_product(
             logger.debug(f"Found monomer sequence for molecule: {identities}")
 
         found_seqs.append(dict(
-            smiles=Chem.MolToSmiles(mol),
+            mol=mol,
             motif_code=identities
         ))
+
+    if len(found_seqs) > 1:
+        # Dereplicate the found sequences. Cluster based on sequence, and pick smallest.
+        clustered = defaultdict(list)
+        for seq in found_seqs:
+            mol = seq["mol"]
+            motif_code_str = "~".join(seq["motif_code"])
+            clustered[motif_code_str].append(mol)
+
+        # For each cluster, pick the smallest molecule.
+        found_seqs = []
+        for motif_code_str, mols in clustered.items():
+            mols = sorted(mols, key=lambda x: x.GetNumAtoms())
+            found_seqs.append(dict(
+                mol=mols[0],
+                motif_code=motif_code_str.split("~")
+            ))
     
-    return found_seqs
+    # Transform mols to smiles.
+    seqs = []
+    for seq in found_seqs:
+        smiles = Chem.MolToSmiles(seq["mol"])
+        seqs.append(dict(
+            smiles=smiles,
+            motif_code=seq["motif_code"]
+        ))
+    
+    return seqs

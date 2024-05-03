@@ -45,6 +45,48 @@ def parse_mol_timed(mol: Molecule) -> Result:
     "compound_name, test, expected, expected_raises",
     [
         (
+            "10-deoxymethynolide",
+            r"CC[C@@H]1[C@@H](/C=C/C(=O)[C@@H](C[C@@H]([C@@H]([C@H](C(=O)O1)C)O)C)C)C",
+            [
+                "polyketide|B2",
+                "polyketide|C1",
+                "polyketide|A2",
+                "polyketide|D2",
+                "polyketide|B2",
+            ],
+            None
+        ),
+        (
+            "13-deoxytedanolide",
+            r"C/C=C\[C@H](C)[C@@H]1[C@](O1)(C)[C@H]([C@H]2COC(=O)[C@@H]([C@H]([C@@H](C(=O)[C@@H]([C@H](/C(=C/[C@@H](C(=O)CC[C@H](C2=O)C)C)/C)O)C)C)OC)O)O",
+            [
+                "polyketide|C2",
+                "polyketide|C2",
+                "polyketide|B6",
+                "polyketide|A2",
+                "polyketide|D1",
+                "polyketide|A2",
+                "polyketide|C2",
+                "polyketide|B2",
+                "polyketide|A2",
+                "polyketide|B5",
+            ],
+            None
+        ),
+        (
+            "6-deoxyerythronolide_B",
+            r"CC[C@@H]1[C@@H]([C@@H]([C@H](C(=O)[C@@H](C[C@@H]([C@@H]([C@H]([C@@H]([C@H](C(=O)O1)C)O)C)O)C)C)C)O)C",
+            [
+                "polyketide|B2",
+                "polyketide|B2",
+                "polyketide|A2",
+                "polyketide|D2",
+                "polyketide|B2",
+                "polyketide|B2"
+            ],
+            None
+        ),
+        (
             "erythromycin",
             r"CCC1C(C(C(C(=O)C(CC(C(C(C(C(C(=O)O1)C)OC2CC(C(C(O2)C)O)(C)OC)C)OC3C(C(CC(O3)C)N(C)C)O)(C)O)C)C)O)(C)O",
             [

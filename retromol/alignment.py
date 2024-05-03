@@ -1,5 +1,6 @@
 """This module contains functions for sequence alignment."""
 
+import re
 import typing as ty
 from dataclasses import dataclass
 from enum import Enum, auto
@@ -24,23 +25,10 @@ class PolyketideType(Enum):
     Undefined = auto()
 
 
-class PeptideType(Enum):
-    """Enum for peptide types."""
+class UndefinedMotif(Motif):
+    """Class for undefined motifs."""
 
-    PolarAndCharged = auto()
-    SmallHydrophobic = auto()
-    SmallNonHydrophobic = auto()
-    Tiny = auto()
-    Bulky = auto()
-    CyclicAliphatic = auto()
-    CysteineLike = auto()
-    Undefined = auto()
-
-    def __str__(self) -> str:
-        return self.name
-
-    def __repr__(self) -> str:
-        return self.name
+    ...
 
 
 @dataclass
@@ -51,48 +39,35 @@ class PolyketideMotif(Motif):
     decoration_type: int | None
 
     @classmethod
-    def from_dict(cls, data: ty.Dict[str, ty.Any]) -> "PolyketideMotif":
+    def parse(cls, motif: str) -> Motif:
         """Create a PolyketideMotif object from a dictionary.
 
-        :param data: Dictionary with polyketide motif data.
-        :type data: ty.Dict[str, ty.Any]
+        :param motif: Polyketide motif.
+        :type motif: str
         :return: Polyketide motif object.
         :rtype: PolyketideMotif
         """
-        accesory_domains = data["accessory_domains"]
+        # Should start with A, B, C, or D, then one or two digit. Match both.
+        match = re.match(r"polyketide\|([A-D])(\d{1,2})", motif)
 
-        # Determine pk_type.
-        if len(accesory_domains) == 0:
-            pk_type = PolyketideType.A
+        if not match:
+            return UndefinedMotif()
 
-        elif len(accesory_domains) == 1 and "KR" in accesory_domains:
-            pk_type = PolyketideType.B
+        pks_type_str = match.group(1)
+        decoration_type = int(match.group(2))
 
-        elif (
-            len(accesory_domains) == 2
-            and "KR" in accesory_domains
-            and "DH" in accesory_domains
-        ):
-            pk_type = PolyketideType.C
-
-        elif (
-            len(accesory_domains) == 3
-            and "KR" in accesory_domains
-            and "DH" in accesory_domains
-            and "ER" in accesory_domains
-        ):
-            pk_type = PolyketideType.D
-
+        if pks_type_str == "A":
+            pks_type = PolyketideType.A
+        elif pks_type_str == "B":
+            pks_type = PolyketideType.B
+        elif pks_type_str == "C":
+            pks_type = PolyketideType.C
+        elif pks_type_str == "D":
+            pks_type = PolyketideType.D
         else:
-            pk_type = PolyketideType.Undefined
+            pks_type = PolyketideType.Undefined
 
-        # Determine decoration_type.
-        try:
-            decoration_type = int(data["decoration_type"])
-        except ValueError:
-            decoration_type = None
-
-        return cls(pk_type, decoration_type)
+        return cls(pks_type, decoration_type)
 
     def __str__(self) -> str:
         return f"{self.type}{self.decoration_type}"
@@ -105,56 +80,33 @@ class PolyketideMotif(Motif):
 class PeptideMotif(Motif):
     """Dataclass for peptide motifs."""
 
-    type: PeptideType | None
+    source: str 
+    cid: str
 
     @classmethod
-    def from_dict(cls, data: ty.Dict[str, ty.Any]) -> "PeptideMotif":
+    def parse(cls, motif: str) -> Motif:
         """Create a PeptideMotif object from a dictionary.
 
-        :param data: Dictionary with peptide motif data.
-        :type data: ty.Dict[str, ty.Any]
+        :param motif: Peptide motif.
+        :type motif: str
         :return: Peptide motif object.
         :rtype: PeptideMotif
         """
-        classification = data["classification"]
+        match = re.match(r"peptide\|(\w+)\|(.+)", motif)
 
-        if classification == "small non-hydrophobic":
-            peptide_type = PeptideType.SmallNonHydrophobic
+        if not match:
+            return UndefinedMotif()
+        
+        source = match.group(1)
+        cid = match.group(2)
 
-        elif classification == "small hydrophobic":
-            peptide_type = PeptideType.SmallHydrophobic
-
-        elif classification == "cyclic aliphatic":
-            peptide_type = PeptideType.CyclicAliphatic
-
-        elif classification == "cysteine-like":
-            peptide_type = PeptideType.CysteineLike
-
-        elif classification == "polar and charged":
-            peptide_type = PeptideType.PolarAndCharged
-
-        elif classification == "tiny":
-            peptide_type = PeptideType.Tiny
-
-        elif classification == "bulky":
-            peptide_type = PeptideType.Bulky
-
-        else:
-            peptide_type = PeptideType.Undefined
-
-        return cls(peptide_type)
+        return cls(source, cid)
 
     def __str__(self) -> str:
-        return f"{self.type}"
+        return f"peptide|{self.source}|{self.cid}"
 
     def __repr__(self) -> str:
-        return f"{self.type}"
-
-
-class UndefinedMotif(Motif):
-    """Class for undefined motifs."""
-
-    ...
+        return f"peptide|{self.source}|{self.cid}"
 
 
 class Gap(Motif):
@@ -198,7 +150,7 @@ def score_motif_similarity(motif1: Motif, motif2: Motif) -> int:
 
     # Both are any peptide motif.
     if isinstance(motif1, PeptideMotif) and isinstance(motif2, PeptideMotif):
-        if motif1.type == motif2.type:
+        if motif1.cid == motif2.cid:
             return 3
         else:
             return 1
@@ -215,7 +167,7 @@ def score_motif_similarity(motif1: Motif, motif2: Motif) -> int:
     return 0
 
 
-def parse_primary_sequence(sequence: ty.Dict[str, ty.Any]) -> "ModuleSequence":
+def parse_primary_sequence(sequence: ty.List[str]) -> "ModuleSequence":
     """
     Parse primary sequence from dictionary.
 
@@ -226,14 +178,11 @@ def parse_primary_sequence(sequence: ty.Dict[str, ty.Any]) -> "ModuleSequence":
     """
     module_list = []
 
-    for props in sequence:
-        if identifier := props.get("identifier"):
-            if identifier == "polyketide":
-                module_list.append((PolyketideMotif.from_dict(props), None))
-            elif identifier == "peptide":
-                module_list.append((PeptideMotif.from_dict(props), None))
-            else:
-                module_list.append((UndefinedMotif(), None))
+    for motif in sequence:
+        if motif.startswith("polyketide|"):
+            module_list.append((PolyketideMotif.parse(motif), None))
+        elif motif.startswith("peptide|"):
+            module_list.append((PeptideMotif.parse(motif), None))
         else:
             module_list.append((UndefinedMotif(), None))
 
@@ -350,7 +299,7 @@ class ModuleSequence:
 
     def __init__(self, name: str, module_sequence: ty.List[Module]) -> None:
         self.name = name
-        self._seq = module_sequence
+        self.seq = module_sequence
 
     def tag_idx(self) -> None:
         """Tag the modules with their original index in the sequence.
@@ -358,8 +307,8 @@ class ModuleSequence:
         :return: None
         :rtype: None
         """
-        self._seq = [
-            (module, module_idx) for module_idx, (module, _) in enumerate(self._seq)
+        self.seq = [
+            (module, module_idx) for module_idx, (module, _) in enumerate(self.seq)
         ]
 
     def clear_tags(self) -> None:
@@ -368,7 +317,7 @@ class ModuleSequence:
         :return: None
         :rtype: None
         """
-        self._seq = [(module, None) for module, _ in self._seq]
+        self.seq = [(module, None) for module, _ in self.seq]
 
     def insert(self, idx: int, module: Module) -> None:
         """Insert a module at a specific index.
@@ -380,7 +329,7 @@ class ModuleSequence:
         :return: None
         :rtype: None
         """
-        self._seq.insert(idx, module)
+        self.seq.insert(idx, module)
 
     def alignment_matrix(
         self, other: "ModuleSequence", gap_cost: int, end_gap_cost: int
@@ -397,8 +346,8 @@ class ModuleSequence:
         :rtype: AlignmentMatrix
         """
         # Instantiate zero matrix.
-        nrows = len(self._seq) + 1
-        ncols = len(other._seq) + 1
+        nrows = len(self.seq) + 1
+        ncols = len(other.seq) + 1
         mat = AlignmentMatrix(nrows, ncols)
         mat.build(0)
 
@@ -415,11 +364,11 @@ class ModuleSequence:
 
                 # Calculate pairwise score..
                 cost = score_motif_similarity(
-                    self._seq[row - 1][0], other._seq[col - 1][0]
+                    self.seq[row - 1][0], other.seq[col - 1][0]
                 )
 
                 # Calculate penalty score.
-                if col == len(other._seq) or row == len(self._seq):
+                if col == len(other.seq) or row == len(self.seq):
                     penalty = end_gap_cost
                 else:
                     penalty = gap_cost
@@ -467,12 +416,12 @@ class ModuleSequence:
         """
         # End stage for one seq when seq is depleted of modules.
         if col == 0:
-            return self._seq[:row]
+            return self.seq[:row]
         if row == 0:
             return [(Gap, None)] * col
 
         # Gap penalty depends on location in matrix.
-        if row == len(self._seq) or col == len(other._seq):
+        if row == len(self.seq) or col == len(other.seq):
             penalty = end_gap_cost
         else:
             penalty = gap_cost
@@ -485,13 +434,13 @@ class ModuleSequence:
 
         # Traceback defined by conditions for every direction.
         if (
-            self._seq[row - 1][0] == other._seq[col - 1][0]
+            self.seq[row - 1][0] == other.seq[col - 1][0]
             or diagonal > max([horizontal, vertical])
             or (vertical - current != penalty and horizontal - current != penalty)
         ):
             return self.traceback(
                 other, row - 1, col - 1, mat, gap_cost, end_gap_cost
-            ) + [self._seq[row - 1]]
+            ) + [self.seq[row - 1]]
 
         if horizontal > vertical:
             return self.traceback(other, row, col - 1, mat, gap_cost, end_gap_cost) + [
@@ -500,7 +449,7 @@ class ModuleSequence:
 
         if vertical >= horizontal:
             return self.traceback(other, row - 1, col, mat, gap_cost, end_gap_cost) + [
-                self._seq[row - 1]
+                self.seq[row - 1]
             ]
 
     def optimal_alignment(
@@ -519,11 +468,11 @@ class ModuleSequence:
         """
         mat = self.alignment_matrix(other, gap_cost, end_gap_cost)
         aligned_self = self.traceback(
-            other, len(self._seq), len(other._seq), mat, gap_cost, end_gap_cost
+            other, len(self.seq), len(other.seq), mat, gap_cost, end_gap_cost
         )
         mat.transpose()
         aligned_other = other.traceback(
-            self, len(other._seq), len(self._seq), mat, gap_cost, end_gap_cost
+            self, len(other.seq), len(self.seq), mat, gap_cost, end_gap_cost
         )
         alignment_score = mat.get(-1, -1)
         alignment = PairwiseAlignment(
@@ -611,7 +560,7 @@ class MultipleSequenceAlignment:
     def __init__(
         self, seqs: ty.List[ModuleSequence], gap_cost: int, gap_end_cost: int
     ) -> None:
-        self._seqs = seqs
+        self.seqs = seqs
         self.gap = gap_cost
         self.end = gap_end_cost
         self.msa = self._align()
@@ -636,7 +585,7 @@ class MultipleSequenceAlignment:
             :return: Pairwise score matrix.
             :rtype: ty.List[Motif]
             """
-            mat = PairwiseScoreMatrix(len(self._seqs), len(self._seqs))
+            mat = PairwiseScoreMatrix(len(self.seqs), len(self.seqs))
             mat.build(0.0)
             for idx1, seq1 in enumerate(seqs1):
                 for idx2, seq2 in enumerate(seqs2):
@@ -654,15 +603,15 @@ class MultipleSequenceAlignment:
             return mat
 
         # Create a dictionary of all records
-        if len(self._seqs) == 0:
+        if len(self.seqs) == 0:
             msa = {0: [ModuleSequence("", "")]}  # Return empty alignment.
-        elif len(self._seqs) == 1:
-            msa = {0: self._seqs}  # Return seq if single.
+        elif len(self.seqs) == 1:
+            msa = {0: self.seqs}  # Return seq if single.
         else:
             # Identification of most closely related pair.
-            mat = all_pairwise_scores(self._seqs, self._seqs)
+            mat = all_pairwise_scores(self.seqs, self.seqs)
             guide_tree = linkage(pdist(mat._matrix), method="ward")
-            msa = {seq_idx: [seq] for seq_idx, seq in enumerate(self._seqs)}
+            msa = {seq_idx: [seq] for seq_idx, seq in enumerate(self.seqs)}
 
             # Progressive insertion of neutral elements (can create new gaps,
             # but cannot remove existing gaps).
@@ -672,7 +621,7 @@ class MultipleSequenceAlignment:
                 # seed alignment or it is a leaf connecting
                 # to existing alignment.
                 j1, j2 = int(pair[0]), int(pair[1])
-                new_idx = pair_idx + len(self._seqs)
+                new_idx = pair_idx + len(self.seqs)
 
                 if len(msa[j1]) == 1 and len(msa[j2]) == 1:
                     seed1, seed2 = msa[j1][0], msa[j2][0]
@@ -709,7 +658,7 @@ class MultipleSequenceAlignment:
                         other_seqs = seqs[:-1]
 
                     anchor, new = align_to.aligned_sequences()
-                    for m_idx, (_, m_tag) in enumerate(anchor._seq):
+                    for m_idx, (_, m_tag) in enumerate(anchor.seq):
                         if m_tag is None:  # New insertion.
                             for seq in other_seqs:
                                 seq.insert(m_idx, (Gap, None))
@@ -763,12 +712,12 @@ class MultipleSequenceAlignment:
                         msa1_other_seqs = msa1[1:]
                         msa2_other_seqs = msa2[:-1]
 
-                    for m_idx, (_, m_tag) in enumerate(msa1_align_to._seq):
+                    for m_idx, (_, m_tag) in enumerate(msa1_align_to.seq):
                         if m_tag is None:  # New insertion.
                             for seq in msa1_other_seqs:
                                 seq.insert(m_idx, (Gap, None))
 
-                    for m_idx, (_, m_tag) in enumerate(msa2_align_to._seq):
+                    for m_idx, (_, m_tag) in enumerate(msa2_align_to.seq):
                         if m_tag is None:  # New insertion.
                             for seq in msa2_other_seqs:
                                 seq.insert(m_idx, (Gap, None))
