@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 """This module contains the chemistry utilities for the RetroMol package."""
+
+import logging
 import typing as ty
 from collections import defaultdict
 
@@ -12,6 +14,28 @@ Tree = ty.Dict[int, ty.Set]
 ReactionTreeMapping = ty.Dict[int, Chem.Mol]
 MonomerGraphMapping = ty.Dict[int, ty.Tuple[int, str]]
 Reaction = ChemicalReaction
+
+
+def neutarlize_molecule(mol: Chem.Mol) -> Chem.Mol:
+    """Neutralize the molecule.
+
+    :param mol: The molecule.
+    :type mol: Chem.Mol
+    :return: The neutralized molecule.
+    :rtype: Chem.Mol
+    """
+    pattern = Chem.MolFromSmarts("[+1!h0!$([*]~[-1,-2,-3,-4]),-1!$([*]~[+1,+2,+3,+4])]")
+    at_matches = mol.GetSubstructMatches(pattern)
+    at_matches_list = [y[0] for y in at_matches]
+    if len(at_matches_list) > 0:
+        for at_idx in at_matches_list:
+            atom = mol.GetAtomWithIdx(at_idx)
+            chg = atom.GetFormalCharge()
+            hcount = atom.GetTotalNumHs()
+            atom.SetFormalCharge(0)
+            atom.SetNumExplicitHs(hcount - chg)
+            atom.UpdatePropertyCache()
+    return mol
 
 
 class MolecularPattern:
@@ -58,6 +82,10 @@ class Molecule:
         self.name = name
         self.smiles = smiles
         self.compiled = Chem.MolFromSmiles(smiles)
+
+    def neutralize(self) -> None:
+        """Neutralize the molecule."""
+        self.compiled = neutarlize_molecule(self.compiled)
 
     def apply_rules(
         self, reactions: ty.List[ReactionRule]
@@ -194,6 +222,8 @@ def greedy_max_set_cover(
     :return: The selected monomers.
     :rtype: ty.List[ty.Tuple[int, str]]
     """
+    logger = logging.getLogger(__name__)
+    
     superset = set()
     for atom in mol.GetAtoms():
         if atom.GetIsotope() > 0:
@@ -209,12 +239,21 @@ def greedy_max_set_cover(
 
     sorted_subsets = sorted(subsets, key=lambda x: len(x[0]), reverse=True)
 
+    logger.debug(f"Founds {len(sorted_subsets)} subsets. Performing greedy maximum set cover ...")
+
     selected_subsets = []
     covered_elements = set()
     for subset, info in sorted_subsets:
         uncovered_elements = subset - covered_elements
+
+        # Make sure that only a subset is selected if all elements are uncovered.
+        if uncovered_elements != subset:
+            continue
+
         if uncovered_elements:
             selected_subsets.append(info)
             covered_elements.update(uncovered_elements)
+
+    logger.debug(f"Performed greedy maximum set cover and selected {len(selected_subsets)} subsets.")
 
     return selected_subsets

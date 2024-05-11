@@ -19,7 +19,7 @@ from retromol.parsing import (
     parse_mol,
 )
 
-RDLogger.DisableLog("rdApp.*")
+# RDLogger.DisableLog("rdApp.*")
 
 logger = logging.getLogger(__name__)
 
@@ -42,14 +42,16 @@ def cli() -> argparse.Namespace:
         "-r",
         "--reactions",
         type=str,
-        required=True,
+        required=False,
+        default=os.path.join(os.path.dirname(os.path.dirname(__file__)), "tests", "fixtures", "reactions.json"),
         help="Path to JSON file containing reaction.",
     )
     parser.add_argument(
         "-m",
         "--monomers",
         type=str,
-        required=True,
+        required=False,
+        default=os.path.join(os.path.dirname(os.path.dirname(__file__)), "tests", "fixtures", "monomers.json"),
         help="Path to JSON file containing monomer patterns.",
     )
     parser.add_argument(
@@ -112,10 +114,12 @@ def parse_mol_timed(record: Record) -> Result:
     :return: The result of the parsing.
     :rtype: Result
     """
+    logger = logging.getLogger(__name__)
     try:
         mol, reactions, monomers = record
         return parse_mol(mol, reactions, monomers)
-    except Exception:
+    except Exception as e:
+        logger.error(f"Failed to parse {mol.name} and raised {e.__class__.__name__}: {e}")
         return Result(mol.name, mol.compiled, False)
 
 

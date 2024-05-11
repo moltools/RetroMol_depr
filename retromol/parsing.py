@@ -156,6 +156,7 @@ def parse_mol(
     mol: Molecule,
     reactions: ty.List[ReactionRule],
     monomers: ty.List[MolecularPattern],
+    neutralize: bool = True,
 ) -> Result:
     """Parse a molecule with RetroMol.
 
@@ -165,13 +166,22 @@ def parse_mol(
     :type reactions: ty.List[ReactionRule]
     :param monomers: The molecular patterns.
     :type monomers: ty.List[MolecularPattern]
+    :param neutralize: Whether to neutralize the molecule.
+    :type neutralize: bool
     :return: The result.
     :rtype: Result
     """
     logger = logging.getLogger(__name__)
 
     name = mol.name
+
+    if neutralize:
+        mol.neutralize()
+
+    logger.debug(f"Starting parsing for {name} ...")
     reactant, reaction_tree, reaction_mapping = mol.apply_rules(reactions)
+    logger.debug(f"Applied reactions to {name}.")
+    
     applied_reactions = list(
         set(
             [
@@ -181,12 +191,19 @@ def parse_mol(
             ]
         )
     )
+    logger.debug(f"Applied reactions: {applied_reactions}")
+
+    logger.debug(f"Starting monomer graph generation for {name} ...")
     reaction_tree = reaction_tree_to_digraph(reaction_tree)
+    logger.debug("... Created digraph from reaction tree.")
     monomer_graph, monomer_mapping = reaction_tree_to_monomer_graph(
         mol, reaction_tree, reaction_mapping, monomers
     )
+    logger.debug("... Generated monomer graph from digraph.")
+    logger.debug(f"Generated monomer graph for {name}.")
 
     # Reformat reaction_tree and reaction_mapping into one graph.
+    logger.debug(f"Reformatting reaction tree for {name} ...")
     new_reaction_tree = {}
     for parent in reaction_tree.nodes:
         children = list(reaction_tree.successors(parent))
@@ -199,8 +216,11 @@ def parse_mol(
         smiles = Chem.MolToSmiles(mol)
 
         new_reaction_tree[parent] = {"smiles": smiles, "children": children}
+    
+    logger.debug(f"Reformatted reaction tree for {name}.")
 
     # Reformat monomer_graph and monomer_mapping into one graph.
+    logger.debug(f"Reformatting monomer graph for {name} ...")
     new_monomer_graph = {}
 
     for reaction_tree_node, (monomer_graph_node, identity) in monomer_mapping.items():
@@ -221,6 +241,8 @@ def parse_mol(
                 "identity": None,
                 "neighbors": neighbors,
             }
+
+    logger.debug(f"Reformatted monomer graph for {name}.")
 
     if logger.isEnabledFor(logging.DEBUG):
         logger.debug(f" Parsing was successful for {name}.")

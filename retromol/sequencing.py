@@ -9,8 +9,6 @@ from collections import defaultdict
 import networkx as nx
 from rdkit import Chem
 
-from retromol.chem import mol_to_fingerprint, tanimoto_similarity
-
 
 def parse_modular_natural_product(
     reaction_tree: ty.Dict[int, ty.List[int]],
@@ -29,6 +27,7 @@ def parse_modular_natural_product(
     :rtype: ty.List[ty.Tuple[Chem.Mol, ty.List[str]]]
     """
     logger = logging.getLogger(__name__)
+    logger.debug(f"Starting modular natural product sequencing ...")
 
     # Get all identified monomers as Chem.Mol objects.
     monomer_ids = []
@@ -103,12 +102,15 @@ def parse_modular_natural_product(
         # If not, skip it.
         if temp_monomer_graph.number_of_nodes() == 0:
             logger.debug(f"Found monomer graph with no nodes.")
+            logger.debug(f"SMILES: {Chem.MolToSmiles(mol)}")
             continue
 
         # Check if temp_monomer_graph is connected. If not, skip it.
         # This implies that a part of the linear molecule was not identified.
         if not nx.is_connected(temp_monomer_graph):
+            logger.debug
             logger.debug(f"Found linearized monomer graph that is not connected.")
+            logger.debug(f"SMILES: {Chem.MolToSmiles(mol)}")
             continue
         
         contracted_nodes = {}
@@ -224,4 +226,5 @@ def parse_modular_natural_product(
             motif_code=seq["motif_code"]
         ))
     
+    logger.debug(f"Finished modular natural product sequencing.")
     return seqs
