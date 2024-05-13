@@ -19,7 +19,7 @@ from retromol.parsing import (
     parse_mol,
 )
 
-# RDLogger.DisableLog("rdApp.*")
+RDLogger.DisableLog("rdApp.*")
 
 logger = logging.getLogger(__name__)
 
@@ -167,11 +167,21 @@ def main() -> None:
                 next(fo)
             for i, line in enumerate(fo):
                 name, smiles = line.strip().split(sep)
+                
+                # Check if output dir already contains JSON file for entry.
+                out_path = os.path.join(args.output, f"{name}.json")
+
+                # Skip if JSON file already exists.
+                if os.path.exists(out_path):
+                    continue
+
                 mol = Molecule(name, smiles)
                 records.append((mol, reactions, monomers))
 
                 # Report on progress.
                 print(f"Added record {i+1} to queue...", end="\r")
+
+        logger.info(f"Added {len(records)} records to queue.")
 
         # Parse molecules in parallel.
         nproc = min(args.nproc, mp.cpu_count())
