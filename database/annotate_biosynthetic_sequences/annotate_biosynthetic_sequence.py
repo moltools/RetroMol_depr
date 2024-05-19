@@ -5,6 +5,7 @@ import logging
 import os
 import re
 import typing as ty
+import json
 
 from neo4j import GraphDatabase
 from rdkit import RDLogger
@@ -70,7 +71,8 @@ def parse_motif(i: int, motif: str) -> str:
             f"}})"
         )
 
-    return f"(u{i + 1}:Motif {{identifier: 'unknown'}})"
+    else:
+        raise ValueError(f"Unknown motif: {motif}")
 
 
 def main() -> None:
@@ -112,7 +114,7 @@ def main() -> None:
 
                 # Create biosynthetic fingerprint node sequence.
                 query_begin = """
-                CREATE (s:PrimarySequence {identifier: $identifier, accession: $accession, applied_reactions: $applied_reactions})-[:START]->
+                CREATE (s:PrimarySequence {identifier: $identifier, accession: $accession, applied_reactions: $applied_reactions, sequences: $sequences})-[:START]->
                 """
                 query_end = "-[:NEXT]->".join(
                     [parse_motif(i, motif) for i, motif in enumerate(sequence["motif_code"])]
@@ -122,6 +124,7 @@ def main() -> None:
                     identifier=identifier,
                     accession=accession,
                     applied_reactions=applied_reactions,
+                    sequences=json.dumps(sequences)
                 )
 
                 # Add link between biosynthetic fingerprint and compound.
