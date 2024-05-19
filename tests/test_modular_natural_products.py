@@ -6,14 +6,9 @@ import typing as ty
 
 import pytest
 
+from retromol.api import Result, parse_mol, parse_molecular_patterns, parse_reaction_rules
 from retromol.chem import Molecule
-from retromol.helpers import RetroMolTimeout, timeout
-from retromol.parsing import (
-    Result,
-    parse_reaction_rules,
-    parse_molecular_patterns,
-    parse_mol,
-)
+from retromol.helpers import RetroMolTimeoutError, timeout
 
 TESTS_DIR_NAME = os.path.dirname(__file__)
 PATH_TO_MONOMERS = os.path.join(TESTS_DIR_NAME, "fixtures", "monomers.json")
@@ -54,7 +49,7 @@ def parse_mol_timed(mol: Molecule) -> Result:
                 "polyketide|D2",
                 "polyketide|B2",
             ],
-            None
+            None,
         ),
         (
             "13-deoxytedanolide",
@@ -71,7 +66,7 @@ def parse_mol_timed(mol: Molecule) -> Result:
                 "polyketide|A2",
                 "polyketide|B5",
             ],
-            None
+            None,
         ),
         (
             "6-deoxyerythronolide_B",
@@ -82,15 +77,15 @@ def parse_mol_timed(mol: Molecule) -> Result:
                 "polyketide|A2",
                 "polyketide|D2",
                 "polyketide|B2",
-                "polyketide|B2"
+                "polyketide|B2",
             ],
-            None
+            None,
         ),
         (
             "abyssomicin_C",
             r"C[C@@H]1C[C@]23OC(=O)C4=C2OC1[C@H](O)C3\C=C\C(=O)[C@@H](C)C[C@@H](C)C4=O",
             [],
-            None
+            None,
         ),
         (
             "acutiphycin",
@@ -107,7 +102,7 @@ def parse_mol_timed(mol: Molecule) -> Result:
                 "polyketide|B1",
                 "polyketide|A1",
             ],
-            None
+            None,
         ),
         (
             "amicoumacin",
@@ -121,7 +116,7 @@ def parse_mol_timed(mol: Molecule) -> Result:
                 "polyketide|C1",
                 "polyketide|A1",
             ],
-            None
+            None,
         ),
         (
             "amphidinolide_J",
@@ -137,7 +132,7 @@ def parse_mol_timed(mol: Molecule) -> Result:
                 "polyketide|D12",
                 "polyketide|D8",
             ],
-            None
+            None,
         ),
         (
             "amphidinolide_P",
@@ -151,7 +146,7 @@ def parse_mol_timed(mol: Molecule) -> Result:
                 "polyketide|A9",
                 "polyketide|A1",
             ],
-            None
+            None,
         ),
         (
             "anthracimycin",
@@ -168,7 +163,7 @@ def parse_mol_timed(mol: Molecule) -> Result:
                 "polyketide|A1",
                 "polyketide|A2",
             ],
-            None
+            None,
         ),
         (
             "bitungolide_F",
@@ -182,7 +177,7 @@ def parse_mol_timed(mol: Molecule) -> Result:
                 "polyketide|B4",
                 "polyketide|C1",
             ],
-            None
+            None,
         ),
         (
             "borrelidin",
@@ -197,7 +192,7 @@ def parse_mol_timed(mol: Molecule) -> Result:
                 "polyketide|D2",
                 "polyketide|B1",
             ],
-            None
+            None,
         ),
         (
             "callystatin_A",
@@ -214,19 +209,19 @@ def parse_mol_timed(mol: Molecule) -> Result:
                 "polyketide|B1",
                 "polyketide|C1",
             ],
-            None
+            None,
         ),
         (
             "carolacton",
             r"C[C@@H]\1CCC[C@@H]([C@H](OC(=O)[C@@H]([C@@H](/C=C1)O)O)/C(=C/[C@@H](C)C(=O)[C@H](C)[C@@H](CC(=O)O)OC)/C)C",
             [],
-            None
+            None,
         ),
         (
             "chaetoglobosin_A",
             r"C[C@H]\1C/C=C/[C@H]2[C@H]3[C@](O3)([C@H]([C@@H]4[C@@]2(C(=O)/C=C/C(=O)[C@@H](/C(=C1)/C)O)C(=O)N[C@H]4CC5=CNC6=CC=CC=C65)C)C",
             [],
-            None
+            None,
         ),
         (
             "chlorotonil_A",
@@ -243,7 +238,7 @@ def parse_mol_timed(mol: Molecule) -> Result:
                 "polyketide|A1",
                 "polyketide|A2",
             ],
-            None
+            None,
         ),
         (
             "daptomycin",
@@ -255,19 +250,19 @@ def parse_mol_timed(mol: Molecule) -> Result:
                 "polyketide|D1",
                 "peptide|pubchem|1148",
                 "peptide|pubchem|236",
-                'peptide|pubchem|424', 
-                'peptide|pubchem|205', 
-                'peptide|pubchem|750', 
-                'peptide|pubchem|389', 
-                'peptide|pubchem|424', 
-                'peptide|pubchem|602', 
-                'peptide|pubchem|424', 
-                'peptide|pubchem|750', 
-                'peptide|pubchem|617', 
-                'peptide|pubchem|237657', 
-                'peptide|pubchem|846'
+                "peptide|pubchem|424",
+                "peptide|pubchem|205",
+                "peptide|pubchem|750",
+                "peptide|pubchem|389",
+                "peptide|pubchem|424",
+                "peptide|pubchem|602",
+                "peptide|pubchem|424",
+                "peptide|pubchem|750",
+                "peptide|pubchem|617",
+                "peptide|pubchem|237657",
+                "peptide|pubchem|846",
             ],
-            None
+            None,
         ),
         (
             "dictyostatin",
@@ -286,7 +281,7 @@ def parse_mol_timed(mol: Molecule) -> Result:
                 "polyketide|C1",
                 "polyketide|C1",
             ],
-            None
+            None,
         ),
         (
             "discodermolide",
@@ -304,7 +299,7 @@ def parse_mol_timed(mol: Molecule) -> Result:
                 "polyketide|B2",
                 "polyketide|B2",
             ],
-            None
+            None,
         ),
         (
             "epothilone",
@@ -320,20 +315,20 @@ def parse_mol_timed(mol: Molecule) -> Result:
                 "polyketide|A3",
                 "polyketide|B1",
             ],
-            None
+            None,
         ),
         (
             "erythromycin",
             r"CCC1C(C(C(C(=O)C(CC(C(C(C(C(C(=O)O1)C)OC2CC(C(C(O2)C)O)(C)OC)C)OC3C(C(CC(O3)C)N(C)C)O)(C)O)C)C)O)(C)O",
             [
-                "polyketide|B7", 
-                "polyketide|B2", 
-                "polyketide|A2", 
-                "polyketide|D7", 
-                "polyketide|B2", 
-                "polyketide|B2"
+                "polyketide|B7",
+                "polyketide|B2",
+                "polyketide|A2",
+                "polyketide|D7",
+                "polyketide|B2",
+                "polyketide|B2",
             ],
-            None
+            None,
         ),
         (
             "georatusin",
@@ -348,7 +343,7 @@ def parse_mol_timed(mol: Molecule) -> Result:
                 "polyketide|A2",
                 "peptide|pubchem|1148",
             ],
-            None
+            None,
         ),
         (
             "gephyronic_acid",
@@ -362,7 +357,7 @@ def parse_mol_timed(mol: Molecule) -> Result:
                 "polyketide|B2",
                 "polyketide|B1",
             ],
-            None
+            None,
         ),
         (
             "harzianic_acid",
@@ -372,9 +367,9 @@ def parse_mol_timed(mol: Molecule) -> Result:
                 "polyketide|C1",
                 "polyketide|C1",
                 "polyketide|A1",
-                "peptide|pubchem|29"
+                "peptide|pubchem|29",
             ],
-            None
+            None,
         ),
         (
             "herboxidiene",
@@ -389,7 +384,7 @@ def parse_mol_timed(mol: Molecule) -> Result:
                 "polyketide|D1",
                 "polyketide|C1",
             ],
-            None
+            None,
         ),
         (
             "hymenosetin",
@@ -404,7 +399,7 @@ def parse_mol_timed(mol: Molecule) -> Result:
                 "polyketide|A1",
                 "peptide|pubchem|205",
             ],
-            None
+            None,
         ),
         (
             "indanomycin",
@@ -421,7 +416,7 @@ def parse_mol_timed(mol: Molecule) -> Result:
                 "polyketide|D1",
                 "polyketide|C2",
             ],
-            None
+            None,
         ),
         (
             "ircinianin",
@@ -436,7 +431,7 @@ def parse_mol_timed(mol: Molecule) -> Result:
                 "polyketide|D11",
                 "polyketide|A2",
             ],
-            None
+            None,
         ),
         (
             "iriomoteolide_1a",
@@ -453,7 +448,7 @@ def parse_mol_timed(mol: Molecule) -> Result:
                 "polyketide|B2",
                 "polyketide|C6",
             ],
-            None
+            None,
         ),
         (
             "iriomoteolide_3a",
@@ -470,7 +465,7 @@ def parse_mol_timed(mol: Molecule) -> Result:
                 "polyketide|C1",
                 "polyketide|D8",
             ],
-            None
+            None,
         ),
         (
             "jerangolid_A",
@@ -484,7 +479,7 @@ def parse_mol_timed(mol: Molecule) -> Result:
                 "polyketide|B1",
                 "polyketide|A6",
             ],
-            None
+            None,
         ),
         (
             "kirromycin",
@@ -507,7 +502,7 @@ def parse_mol_timed(mol: Molecule) -> Result:
                 "polyketide|A1",
                 "peptide|pubchem|239",
             ],
-            None
+            None,
         ),
         (
             "lactimidomycin",
@@ -522,7 +517,7 @@ def parse_mol_timed(mol: Molecule) -> Result:
                 "polyketide|D1",
                 "polyketide|C1",
             ],
-            None
+            None,
         ),
         (
             "lankamycin",
@@ -536,7 +531,7 @@ def parse_mol_timed(mol: Molecule) -> Result:
                 "polyketide|B2",
                 "polyketide|B2",
             ],
-            None
+            None,
         ),
         (
             "latrunculin",
@@ -552,19 +547,19 @@ def parse_mol_timed(mol: Molecule) -> Result:
                 "polyketide|D1",
                 "polyketide|C6",
             ],
-            None
+            None,
         ),
         (
             "leiodermatolide",
             r"CC[C@H]1[C@@H]([C@@](CC(=O)O1)(C/C=C/C=C(\C)/[C@@H]2[C@H](/C=C\C=C/[C@@H]([C@H]([C@H]([C@@H](/C(=C/CCC(=O)O2)/C)C)O)C)OC(=O)N)C)O)C",
             [],
-            None
+            None,
         ),
         (
             "lovastatin",
             r"CC[C@H](C)C(=O)O[C@H]1C[C@H](C=C2[C@H]1[C@H]([C@H](C=C2)C)CC[C@@H]3C[C@H](CC(=O)O3)O)C",
             [],
-            None
+            None,
         ),
         (
             "macrolactin_A",
@@ -582,7 +577,7 @@ def parse_mol_timed(mol: Molecule) -> Result:
                 "polyketide|C1",
                 "polyketide|C1",
             ],
-            None
+            None,
         ),
         (
             "megalomycin_A",
@@ -595,7 +590,7 @@ def parse_mol_timed(mol: Molecule) -> Result:
                 "polyketide|B2",
                 "polyketide|B2",
             ],
-            None
+            None,
         ),
         (
             "micacocidin_A",
@@ -611,7 +606,7 @@ def parse_mol_timed(mol: Molecule) -> Result:
                 "polyketide|B3",
                 "peptide|pubchem|594",
             ],
-            None
+            None,
         ),
         (
             "migrastatin",
@@ -626,7 +621,7 @@ def parse_mol_timed(mol: Molecule) -> Result:
                 "polyketide|D1",
                 "polyketide|C1",
             ],
-            None
+            None,
         ),
         (
             "narbonolide",
@@ -639,13 +634,13 @@ def parse_mol_timed(mol: Molecule) -> Result:
                 "polyketide|B2",
                 "polyketide|A2",
             ],
-            None
+            None,
         ),
         (
             "pederin",
             r"C[C@H]1[C@H](O[C@](CC1=C)([C@@H](C(=O)N[C@H]([C@@H]2C[C@H](C([C@H](O2)C[C@@H](COC)OC)(C)C)O)OC)O)OC)C",
             [],
-            None
+            None,
         ),
         (
             "peloruside_A",
@@ -661,19 +656,19 @@ def parse_mol_timed(mol: Molecule) -> Result:
                 "polyketide|B1",
                 "polyketide|B5",
             ],
-            None
+            None,
         ),
         (
             "penicillin_G",
             r"CC1([C@@H](N2[C@H](S1)[C@@H](C2=O)NC(=O)CC3=CC=CC=C3)C(=O)O)C",
             [],
-            None
+            None,
         ),
         (
             "periconiasin_I",
             r"C/C/1=C/C[C@@H](CC(=O)[C@]23[C@@H](C1)[C@H](C(=C([C@H]2[C@@H](NC3=O)CC(C)C)C)C)O)O",
             [],
-            None
+            None,
         ),
         (
             "ratjadon",
@@ -691,14 +686,9 @@ def parse_mol_timed(mol: Molecule) -> Result:
                 "polyketide|B1",
                 "polyketide|C1",
             ],
-            None
+            None,
         ),
-        (
-            "salinosporamide",
-            r"CCCC1C(=O)NC2(C1(OC2=O)C)C(C3CCCC=C3)O",
-            [],
-            None
-        ),
+        ("salinosporamide", r"CCCC1C(=O)NC2(C1(OC2=O)C)C(C3CCCC=C3)O", [], None),
         (
             "soraphen_A",
             r"C[C@H]1/C=C/[C@H]([C@H](CCCC[C@H](OC(=O)[C@H]([C@@]2([C@@H]([C@H]([C@@H]([C@H]1O2)C)O)OC)O)C)C3=CC=CC=C3)OC)OC",
@@ -712,7 +702,7 @@ def parse_mol_timed(mol: Molecule) -> Result:
                 "polyketide|B5",
                 "polyketide|A2",
             ],
-            None
+            None,
         ),
         (
             "spiculoic_acid_A",
@@ -724,7 +714,7 @@ def parse_mol_timed(mol: Molecule) -> Result:
                 "polyketide|A4",
                 "polyketide|C4",
             ],
-            None
+            None,
         ),
         (
             "spongidepsin",
@@ -737,7 +727,7 @@ def parse_mol_timed(mol: Molecule) -> Result:
                 "polyketide|D2",
                 "peptide|pubchem|994",
             ],
-            None
+            None,
         ),
         (
             "thailanstatin_A",
@@ -753,19 +743,19 @@ def parse_mol_timed(mol: Molecule) -> Result:
                 "polyketide|A8",
                 "polyketide|C1",
             ],
-            None
+            None,
         ),
         (
             "theopederin_A",
             r"C[C@H]1[C@H](O[C@](CC1=C)([C@H](C(=O)N[C@@H]2[C@@H]3[C@@H]([C@H](C([C@H](O3)C[C@H]4CCCC(O4)O)(C)C)OC)OCO2)O)OC)C",
             [],
-            None
+            None,
         ),
         (
             "theopederin_B",
             r"C[C@H]1[C@H](O[C@](CC1=C)([C@H](C(=O)N[C@@H]2[C@@H]3[C@@H]([C@H](C([C@H](O3)C[C@@H](CCCC(=O)OC)O)(C)C)OC)OCO2)O)OC)C",
             [],
-            None
+            None,
         ),
         (
             "thermolide_A",
@@ -781,13 +771,13 @@ def parse_mol_timed(mol: Molecule) -> Result:
                 "polyketide|B1",
                 "peptide|pubchem|602",
             ],
-            None
+            None,
         ),
         # (
         #     "thiocoraline",
         #     r"CN1C2CSSCC(C(=O)N(C(C(=O)SCC(C(=O)NCC1=O)NC(=O)C3=NC4=CC=CC=C4C=C3O)CSC)C)N(C(=O)CNC(=O)C(CSC(=O)C(N(C2=O)C)CSC)NC(=O)C5=NC6=CC=CC=C6C=C5O)C",
         #     [],
-        #     RetroMolTimeout
+        #     RetroMolTimeoutError
         # ),
         (
             "zincophorin",
@@ -805,7 +795,7 @@ def parse_mol_timed(mol: Molecule) -> Result:
                 "polyketide|D1",
                 "polyketide|B2",
             ],
-            None
+            None,
         ),
         (
             "zwittermicin_A",
@@ -817,11 +807,13 @@ def parse_mol_timed(mol: Molecule) -> Result:
                 "polyketide|B5",
                 "peptide|pubchem|364",
             ],
-            None
-        )
+            None,
+        ),
     ],
 )
-def test_modular_natural_produts(compound_name: str, test: str, expected: ty.List[str], expected_raises: ty.Any):
+def test_modular_natural_produts(
+    compound_name: str, test: str, expected: ty.List[str], expected_raises: ty.Any
+):
     """Integration test for parsing and sequencing a natural product compound.
 
     :param test: The test input.
@@ -832,7 +824,7 @@ def test_modular_natural_produts(compound_name: str, test: str, expected: ty.Lis
     :type expected_raises: Any
     """
     molecule = Molecule("test_input", test)
-    
+
     result = parse_mol_timed(molecule)
 
     if expected_raises is not None:
@@ -843,8 +835,6 @@ def test_modular_natural_produts(compound_name: str, test: str, expected: ty.Lis
 
         sequences = result.sequences
 
-        print(sequences)
-        
         if len(sequences) > 0:
             motif_codes = [seq["motif_code"] for seq in sequences]
             assert expected in motif_codes

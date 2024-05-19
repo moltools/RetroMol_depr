@@ -1,6 +1,6 @@
-"""This module contains helper functions and decorators for the retromol
-package.
-"""
+# -*- coding: utf-8 -*-
+
+"""This module contains helper functions for RetroMol."""
 
 import errno
 import functools
@@ -8,17 +8,17 @@ import os
 import signal
 import typing as ty
 
+TIMEOUT_ERROR_MSG = os.strerror(errno.ETIME)
 
-class RetroMolTimeout(Exception):
+
+class RetroMolTimeoutError(Exception):
     """Custom exception to raise when a function exceeds the specified time."""
 
     pass
 
 
-def timeout(
-    seconds: int = 5, error_message: str = os.strerror(errno.ETIME)
-) -> ty.Callable:
-    """Raise a RetroMolTimeout when runtime exceeds the specified time.
+def timeout(seconds: int = 5, error_message: str = TIMEOUT_ERROR_MSG) -> ty.Callable:
+    """Raise a RetroMolTimeoutError when runtime exceeds the specified time.
 
     :param seconds: The number of seconds before the function times out.
     :type seconds: int
@@ -30,12 +30,14 @@ def timeout(
     """
 
     def decorator(func: ty.Callable) -> ty.Callable:
+        """Decorate the function."""
 
         def _handle_timeout(signum, frame):
-            raise RetroMolTimeout(error_message)
+            raise RetroMolTimeoutError(error_message)
 
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
+            """Wrap the function."""
             signal.signal(signal.SIGALRM, _handle_timeout)
             signal.alarm(seconds)
             try:

@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 """This module contains functions for drawing molecules and monomer graphs."""
 
 import typing as ty
@@ -8,7 +10,7 @@ import networkx as nx
 from rdkit import Chem
 from rdkit.Chem import AllChem, Draw
 
-from retromol.parsing import Result
+from retromol.api import Result
 
 
 def get_2d_coordinatates(mol: Chem.Mol) -> ty.Dict[int, ty.Tuple[float, float]]:
@@ -40,9 +42,7 @@ def draw_molecule(mol: Chem.Mol, path: str) -> None:
     :param path: The path to save the image to.
     :type path: str
     """
-    mol = deepcopy(
-        mol
-    )  # Keep isotope numbers intact for atom mapping outside of function.
+    mol = deepcopy(mol)  # Keep isotope numbers intact for atom mapping outside of function.
 
     for atom in mol.GetAtoms():
         atom.SetIsotope(0)

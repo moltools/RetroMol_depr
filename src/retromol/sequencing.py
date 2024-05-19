@@ -1,6 +1,6 @@
-"""This module contains functions for retrieving monomer sequences from
-monomer graphs.
-"""
+# -*- coding: utf-8 -*-
+
+"""This module contains the sequencing utilities for the RetroMol package."""
 
 import logging
 import typing as ty
@@ -13,7 +13,7 @@ from rdkit import Chem
 def parse_modular_natural_product(
     reaction_tree: ty.Dict[int, ty.List[int]],
     monomer_graph: ty.Dict[str, ty.Any],
-    core_types: ty.List[str] = ["polyketide", "peptide"]
+    core_types: ty.List[str] = ["polyketide", "peptide"],
 ) -> ty.List[ty.Tuple[Chem.Mol, ty.List[str]]]:
     """Parse a monomer graph to retrieve a modular natural product sequence.
 
@@ -27,7 +27,7 @@ def parse_modular_natural_product(
     :rtype: ty.List[ty.Tuple[Chem.Mol, ty.List[str]]]
     """
     logger = logging.getLogger(__name__)
-    logger.debug(f"Starting modular natural product sequencing ...")
+    logger.debug("Starting modular natural product sequencing ...")
 
     # Get all identified monomers as Chem.Mol objects.
     monomer_ids = []
@@ -37,7 +37,9 @@ def parse_modular_natural_product(
             if identity.split("|")[0] not in core_types:
                 continue
             monomer_ids.append((props["reaction_tree_id"], identity))
-    subs = [(Chem.MolFromSmiles(reaction_tree[x]["smiles"]), identity) for x, identity in monomer_ids]
+    subs = [
+        (Chem.MolFromSmiles(reaction_tree[x]["smiles"]), identity) for x, identity in monomer_ids
+    ]
 
     # Retrieve the original AMNs of the identified core type monomers.
     monomer_amns = set()
@@ -56,7 +58,7 @@ def parse_modular_natural_product(
         amns = set()
         for atom in mol.GetAtoms():
             amn = atom.GetAtomMapNum()
-            if amn > 0: 
+            if amn > 0:
                 amns.add(amn)
         if monomer_amns.issubset(amns):
             mols.append(mol)
@@ -73,7 +75,7 @@ def parse_modular_natural_product(
     mols = [mol for mol, num_cycles in mols_with_num_cycles if num_cycles == min_num_cycles]
 
     if len(mols) == 0:
-        logger.debug(f"Found no molecules with the minimum number of cycles.")
+        logger.debug("Found no molecules with the minimum number of cycles.")
         return []
 
     # If there are no molecules left, return an empty list.
@@ -91,7 +93,7 @@ def parse_modular_natural_product(
             begin_amn = bond.GetBeginAtom().GetAtomMapNum()
             end_amn = bond.GetEndAtom().GetAtomMapNum()
             if (
-                begin_amn > 0 
+                begin_amn > 0
                 and end_amn > 0
                 and begin_amn in monomer_amns
                 and end_amn in monomer_amns
@@ -101,7 +103,7 @@ def parse_modular_natural_product(
         # Check if temp_monomer_graph has any nodes.
         # If not, skip it.
         if temp_monomer_graph.number_of_nodes() == 0:
-            logger.debug(f"Found monomer graph with no nodes.")
+            logger.debug("Found monomer graph with no nodes.")
             logger.debug(f"SMILES: {Chem.MolToSmiles(mol)}")
             continue
 
@@ -109,10 +111,10 @@ def parse_modular_natural_product(
         # This implies that a part of the linear molecule was not identified.
         if not nx.is_connected(temp_monomer_graph):
             logger.debug
-            logger.debug(f"Found linearized monomer graph that is not connected.")
+            logger.debug("Found linearized monomer graph that is not connected.")
             logger.debug(f"SMILES: {Chem.MolToSmiles(mol)}")
             continue
-        
+
         contracted_nodes = {}
         for sub, _ in subs:
             sub_amns = []
@@ -120,30 +122,27 @@ def parse_modular_natural_product(
                 amn = atom.GetAtomMapNum()
                 if amn > 0:
                     sub_amns.append(amn)
-            
+
             contracted_nodes[sub_amns[0]] = sub_amns
             # temp_monomer_graph.add_node(amns[0])
             for sub_amn in sub_amns[1:]:
                 temp_monomer_graph = nx.contracted_nodes(
-                    temp_monomer_graph, 
-                    sub_amns[0], 
-                    sub_amn, 
-                    self_loops=False
+                    temp_monomer_graph, sub_amns[0], sub_amn, self_loops=False
                 )
-        
+
         # Check if the monomer graph is linear. If not, skip it.
         # The monomer graph is linear if it has one less edge than nodes.
         if temp_monomer_graph.number_of_edges() != temp_monomer_graph.number_of_nodes() - 1:
-            logger.debug(f"Found linearized monomer graph that is not linear.")
+            logger.debug("Found linearized monomer graph that is not linear.")
             continue
 
         # Check which side is the start and which side is the end.
         # First get both ends, these are the nodes that only have one edge.
         ends = [node for node, degree in temp_monomer_graph.degree() if degree == 1]
-        
+
         # As sanity check, there should be exactly two ends.
         if len(ends) != 2:
-            logger.debug(f"Found linearized monomer graph with more than two ends.")
+            logger.debug("Found linearized monomer graph with more than two ends.")
             continue
 
         # Get the AMNS of both ends.
@@ -169,12 +168,12 @@ def parse_modular_natural_product(
 
         # If both have a COOH group, skip this molecule.
         if a_has_cooh and b_has_cooh:
-            logger.debug(f"Found linearized monomer graph with two ends with COOH.")
+            logger.debug("Found linearized monomer graph with two ends with COOH.")
             continue
 
         # If none have a COOH group, skip this molecule.
         if not a_has_cooh and not b_has_cooh:
-            logger.debug(f"Found linearized monomer graph with two ends without COOH.")
+            logger.debug("Found linearized monomer graph with two ends without COOH.")
             continue
 
         # If a has a COOH group, a is the end.
@@ -195,10 +194,7 @@ def parse_modular_natural_product(
             logger.debug(f"Found linearized molecule: {Chem.MolToSmiles(mol)}")
             logger.debug(f"Found monomer sequence for molecule: {identities}")
 
-        found_seqs.append(dict(
-            mol=mol,
-            motif_code=identities
-        ))
+        found_seqs.append(dict(mol=mol, motif_code=identities))
 
     if len(found_seqs) > 1:
         # Dereplicate the found sequences. Cluster based on sequence, and pick smallest.
@@ -212,19 +208,13 @@ def parse_modular_natural_product(
         found_seqs = []
         for motif_code_str, mols in clustered.items():
             mols = sorted(mols, key=lambda x: x.GetNumAtoms())
-            found_seqs.append(dict(
-                mol=mols[0],
-                motif_code=motif_code_str.split("~")
-            ))
-    
+            found_seqs.append(dict(mol=mols[0], motif_code=motif_code_str.split("~")))
+
     # Transform mols to smiles.
     seqs = []
     for seq in found_seqs:
         smiles = Chem.MolToSmiles(seq["mol"])
-        seqs.append(dict(
-            smiles=smiles,
-            motif_code=seq["motif_code"]
-        ))
-    
-    logger.debug(f"Finished modular natural product sequencing.")
+        seqs.append(dict(smiles=smiles, motif_code=seq["motif_code"]))
+
+    logger.debug("Finished modular natural product sequencing.")
     return seqs

@@ -9,9 +9,10 @@ import re
 from neo4j import GraphDatabase
 from tqdm import tqdm
 
+
 def cli() -> argparse.Namespace:
     """Parse command-line arguments.
-    
+
     :return: Command-line arguments.
     :rtype: argparse.Namespace
     """
@@ -22,14 +23,13 @@ def cli() -> argparse.Namespace:
         "--authentication",
         default=None,
         nargs=2,
-        help="Neo4j authentication as '<username> <password>'."
+        help="Neo4j authentication as '<username> <password>'.",
     )
     return parser.parse_args()
 
 
 def parse_json(file_path: str):
-    """
-    """
+    """ """
     logger = logging.getLogger(__name__)
 
     with open(file_path, "r") as file:
@@ -44,7 +44,7 @@ def parse_json(file_path: str):
 
         for protocluster in protoclusters:
             for protocluster_item in protocluster:
-                
+
                 sequence = []
 
                 accession = protocluster_item["accession"]
@@ -62,38 +62,28 @@ def parse_json(file_path: str):
                         has_er = any([hit_id.startswith("PKS_ER") for hit_id in hit_ids])
 
                         if has_kr and has_dh and has_er:
-                            sequence.append(
-                                "polyketide|D"
-                            )
+                            sequence.append("polyketide|D")
                         elif has_kr and has_dh:
-                            sequence.append(
-                                "polyketide|C"
-                            )
+                            sequence.append("polyketide|C")
                         elif has_kr:
-                            sequence.append(
-                                "polyketide|B"
-                            )
+                            sequence.append("polyketide|B")
                         else:
-                            sequence.append(
-                                "polyketide|A"
-                            )
+                            sequence.append("polyketide|A")
 
-                    
                     elif any([hit_id.startswith("Condensation") for hit_id in hit_ids]):
-                        sequence.append(
-                            "peptide|pubchem|0"
-                        )
+                        sequence.append("peptide|pubchem|0")
 
                     else:
                         # Something else...
                         pass
-                    
+
                 if len(sequence) >= 2:
                     yield accession, sequence
 
+
 def parse_motif(i: int, motif: str) -> str:
     """Parse a motif into a Cypher query.
-    
+
     :param i: Index of motif.
     :type i: int
     :param motif: Motif to parse.
@@ -112,7 +102,7 @@ def parse_motif(i: int, motif: str) -> str:
             f"decoration_type: '{0}'"
             f"}})"
         )
-    
+
     elif match := re.match(r"peptide\|(\w+)\|(.+)", motif):
         source = match.group(1)
         cid = match.group(2)
@@ -124,14 +114,15 @@ def parse_motif(i: int, motif: str) -> str:
             f"cid: '{cid}'"
             f"}})"
         )
-    
+
     else:
         raise ValueError(f"Unknown motif: {motif}")
+
 
 def main() -> None:
     """Driver function."""
     args = cli()
-    
+
     # Configure logger and set log level.
     logging.basicConfig(level=logging.INFO)
     logger = logging.getLogger(__name__)
@@ -145,7 +136,6 @@ def main() -> None:
     else:
         db = GraphDatabase.driver(f"bolt://localhost:{args.port}")
 
-
     with db.session() as session:
 
         # Loop over files and populate the database.
@@ -157,17 +147,19 @@ def main() -> None:
                 CREATE (p:ProtoCluster {identifier: $identifier, accession: $accession})
                 """
                 session.run(query, identifier=identifier, accession=accession)
-                    
+
                 # Create biosynthetic fingerprint node sequence.
                 query_begin = """
                 CREATE (s:PrimarySequence {identifier: $identifier, accession: $accession, applied_reactions: $applied_reactions})-[:START]->
                 """
-                query_end = "-[:NEXT]->".join([parse_motif(i, motif) for i, motif in enumerate(sequence)])
+                query_end = "-[:NEXT]->".join(
+                    [parse_motif(i, motif) for i, motif in enumerate(sequence)]
+                )
                 session.run(
                     query_begin + query_end,
                     identifier=identifier,
                     accession=accession,
-                    applied_reactions=[]
+                    applied_reactions=[],
                 )
 
                 # Add link between biosynthetic fingerprint and proto-cluster.

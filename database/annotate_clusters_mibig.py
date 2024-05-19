@@ -7,22 +7,26 @@ import os
 from neo4j import GraphDatabase
 from tqdm import tqdm
 
+
 def cli() -> argparse.Namespace:
     """Parse command-line arguments.
-    
+
     :return: Command-line arguments.
     :rtype: argparse.Namespace
     """
     parser = argparse.ArgumentParser()
-    parser.add_argument("--input", type=str, required=True, help="Path to dir containing MIBiG JSON files.")
+    parser.add_argument(
+        "--input", type=str, required=True, help="Path to dir containing MIBiG JSON files."
+    )
     parser.add_argument("--port", default=7687, type=int, help="Neo4j port.")
     parser.add_argument(
-        "--authentication", 
+        "--authentication",
         default=None,
         nargs=2,
-        help="Neo4j authentication as '<username> <password>'."
+        help="Neo4j authentication as '<username> <password>'.",
     )
     return parser.parse_args()
+
 
 def main() -> None:
     """Driver function."""
@@ -104,9 +108,12 @@ def main() -> None:
                                     MERGE (b:Bioactivity {name: $bioactivity})
                                     MERGE (c)-[:HAS_BIOACTIVITY]->(b)
                                     """
-                                    session.run(query, npatlas_id=npatlas_id, bioactivity=bioactivity)
+                                    session.run(
+                                        query, npatlas_id=npatlas_id, bioactivity=bioactivity
+                                    )
 
     db.close()
+
 
 if __name__ == "__main__":
     main()

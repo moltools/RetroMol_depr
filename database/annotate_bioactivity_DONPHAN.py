@@ -2,17 +2,18 @@
 """This script annotates bioactivity data from DONPHAN to the Neo4j database."""
 import argparse
 from collections import defaultdict
-from neo4j import GraphDatabase
 
+from neo4j import GraphDatabase
 from rdkit import Chem, RDLogger
 from tqdm import tqdm
 
 RDLogger.DisableLog("rdApp.*")
 
+
 def cli() -> argparse.Namespace:
     """
     Parse command-line arguments.
-    
+
     :return: Command-line arguments.
     :rtype: argparse.Namespace
     """
@@ -20,12 +21,13 @@ def cli() -> argparse.Namespace:
     parser.add_argument("--input", required=True, help="Path to DONPHAN csv file.")
     parser.add_argument("--port", default=7687, type=int, help="Neo4j port.")
     parser.add_argument(
-        "--authentication", 
+        "--authentication",
         default=None,
         nargs=2,
-        help="Neo4j authentication as '<username> <password>'."
+        help="Neo4j authentication as '<username> <password>'.",
     )
     return parser.parse_args()
+
 
 def main() -> None:
     """Driver code."""
@@ -82,6 +84,7 @@ def main() -> None:
                         session.run(query, identifier=identifier, bioactivity=bioactivity)
 
     db.close()
+
 
 if __name__ == "__main__":
     main()

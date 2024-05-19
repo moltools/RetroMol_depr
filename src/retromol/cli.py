@@ -1,5 +1,7 @@
-#!/usr/bin/env python3
-"""This module contains the command line interface for the RetroMol package."""
+# -*- coding: utf-8 -*-
+
+"""Command linwe interface for :mod:`retromol`."""
+
 import argparse
 import json
 import logging
@@ -7,21 +9,14 @@ import multiprocessing as mp
 import os
 import typing as ty
 
-from rdkit import RDLogger
+from tqdm import tqdm
 
-from retromol.chem import Molecule, MolecularPattern, ReactionRule
-
+from retromol.api import Result, parse_mol, parse_molecular_patterns, parse_reaction_rules
+from retromol.chem import MolecularPattern, Molecule, ReactionRule
 from retromol.helpers import timeout
-from retromol.parsing import (
-    Result,
-    parse_reaction_rules,
-    parse_molecular_patterns,
-    parse_mol,
-)
+from retromol.version import get_version
 
-RDLogger.DisableLog("rdApp.*")
-
-logger = logging.getLogger(__name__)
+__all__ = ["main"]
 
 
 def cli() -> argparse.Namespace:
@@ -31,6 +26,12 @@ def cli() -> argparse.Namespace:
     :rtype: argparse.Namespace
     """
     parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"%(prog)s {get_version()}",
+        help="Show program's version number and exit.",
+    )
     parser.add_argument(
         "-h",
         "--help",
@@ -43,7 +44,9 @@ def cli() -> argparse.Namespace:
         "--reactions",
         type=str,
         required=False,
-        default=os.path.join(os.path.dirname(os.path.dirname(__file__)), "tests", "fixtures", "reactions.json"),
+        default=os.path.join(
+            os.path.dirname(os.path.dirname(__file__)), "tests", "fixtures", "reactions.json"
+        ),
         help="Path to JSON file containing reaction.",
     )
     parser.add_argument(
@@ -51,7 +54,9 @@ def cli() -> argparse.Namespace:
         "--monomers",
         type=str,
         required=False,
-        default=os.path.join(os.path.dirname(os.path.dirname(__file__)), "tests", "fixtures", "monomers.json"),
+        default=os.path.join(
+            os.path.dirname(os.path.dirname(__file__)), "tests", "fixtures", "monomers.json"
+        ),
         help="Path to JSON file containing monomer patterns.",
     )
     parser.add_argument(
@@ -124,17 +129,13 @@ def parse_mol_timed(record: Record) -> Result:
 
 
 def main() -> None:
-    """
-    Driver function.
-    """
-    # Disable RDKit logging.
-    RDLogger.DisableLog("rdApp.*")
-
+    """Driver function."""
     # Parse command line arguments.
     args = cli()
 
     # Set logger verbosity.
     logging.basicConfig(level=args.logger_level)
+    logger = logging.getLogger(__name__)
 
     # Parse reaction rules and molecular patterns.
     reactions_src = json.load(open(args.reactions, "r", encoding="utf-8"))
@@ -142,7 +143,7 @@ def main() -> None:
 
     monomers_src = json.load(open(args.monomers, "r", encoding="utf-8"))
     monomers = parse_molecular_patterns(monomers_src)
-    
+
     logger.debug(f"Parsed {len(reactions)} reactions and {len(monomers)} monomers.")
 
     # Parse molecule in single mode.
@@ -152,7 +153,7 @@ def main() -> None:
         result = parse_mol_timed(record)
         with open(args.output, "w", encoding="utf-8") as fo:
             fo.write(result.to_json())
-        logger.debug(f"Processed single molecule.")
+        logger.debug("Processed single molecule.")
         exit(0)
 
     # Parse a batch of molecules.
@@ -165,9 +166,9 @@ def main() -> None:
             sep = {"csv": ",", "tsv": "\t"}.get(args.input.split(".")[-1])
             if args.header:
                 next(fo)
-            for i, line in enumerate(fo):
+            for line in tqdm(fo, desc="Reading input file"):
                 name, smiles = line.strip().split(sep)
-                
+
                 # Check if output dir already contains JSON file for entry.
                 out_path = os.path.join(args.output, f"{name}.json")
 
@@ -178,29 +179,23 @@ def main() -> None:
                 mol = Molecule(name, smiles)
                 records.append((mol, reactions, monomers))
 
-                # Report on progress.
-                print(f"Added record {i+1} to queue...", end="\r")
-
         logger.info(f"Added {len(records)} records to queue.")
 
         # Parse molecules in parallel.
         nproc = min(args.nproc, mp.cpu_count())
-        print(f"\nUsing {nproc} processes...")
+        logger.info(f"\nUsing {nproc} processes...")
         with mp.Pool(processes=nproc) as pool:
-            for i, result in enumerate(pool.imap_unordered(parse_mol_timed, records)):
+            for result in tqdm(pool.imap_unordered(parse_mol_timed, records)):
                 out_path = os.path.join(args.output, f"{result.identifier}.json")
                 with open(out_path, "w", encoding="utf-8") as fo:
                     fo.write(result.to_json())
 
-                # Report on progress.
-                percentage_done = round((i + 1) / len(records) * 100, 2)
-                print(f"Processed {percentage_done}% of records...", end="\r")
         logger.info(f"Processed {len(records)} records.")
         exit(0)
 
     # Invalid mode.
     else:
-        print(f"Invalid mode: {args.mode}")
+        logger.error(f"Invalid mode: {args.mode}")
         exit(1)
 
 

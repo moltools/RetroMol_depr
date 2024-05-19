@@ -1,4 +1,5 @@
-#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 """This module contains the chemistry utilities for the RetroMol package."""
 
 import logging
@@ -39,46 +40,48 @@ def neutarlize_molecule(mol: Chem.Mol) -> Chem.Mol:
 
 
 class MolecularPattern:
-    """A class to represent a molecular pattern.
-
-    :param name: The name of the molecular pattern.
-    :type name: str
-    :param pattern: The SMARTS pattern.
-    :type pattern: str
-    """
+    """A class to represent a molecular pattern."""
 
     def __init__(self, name: str, pattern: str) -> None:
+        """Initialize the molecular pattern.
+
+        :param name: The name of the molecular pattern.
+        :type name: str
+        :param pattern: The SMARTS pattern.
+        :type pattern: str
+        """
         self.name = name
         self.pattern = pattern
         self.compiled = Chem.MolFromSmarts(pattern)
 
 
 class ReactionRule:
-    """A class to represent a reaction rule.
-
-    :param name: The name of the reaction rule.
-    :type name: str
-    :param pattern: The SMARTS reaction pattern.
-    :type pattern: str
-    :type properties: ty.Any
-    """
+    """A class to represent a reaction rule."""
 
     def __init__(self, name: str, pattern: str) -> None:
+        """Initialize the reaction rule.
+
+        :param name: The name of the reaction rule.
+        :type name: str
+        :param pattern: The SMARTS pattern.
+        :type pattern: str
+        """
         self.name = name
         self.patterns = pattern
         self.compiled = ReactionFromSmarts(pattern)
 
 
 class Molecule:
-    """A class to represent a molecule.
-
-    :param name: The name of the molecule.
-    :type name: str
-    :param smiles: The SMILES representation of the molecule.
-    :type smiles: str
-    """
+    """A class to represent a molecule."""
 
     def __init__(self, name: str, smiles: str) -> None:
+        """Initialize the molecule.
+
+        :param name: The name of the molecule.
+        :type name: str
+        :param smiles: The SMILES representation of the molecule.
+        :type smiles: str
+        """
         self.name = name
         self.smiles = smiles
         self.compiled = Chem.MolFromSmiles(smiles)
@@ -97,19 +100,21 @@ class Molecule:
         :return: The reaction tree.
         :rtype: ty.Tuple[Chem.Mol, Tree, ReactionTreeMapping]
         """
+        logger = logging.getLogger(__name__)
+
         radius = 2
         num_bits = 2048
         tree = defaultdict(lambda: defaultdict(set))
         mapping = dict()
 
-        N = self.compiled.GetNumAtoms()
+        num_atoms = self.compiled.GetNumAtoms()
         for atom in self.compiled.GetAtoms():
             atom.SetIsotope(atom.GetIdx() + 1)
 
         mols = [self.compiled]
         while mols:
             current = mols.pop()
-            current_encoding = mol_to_encoding(current, N, radius, num_bits)
+            current_encoding = mol_to_encoding(current, num_atoms, radius, num_bits)
             tree[current_encoding]
             mapping[current_encoding] = current
 
@@ -121,19 +126,20 @@ class Molecule:
                             try:
                                 Chem.SanitizeMol(result)
                             except Exception:
-                                continue
+                                msg = (
+                                    f"Failed to sanitize molecule {Chem.MolToSmiles(result)} "
+                                    f"after applying reaction {reaction.name}."
+                                )
+                                logger.error(msg)
+                                continue  # Quick fix for sanitization issues.
 
-                            result_encoding = mol_to_encoding(
-                                result, N, radius, num_bits
-                            )
+                            result_encoding = mol_to_encoding(result, num_atoms, radius, num_bits)
                             reaction_products.append(result_encoding)
 
                             if result_encoding not in tree:
                                 mols.append(result)
 
-                        tree[current_encoding][reaction.name].add(
-                            frozenset(reaction_products)
-                        )
+                        tree[current_encoding][reaction.name].add(frozenset(reaction_products))
 
         return self.compiled, tree, mapping
 
@@ -169,13 +175,13 @@ def tanimoto_similarity(fp1: np.array, fp2: np.array) -> float:
     return np.logical_and(fp1, fp2).sum() / np.logical_or(fp1, fp2).sum()
 
 
-def mol_to_encoding(mol: Chem.Mol, N: int, radius: int, num_bits: int) -> np.array:
+def mol_to_encoding(mol: Chem.Mol, num_atoms: int, radius: int, num_bits: int) -> np.array:
     """Convert a molecule to an encoding.
 
     :param mol: The molecule.
     :type mol: Chem.Mol
-    :param N: The number of atoms.
-    :type N: int
+    :param num_atoms: The number of atoms.
+    :type num_atoms: int
     :param radius: The radius of the fingerprint.
     :type radius: int
     :param num_bits: The number of bits.
@@ -184,14 +190,12 @@ def mol_to_encoding(mol: Chem.Mol, N: int, radius: int, num_bits: int) -> np.arr
     :rtype: np.array
     """
     amns = [atom.GetIsotope() for atom in mol.GetAtoms() if atom.GetIsotope() > 0]
-    amns = np.array([1 if x in amns else 0 for x in np.arange(N)])
+    amns = np.array([1 if x in amns else 0 for x in np.arange(num_atoms)])
     fp = mol_to_fingerprint(mol, radius, num_bits)
     return hash(np.hstack([fp, amns]).data.tobytes())
 
 
-def identify_mol(
-    mol: Chem.Mol, monomers: ty.List[MolecularPattern]
-) -> ty.Optional[str]:
+def identify_mol(mol: Chem.Mol, monomers: ty.List[MolecularPattern]) -> ty.Optional[str]:
     """Identify the molecule.
 
     :param mol: The molecule.
@@ -223,7 +227,7 @@ def greedy_max_set_cover(
     :rtype: ty.List[ty.Tuple[int, str]]
     """
     logger = logging.getLogger(__name__)
-    
+
     superset = set()
     for atom in mol.GetAtoms():
         if atom.GetIsotope() > 0:
@@ -232,9 +236,7 @@ def greedy_max_set_cover(
     subsets = list()
     for node, node_id in identified:
         submol = mapping[node]
-        amns = set(
-            [atom.GetIsotope() for atom in submol.GetAtoms() if atom.GetIsotope() > 0]
-        )
+        amns = set([atom.GetIsotope() for atom in submol.GetAtoms() if atom.GetIsotope() > 0])
         subsets.append((amns, (node, node_id)))
 
     sorted_subsets = sorted(subsets, key=lambda x: len(x[0]), reverse=True)
@@ -254,6 +256,8 @@ def greedy_max_set_cover(
             selected_subsets.append(info)
             covered_elements.update(uncovered_elements)
 
-    logger.debug(f"Performed greedy maximum set cover and selected {len(selected_subsets)} subsets.")
+    logger.debug(
+        f"Performed greedy maximum set cover and selected {len(selected_subsets)} subsets."
+    )
 
     return selected_subsets

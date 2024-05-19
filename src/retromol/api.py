@@ -1,6 +1,6 @@
-"""This module contains functions for parsing RetroMol Result objects into
-JSON and vice versa.
-"""
+# -*- coding: utf-8 -*-
+
+"""This module contains the API for RetroMol."""
 
 import json
 import logging
@@ -9,7 +9,7 @@ from dataclasses import dataclass
 
 from rdkit import Chem
 
-from retromol.chem import Molecule, MolecularPattern, ReactionRule
+from retromol.chem import MolecularPattern, Molecule, ReactionRule
 from retromol.graph import reaction_tree_to_digraph, reaction_tree_to_monomer_graph
 from retromol.sequencing import parse_modular_natural_product
 
@@ -58,7 +58,7 @@ class Result:
                 "reaction_tree": self.reaction_tree,
                 "applied_reactions": self.applied_reactions,
                 "monomer_graph": self.monomer_graph,
-                "sequences": self.sequences
+                "sequences": self.sequences,
             },
             indent=indent,
         )
@@ -90,7 +90,7 @@ class Result:
             reaction_tree=reaction_tree,
             applied_reactions=data["applied_reactions"],
             monomer_graph=monomer_graph,
-            sequences=data["sequences"]
+            sequences=data["sequences"],
         )
 
     def has_identified_monomers(self) -> bool:
@@ -109,6 +109,8 @@ def parse_reaction_rules(data: ty.Dict[str, str]) -> ty.List[ReactionRule]:
     :type data: str
     :return: The reaction rules.
     :rtype: ty.List[ReactionRule]
+    :raises Exception: If 'name' and/or 'pattern' is not provided for JSON
+        item.
     """
     reaction_rules = []
     for item in data:
@@ -116,9 +118,7 @@ def parse_reaction_rules(data: ty.Dict[str, str]) -> ty.List[ReactionRule]:
         pattern = item.get("pattern", None)
 
         if name is None or pattern is None:
-            raise Exception(
-                "Reaction item invalid: 'name' and/or 'pattern' is not " "provided."
-            )
+            raise Exception("Reaction item invalid: 'name' and/or 'pattern' is not " "provided.")
 
         reaction_rule = ReactionRule(name, pattern)
         reaction_rules.append(reaction_rule)
@@ -130,7 +130,7 @@ def parse_molecular_patterns(data: str) -> ty.List[MolecularPattern]:
     """Parse molecular patterns from JSON.
 
     :param data: The JSON source.
-    :type datta: str
+    :type data: str
     :return: The molecular patterns.
     :rtype: ty.List[MolecularPattern]
     :raises Exception: If 'name' and/or 'pattern' is not provided for JSON
@@ -142,9 +142,7 @@ def parse_molecular_patterns(data: str) -> ty.List[MolecularPattern]:
         pattern = item.get("pattern", None)
 
         if name is None or pattern is None:
-            raise Exception(
-                "Monomer item invalid: 'name' and/or 'pattern' is not " "provided."
-            )
+            raise Exception("Monomer item invalid: 'name' and/or 'pattern' is not " "provided.")
 
         molecular_pattern = MolecularPattern(name, pattern)
         molecular_patterns.append(molecular_pattern)
@@ -181,15 +179,9 @@ def parse_mol(
     logger.debug(f"Starting parsing for {name} ...")
     reactant, reaction_tree, reaction_mapping = mol.apply_rules(reactions)
     logger.debug(f"Applied reactions to {name}.")
-    
+
     applied_reactions = list(
-        set(
-            [
-                reaction
-                for _, reactions in reaction_tree.items()
-                for reaction in reactions
-            ]
-        )
+        set([reaction for _, reactions in reaction_tree.items() for reaction in reactions])
     )
     logger.debug(f"Applied reactions: {applied_reactions}")
 
@@ -216,7 +208,7 @@ def parse_mol(
         smiles = Chem.MolToSmiles(mol)
 
         new_reaction_tree[parent] = {"smiles": smiles, "children": children}
-    
+
     logger.debug(f"Reformatted reaction tree for {name}.")
 
     # Reformat monomer_graph and monomer_mapping into one graph.
@@ -246,7 +238,7 @@ def parse_mol(
 
     if logger.isEnabledFor(logging.DEBUG):
         logger.debug(f" Parsing was successful for {name}.")
-        
+
         for node, items in new_monomer_graph.items():
             if items["identity"] is not None:
                 logger.debug(f"Found identity for {node}: {items['identity']}")
@@ -258,7 +250,7 @@ def parse_mol(
     finally:
         if logger.isEnabledFor(logging.DEBUG):
             if not len(seqs):
-                logger.debug(f"No modular natural product sequence found.")
+                logger.debug("No modular natural product sequence found.")
             for seq in seqs:
                 logger.debug(f"Modular natural product sequence: {seq}")
 
@@ -270,7 +262,7 @@ def parse_mol(
         reaction_tree=new_reaction_tree,
         applied_reactions=applied_reactions,
         monomer_graph=new_monomer_graph,
-        sequences=seqs
+        sequences=seqs,
     )
 
-    return result 
+    return result

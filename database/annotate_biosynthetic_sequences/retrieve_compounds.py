@@ -10,9 +10,10 @@ from tqdm import tqdm
 
 RDLogger.DisableLog("rdApp.*")
 
+
 def cli() -> argparse.Namespace:
     """Parse command-line arguments.
-    
+
     :return: Command-line arguments.
     :rtype: argparse.Namespace
     """
@@ -20,12 +21,13 @@ def cli() -> argparse.Namespace:
     parser.add_argument("--out", type=str, required=True, help="Path to output file.")
     parser.add_argument("--port", default=7687, type=int, help="Neo4j port.")
     parser.add_argument(
-        "--authentication", 
+        "--authentication",
         default=None,
         nargs=2,
-        help="Neo4j authentication as '<username> <password>'."
+        help="Neo4j authentication as '<username> <password>'.",
     )
     return parser.parse_args()
+
 
 def main() -> None:
     """Driver function."""
@@ -56,6 +58,7 @@ def main() -> None:
                     continue
 
                 out_file.write(f"{npatlas_id}\t{smiles}\n")
+
 
 if __name__ == "__main__":
     main()

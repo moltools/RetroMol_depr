@@ -6,9 +6,10 @@ import argparse
 import json
 import typing as ty
 from dataclasses import dataclass
-from neo4j import Session, GraphDatabase
 
+from neo4j import GraphDatabase, Session
 from tqdm import tqdm
+
 
 def cli() -> argparse.Namespace:
     """Parse command-line arguments.
@@ -20,26 +21,29 @@ def cli() -> argparse.Namespace:
     parser.add_argument("--input", required=True, help="Path to NPAtlas JSON database file.")
     parser.add_argument("--port", default=7687, type=int, help="Neo4j port.")
     parser.add_argument(
-        "--authentication", 
+        "--authentication",
         default=None,
         nargs=2,
-        help="Neo4j authentication as '<username> <password>'."
+        help="Neo4j authentication as '<username> <password>'.",
     )
     return parser.parse_args()
+
 
 @dataclass
 class CompoundRecord:
     """Dataclass to store compound information."""
+
     identifier: str
     inchi: str
     inchikey: str
     biosynthetic_pathway: ty.List[str]
     ncbi_ids: ty.List[str]
 
+
 def add_compound(session: Session, record: CompoundRecord) -> None:
     """
     Add compound to the Neo4j database.
-    
+
     :param session: Neo4j session.
     :type session: Session
     :param record: Compound record.
@@ -57,7 +61,7 @@ def add_compound(session: Session, record: CompoundRecord) -> None:
         identifier=record.identifier,
         connectivity=connectivity,
         inchi=record.inchi,
-        inchikey=record.inchikey
+        inchikey=record.inchikey,
     )
 
     for pathway in record.biosynthetic_pathway:
@@ -92,6 +96,7 @@ def add_compound(session: Session, record: CompoundRecord) -> None:
         """
         session.run(query, identifier=record.identifier, ncbi_id=ncbi_id)
 
+
 def main() -> None:
     """Driver function."""
     args = cli()
@@ -109,7 +114,8 @@ def main() -> None:
                 ncbi_id = compound["origin_organism"]["taxon"]["ncbi_id"]
                 if ncbi_id is not None:
                     ncbi_ids = [ncbi_id]
-                else: ncbi_ids = []
+                else:
+                    ncbi_ids = []
 
             except Exception:
                 ncbi_ids = []
@@ -124,12 +130,13 @@ def main() -> None:
                 inchi=compound["inchi"],
                 inchikey=compound["inchikey"],
                 biosynthetic_pathway=pathways,
-                ncbi_ids=ncbi_ids
+                ncbi_ids=ncbi_ids,
             )
 
             add_compound(session, record)
 
     db.close()
+
 
 if __name__ == "__main__":
     main()

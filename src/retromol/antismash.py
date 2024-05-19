@@ -1,6 +1,10 @@
+# -*- coding: utf-8 -*-
+
+"""AntiSMASH module for the retrieval and parsing of AntiSMASH results."""
 
 import json
-import typing as ty 
+import logging
+
 import requests
 
 
@@ -18,14 +22,14 @@ def retrieve_antismash_result(job_id: str, ncbi_acc: str) -> str:
     url = f"https://antismash.secondarymetabolites.org/upload/{job_id}/{ncbi_acc}.json"
 
     response = requests.get(url)
-    
+
     if response.status_code == 200:
         return response.text
-    
+
     raise ValueError(f"Failed to retrieve AntiSMASH result: {response.status_code}")
 
 
-def parse_antismash_result(src: str) -> ty.List[ty.List[str]]:
+def parse_antismash_result(src: str) -> None:
     """Parse the AntiSMASH result JSON into primary sequences.
 
     :param src: The path to the JSON file.
@@ -33,25 +37,28 @@ def parse_antismash_result(src: str) -> ty.List[ty.List[str]]:
     :return: A list of lists of primary sequences.
     :rtype: List[List[str]]
     """
+    logger = logging.getLogger(__name__)
+
     data = json.loads(src)
 
     for record in data["records"]:
         domains = record["modules"]["antismash.detection.nrps_pks_domains"]
 
-        record_id = domains["record_id"]
+        # record_id = domains["record_id"]
 
         for _, domain in domains["cds_results"].items():
-            
-            # print(domain["modules"])
+
+            # logger.debug(domain["modules"])
 
             modules = domain["modules"]
-            print("\n>gene")
+            logger.debug("\n>gene")
             for module in modules:
                 components = module["components"]
-                print(">domain")
+                logger.debug(">domain")
                 for component in components:
-                    print(component["domain"]["hit_id"])
-
+                    logger.debug(component["domain"]["hit_id"])
 
     # TODO: Parse out modules, and amino acid sequences for A-domains
     # TODO: make predictions with PARAS for A-domains
+
+    return None
