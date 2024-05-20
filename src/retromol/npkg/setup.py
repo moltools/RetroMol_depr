@@ -59,6 +59,7 @@ def create_database(
     path_to_data: str,
     path_to_rxn: str,
     path_to_mon: str,
+    set_constraints: bool = True,
     only_retrosynthesis: bool = False,
     num_workers: int = 1
 ) -> None:
@@ -72,6 +73,8 @@ def create_database(
     :type path_to_rxn: str
     :param path_to_mon: The path to the JSON file containing the monomer patterns.
     :type path_to_mon: str
+    :param set_constraints: If True, set constraints on the database.
+    :type set_constraints: bool
     :param only_retrosynthesis: Only reparse retrosynthesis data.
     :type only_retrosynthesis: bool
     :param num_workers: The number of workers to use for parsing.
@@ -100,7 +103,8 @@ def create_database(
             raise TypeError(msg)
 
         # Set constraints.
-        set_constraints(conn)
+        if set_constraints:
+            set_constraints(conn)
 
         # Load data.
         parse_npatlas(conn, path_npatlas)
@@ -119,7 +123,8 @@ def create_database(
         purge_retrosynthesis_data(conn, only_calculated=True)
 
         # Set constraints.
-        set_constraints(conn)
+        if set_constraints:
+            set_constraints(conn)
 
         # Load data.
         parse_compounds(conn, path_to_rxn, path_to_mon, num_workers)

@@ -27,6 +27,7 @@ def add_subparsers(parser: argparse._SubParsersAction) -> None:
 
     subparser_create.add_argument("--prc", type=int, default=1, help="Number of processes to use.")  # noqa: E501
     subparser_create.add_argument("--dir", type=str, required=True, help="Path to dir containing data for database construction.")  # noqa: E501
+    subparser_create.add_argument("--set-constraints", action="store_true", help="Set constraints on the database.")  # noqa: E501
     subparser_create.add_argument("--only-retrosynthesis", action="store_true", help="Only reparse retrosynthesis data.")  # noqa: E501
 
     repository_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
@@ -54,6 +55,7 @@ def main(args: argparse.Namespace) -> None:
             path_to_data=args.dir, 
             path_to_rxn=args.rxn,
             path_to_mon=args.mon,
+            set_constraints=args.set_constraints,
             only_retrosynthesis=args.only_retrosynthesis,
             num_workers=args.prc
         )

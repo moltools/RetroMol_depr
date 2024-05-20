@@ -28,7 +28,7 @@ class BioactivityLabel(Node):
             raise TypeError(f"Expected a Neo4jConnection but received {type(conn)}")
         
         # Set constraints for BioactivityLabel nodes.
-        # conn.query("CREATE CONSTRAINT FOR (b:BioactivityLabel) REQUIRE (b.name, b.source) IS NODE KEY")
+        conn.query("CREATE CONSTRAINT FOR (b:BioactivityLabel) REQUIRE (b.name, b.source) IS NODE KEY")
         conn.query("CREATE CONSTRAINT FOR (b:BioactivityLabel) REQUIRE b.name IS NOT NULL")
         conn.query("CREATE CONSTRAINT FOR (b:BioactivityLabel) REQUIRE b.source IS NOT NULL")
 
@@ -85,7 +85,7 @@ class BiosyntheticGeneCluster(Node):
             raise TypeError(f"Expected a Neo4jConnection but received {type(conn)}")
         
         # Set constraints for BiosyntheticGeneCluster nodes.
-        # conn.query("CREATE CONSTRAINT FOR (b:BiosyntheticGeneCluster) REQUIRE (b.identifier, b.source) IS NODE KEY")
+        conn.query("CREATE CONSTRAINT FOR (b:BiosyntheticGeneCluster) REQUIRE (b.identifier, b.source) IS NODE KEY")
         conn.query("CREATE CONSTRAINT FOR (b:BiosyntheticGeneCluster) REQUIRE b.identifier IS NOT NULL;")
         conn.query("CREATE CONSTRAINT FOR (b:BiosyntheticGeneCluster) REQUIRE b.source IS NOT NULL")
 
@@ -142,7 +142,7 @@ class Compound(Node):
             raise TypeError(f"Expected a Neo4jConnection but received {type(conn)}")
         
         # Set constraints for Compound nodes.
-        # conn.query("CREATE CONSTRAINT FOR (c:Compound) REQUIRE (c.identifier, c.source) IS NODE KEY")
+        conn.query("CREATE CONSTRAINT FOR (c:Compound) REQUIRE (c.identifier, c.source) IS NODE KEY")
         conn.query("CREATE CONSTRAINT FOR (c:Compound) REQUIRE c.identifier IS NOT NULL")
         conn.query("CREATE CONSTRAINT FOR (c:Compound) REQUIRE c.source IS NOT NULL")
         conn.query("CREATE CONSTRAINT FOR (c:Compound) REQUIRE c.inchikey_connectivity IS NOT NULL")
@@ -227,7 +227,7 @@ class Motif(Node):
         # Set constraints for Motif nodes.
         conn.query("CREATE CONSTRAINT FOR (m:Motif) REQUIRE m.calculated IS NOT NULL")
         conn.query("CREATE CONSTRAINT FOR (m:Motif) REQUIRE m.calculated IS :: BOOLEAN")
-        # conn.query("CREATE CONSTRAINT FOR (m:Motif) REQUIRE m.motif_type IS IN ['polyketide', 'peptide']")
+        conn.query("CREATE CONSTRAINT FOR (m:Motif) REQUIRE m.motif_type IS IN ['polyketide', 'peptide']")
         # conn.query("CREATE CONSTRAINT FOR (m:Motif) REQUIRE m.polyketide_type IS NOT NULL IF m.motif_type = 'polyketide'")
         # conn.query("CREATE CONSTRAINT FOR (m:Motif) REQUIRE m.polyketide_decoration_type IS NOT NULL IF m.motif_type = 'polyketide'")
         # conn.query("CREATE CONSTRAINT FOR (m:Motif) REQUIRE m.polyketide_decoration_type IS :: INT IF m.motif_type = 'polyketide'")
@@ -350,7 +350,7 @@ class MotifCode(Node):
             raise TypeError(f"Expected a Neo4jConnection but received {type(conn)}")
         
         # Set constraints for MotifCode nodes.
-        # conn.query("CREATE CONSTRAINT FOR (m:MotifCode) REQUIRE (m.compound_identifier, m.compound_source, m.calculated) IS NODE KEY")  # noqa: E501
+        conn.query("CREATE CONSTRAINT FOR (m:MotifCode) REQUIRE (m.compound_identifier, m.compound_source, m.calculated) IS NODE KEY")  # noqa: E501
         conn.query("CREATE CONSTRAINT FOR (m:MotifCode) REQUIRE m.compound_identifier IS NOT NULL")  # noqa: E501
         conn.query("CREATE CONSTRAINT FOR (m:MotifCode) REQUIRE m.compound_source IS NOT NULL")  # noqa: E501
         conn.query("CREATE CONSTRAINT FOR (m:MotifCode) REQUIRE m.calculated IS NOT NULL")  # noqa: E501
@@ -421,7 +421,7 @@ class Organism(Node):
             raise TypeError(f"Expected a Neo4jConnection but received {type(conn)}")
         
         # Set constraints for Organism nodes.
-        # conn.query("CREATE CONSTRAINT FOR (o:Organism) REQUIRE o.ncbi_id IS NODE KEY")
+        conn.query("CREATE CONSTRAINT FOR (o:Organism) REQUIRE o.ncbi_id IS NODE KEY")
         conn.query("CREATE CONSTRAINT FOR (o:Organism) REQUIRE o.ncbi_id IS NOT NULL")
         conn.query("CREATE CONSTRAINT FOR (o:Organism) REQUIRE o.type IS NOT NULL")
         conn.query("CREATE CONSTRAINT FOR (o:Organism) REQUIRE o.genus IS NOT NULL")
@@ -498,7 +498,7 @@ class Pathway(Node):
             raise TypeError(f"Expected a Neo4jConnection but received {type(conn)}")
         
         # Set constraints for Pathway nodes.
-        # conn.query("CREATE CONSTRAINT FOR (p:Pathway) REQUIRE (p.name, p.source) IS NODE KEY")
+        conn.query("CREATE CONSTRAINT FOR (p:Pathway) REQUIRE (p.name, p.source) IS NODE KEY")
         conn.query("CREATE CONSTRAINT FOR (p:Pathway) REQUIRE p.name IS NOT NULL")
         conn.query("CREATE CONSTRAINT FOR (p:Pathway) REQUIRE p.source IS NOT NULL")
 
