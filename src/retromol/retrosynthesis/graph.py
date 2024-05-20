@@ -7,7 +7,7 @@ import typing as ty
 
 import networkx as nx
 
-from retromol.chem import (
+from retromol.retrosynthesis.chem import (
     MolecularPattern,
     Molecule,
     MonomerGraphMapping,

@@ -11,8 +11,8 @@ from neo4j import GraphDatabase
 from rdkit import RDLogger
 from tqdm import tqdm
 
-from retromol.api import Result
-from retromol.sequencing import parse_modular_natural_product
+from retromol.retrosynthesis.parsing import Result
+from retromol.retrosynthesis.sequencing import parse_modular_natural_product
 
 RDLogger.DisableLog("rdApp.*")
 

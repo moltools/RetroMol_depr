@@ -3,17 +3,10 @@
 """Command linwe interface for :mod:`retromol`."""
 
 import argparse
-import json
 import logging
-import multiprocessing as mp
-import os
-import typing as ty
 
-from tqdm import tqdm
-
-from retromol.api import Result, parse_mol, parse_molecular_patterns, parse_reaction_rules
-from retromol.chem import MolecularPattern, Molecule, ReactionRule
-from retromol.helpers import timeout
+import retromol.retrosynthesis.cli
+import retromol.npkg.cli
 from retromol.version import get_version
 
 __all__ = ["main"]
@@ -26,177 +19,41 @@ def cli() -> argparse.Namespace:
     :rtype: argparse.Namespace
     """
     parser = argparse.ArgumentParser(add_help=False)
-    parser.add_argument(
-        "--version",
-        action="version",
-        version=f"%(prog)s {get_version()}",
-        help="Show program's version number and exit.",
-    )
-    parser.add_argument(
-        "-h",
-        "--help",
-        action="help",
-        default=argparse.SUPPRESS,
-        help="Show this help message and exit.",
-    )
-    parser.add_argument(
-        "-r",
-        "--reactions",
-        type=str,
-        required=False,
-        default=os.path.join(
-            os.path.dirname(os.path.dirname(__file__)), "tests", "fixtures", "reactions.json"
-        ),
-        help="Path to JSON file containing reaction.",
-    )
-    parser.add_argument(
-        "-m",
-        "--monomers",
-        type=str,
-        required=False,
-        default=os.path.join(
-            os.path.dirname(os.path.dirname(__file__)), "tests", "fixtures", "monomers.json"
-        ),
-        help="Path to JSON file containing monomer patterns.",
-    )
-    parser.add_argument(
-        "-l",
-        "--logger-level",
-        type=str,
-        default="INFO",
-        help="Logger verbosity level.",
-    )
+    parser.add_argument("--version", action="version", version=f"%(prog)s {get_version()}", help="Show program's version number and exit.")  # noqa: E501
+    parser.add_argument("-h", "--help", action="help", default=argparse.SUPPRESS, help="Show this help message and exit.")  # noqa: E501
+    parser.add_argument("-l", "--logger-level", type=str, default="INFO", help="Logger verbosity level.")  # noqa: E501
+    subparser = parser.add_subparsers(dest="mode", required=True)
 
-    subparsers = parser.add_subparsers(dest="mode", required=True)
-    subparser_single_mode = subparsers.add_parser("single")
-    subparser_batch_mode = subparsers.add_parser("batch")
-
-    subparser_single_mode.add_argument(
-        "-i", "--input", type=str, required=True, help="Input SMILES (between quotes)."
-    )
-    subparser_single_mode.add_argument(
-        "-o", "--output", type=str, required=True, help="Path to new JSON output file."
-    )
-
-    subparser_batch_mode.add_argument(
-        "-i",
-        "--input",
-        type=str,
-        required=True,
-        help="Path to input CSV or TSV file as 'name,SMILES' per line.",
-    )
-    subparser_batch_mode.add_argument(
-        "-o",
-        "--output",
-        type=str,
-        required=True,
-        help="Path to new directory for JSON output files.",
-    )
-    subparser_batch_mode.add_argument(
-        "-n",
-        "--nproc",
-        type=int,
-        default=mp.cpu_count(),
-        help="Number of processes to use.",
-    )
-    subparser_batch_mode.add_argument(
-        "--header", action="store_true", help="Input file contains a header line."
-    )
+    retromol.retrosynthesis.cli.add_subparsers(subparser)
+    retromol.npkg.cli.add_subparsers(subparser)
 
     return parser.parse_args()
 
 
-Record = ty.Tuple[Molecule, ty.List[ReactionRule], ty.List[MolecularPattern]]
-
-
-@timeout(10)
-def parse_mol_timed(record: Record) -> Result:
-    """Parse a molecule with a timeout.
-
-    :param record: The record containing the molecule, reaction rules, and
-        molecular patterns.
-    :type record: Record
-    :return: The result of the parsing.
-    :rtype: Result
-    """
-    logger = logging.getLogger(__name__)
-    try:
-        mol, reactions, monomers = record
-        return parse_mol(mol, reactions, monomers)
-    except Exception as e:
-        logger.error(f"Failed to parse {mol.name} and raised {e.__class__.__name__}: {e}")
-        return Result(mol.name, mol.compiled, False)
-
-
 def main() -> None:
     """Driver function."""
-    # Parse command line arguments.
+    # Parse the command line arguments.
     args = cli()
 
-    # Set logger verbosity.
-    logging.basicConfig(level=args.logger_level)
-    logger = logging.getLogger(__name__)
+    # Set up the logger.
+    logging.basicConfig(
+        level=args.logger_level, 
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    )
 
-    # Parse reaction rules and molecular patterns.
-    reactions_src = json.load(open(args.reactions, "r", encoding="utf-8"))
-    reactions = parse_reaction_rules(reactions_src)
+    # Dispatch to the appropriate mode.
+    if args.mode in ["single", "batch"]:
+        retromol.retrosynthesis.cli.main(args)
 
-    monomers_src = json.load(open(args.monomers, "r", encoding="utf-8"))
-    monomers = parse_molecular_patterns(monomers_src)
+    elif args.mode in ["npkg_create", "npkg_purge"]:
+        retromol.npkg.cli.main(args)
 
-    logger.debug(f"Parsed {len(reactions)} reactions and {len(monomers)} monomers.")
-
-    # Parse molecule in single mode.
-    if args.mode == "single":
-        mol = Molecule("input", args.input)
-        record = (mol, reactions, monomers)
-        result = parse_mol_timed(record)
-        with open(args.output, "w", encoding="utf-8") as fo:
-            fo.write(result.to_json())
-        logger.debug("Processed single molecule.")
-        exit(0)
-
-    # Parse a batch of molecules.
-    elif args.mode == "batch":
-
-        # Parse input file.
-        records = []
-        with open(args.input, "r", encoding="utf-8") as fo:
-            # Check file extension.
-            sep = {"csv": ",", "tsv": "\t"}.get(args.input.split(".")[-1])
-            if args.header:
-                next(fo)
-            for line in tqdm(fo, desc="Reading input file"):
-                name, smiles = line.strip().split(sep)
-
-                # Check if output dir already contains JSON file for entry.
-                out_path = os.path.join(args.output, f"{name}.json")
-
-                # Skip if JSON file already exists.
-                if os.path.exists(out_path):
-                    continue
-
-                mol = Molecule(name, smiles)
-                records.append((mol, reactions, monomers))
-
-        logger.info(f"Added {len(records)} records to queue.")
-
-        # Parse molecules in parallel.
-        nproc = min(args.nproc, mp.cpu_count())
-        logger.info(f"\nUsing {nproc} processes...")
-        with mp.Pool(processes=nproc) as pool:
-            for result in tqdm(pool.imap_unordered(parse_mol_timed, records)):
-                out_path = os.path.join(args.output, f"{result.identifier}.json")
-                with open(out_path, "w", encoding="utf-8") as fo:
-                    fo.write(result.to_json())
-
-        logger.info(f"Processed {len(records)} records.")
-        exit(0)
-
-    # Invalid mode.
     else:
-        logger.error(f"Invalid mode: {args.mode}")
-        exit(1)
+        msg = f"Unknown mode: {args.mode}"
+        logging.error(msg)
+        raise ValueError(msg)
+    
+    exit(0)
 
 
 if __name__ == "__main__":

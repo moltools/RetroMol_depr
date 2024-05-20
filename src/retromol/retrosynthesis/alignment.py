@@ -2,12 +2,9 @@
 
 """This module contains functions for sequence alignment."""
 
-import re
 import typing as ty
 
-from versalign.motif import Motif 
-from versalign.sequence import Sequence
-from versalign.pairwise import PairwiseAlignment, align_pairwise
+from versalign.motif import Motif
 
 
 class PolyketideMotif(Motif):

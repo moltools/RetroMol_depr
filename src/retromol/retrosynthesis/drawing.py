@@ -10,7 +10,7 @@ import networkx as nx
 from rdkit import Chem
 from rdkit.Chem import AllChem, Draw
 
-from retromol.api import Result
+from retromol.retrosynthesis.result import Result
 
 
 def get_2d_coordinatates(mol: Chem.Mol) -> ty.Dict[int, ty.Tuple[float, float]]:
