@@ -3,44 +3,14 @@
 """"""
 
 from abc import ABC, abstractmethod
+import re
 import typing as ty
 
 from retromol.npkg.connection import Neo4jConnection
 
 
 class Node(ABC):
-    """The abstract node class."""
-
-    @classmethod
-    @abstractmethod
-    def set_constraints(cls, conn: Neo4jConnection) -> None:
-        """Set constraints on the Neo4j database.
-        
-        :param conn: The Neo4j connection.
-        :type conn: Neo4jConnection
-        """
-        pass
-
-    
-    @classmethod
-    @abstractmethod
-    def drop_constraints(cls, conn: Neo4jConnection) -> None:
-        """Drop constraints on the Neo4j database.
-
-        :param conn: The Neo4j connection.
-        :type conn: Neo4jConnection
-        """
-        pass
-
-    @classmethod
-    @abstractmethod
-    def create(cls, conn: Neo4jConnection) -> None:
-        """Create the node.
-
-        :param conn: The Neo4j connection.
-        :type conn: Neo4jConnection
-        """
-        pass
+    """The Node abstract base class."""
 
 
 class BioactivityLabel(Node):
@@ -58,9 +28,9 @@ class BioactivityLabel(Node):
             raise TypeError(f"Expected a Neo4jConnection but received {type(conn)}")
         
         # Set constraints for BioactivityLabel nodes.
-        conn.query("CREATE CONSTRAINT FOR (b:BioactivityLabel) REQUIRE (b.name, b.source) IS NODE KEY;")
-        conn.query("CREATE CONSTRAINT FOR (b:BioactivityLabel) REQUIRE b.name IS NOT NULL;")
-        conn.query("CREATE CONSTRAINT FOR (b:BioactivityLabel) REQUIRE b.source IS NOT NULL;")
+        conn.query("CREATE CONSTRAINT FOR (b:BioactivityLabel) REQUIRE (b.name, b.source) IS NODE KEY")
+        conn.query("CREATE CONSTRAINT FOR (b:BioactivityLabel) REQUIRE b.name IS NOT NULL")
+        conn.query("CREATE CONSTRAINT FOR (b:BioactivityLabel) REQUIRE b.source IS NOT NULL")
 
     @classmethod
     def create(
@@ -115,9 +85,9 @@ class BiosyntheticGeneCluster(Node):
             raise TypeError(f"Expected a Neo4jConnection but received {type(conn)}")
         
         # Set constraints for BiosyntheticGeneCluster nodes.
-        conn.query("CREATE CONSTRAINT FOR (b:BiosyntheticGeneCluster) REQUIRE (b.identifier, b.source) IS NODE KEY;")
+        conn.query("CREATE CONSTRAINT FOR (b:BiosyntheticGeneCluster) REQUIRE (b.identifier, b.source) IS NODE KEY")
         conn.query("CREATE CONSTRAINT FOR (b:BiosyntheticGeneCluster) REQUIRE b.identifier IS NOT NULL;")
-        conn.query("CREATE CONSTRAINT FOR (b:BiosyntheticGeneCluster) REQUIRE b.source IS NOT NULL;")
+        conn.query("CREATE CONSTRAINT FOR (b:BiosyntheticGeneCluster) REQUIRE b.source IS NOT NULL")
 
     @classmethod
     def create(
@@ -172,12 +142,12 @@ class Compound(Node):
             raise TypeError(f"Expected a Neo4jConnection but received {type(conn)}")
         
         # Set constraints for Compound nodes.
-        conn.query("CREATE CONSTRAINT FOR (c:Compound) REQUIRE (c.identifier, c.source) IS NODE KEY;")
-        conn.query("CREATE CONSTRAINT FOR (c:Compound) REQUIRE c.identifier IS NOT NULL;")
-        conn.query("CREATE CONSTRAINT FOR (c:Compound) REQUIRE c.source IS NOT NULL;")
-        conn.query("CREATE CONSTRAINT FOR (c:Compound) REQUIRE c.inchikey_connectivity IS NOT NULL;")
-        conn.query("CREATE CONSTRAINT FOR (c:Compound) REQUIRE c.inchikey IS NOT NULL;")
-        conn.query("CREATE CONSTRAINT FOR (c:Compound) REQUIRE c.inchi IS NOT NULL;")
+        conn.query("CREATE CONSTRAINT FOR (c:Compound) REQUIRE (c.identifier, c.source) IS NODE KEY")
+        conn.query("CREATE CONSTRAINT FOR (c:Compound) REQUIRE c.identifier IS NOT NULL")
+        conn.query("CREATE CONSTRAINT FOR (c:Compound) REQUIRE c.source IS NOT NULL")
+        conn.query("CREATE CONSTRAINT FOR (c:Compound) REQUIRE c.inchikey_connectivity IS NOT NULL")
+        conn.query("CREATE CONSTRAINT FOR (c:Compound) REQUIRE c.inchikey IS NOT NULL")
+        conn.query("CREATE CONSTRAINT FOR (c:Compound) REQUIRE c.inchi IS NOT NULL")
 
     @classmethod
     def create(
@@ -255,27 +225,25 @@ class Motif(Node):
             raise TypeError(f"Expected a Neo4jConnection but received {type(conn)}")
         
         # Set constraints for Motif nodes.
-        conn.query("CREATE CONSTRAINT FOR (m:Motif) REQUIRE m.calculated IS NOT NULL;")
-        conn.query("CREATE CONSTRAINT FOR (m:Motif) REQUIRE m.calculated IS BOOLEAN;")
-        conn.query("CREATE CONSTRAINT FOR (m:Motif) REQUIRE m.motif_type IN ['polyketide', 'peptide'];")
-        conn.query("CREATE CONSTRAINT FOR (m:Motif) REQUIRE m.polyketide_type IS NOT NULL IF m.motif_type = 'polyketide';")
-        conn.query("CREATE CONSTRAINT FOR (m:Motif) REQUIRE m.polyketide_decoration_type IS NOT NULL IF m.motif_type = 'polyketide';")
-        conn.query("CREATE CONSTRAINT FOR (m:Motif) REQUIRE m.peptide_source IS NOT NULL IF m.motif_type = 'peptide';")
-        conn.query("CREATE CONSTRAINT FOR (m:Motif) REQUIRE m.peptide_cid IS NOT NULL IF m.motif_type = 'peptide';")
+        conn.query("CREATE CONSTRAINT FOR (m:Motif) REQUIRE m.calculated IS NOT NULL")
+        conn.query("CREATE CONSTRAINT FOR (m:Motif) REQUIRE m.calculated IS :: BOOLEAN")
+        # conn.query("CREATE CONSTRAINT FOR (m:Motif) REQUIRE m.motif_type IS IN ['polyketide', 'peptide']")
+        # conn.query("CREATE CONSTRAINT FOR (m:Motif) REQUIRE m.polyketide_type IS NOT NULL IF m.motif_type = 'polyketide'")
+        # conn.query("CREATE CONSTRAINT FOR (m:Motif) REQUIRE m.polyketide_decoration_type IS NOT NULL IF m.motif_type = 'polyketide'")
+        # conn.query("CREATE CONSTRAINT FOR (m:Motif) REQUIRE m.polyketide_decoration_type IS :: INT IF m.motif_type = 'polyketide'")
+        # conn.query("CREATE CONSTRAINT FOR (m:Motif) REQUIRE m.peptide_source IS NOT NULL IF m.motif_type = 'peptide'")
+        # conn.query("CREATE CONSTRAINT FOR (m:Motif) REQUIRE m.peptide_cid IS NOT NULL IF m.motif_type = 'peptide'")
 
     @classmethod
     def create_sub_query(
         cls, 
-        conn: Neo4jConnection, 
         index: int,
         motif_type: str,
         calculated: bool,
         properties: ty.Dict[str, ty.Any],
-    ) -> None:
+    ) -> ty.Tuple[str, ty.Dict[str, ty.Any]]:
         """Create the Motif node.
 
-        :param conn: The Neo4j connection.
-        :type conn: Neo4jConnection
         :param index: The index of the motif in the motif code.
         :type index: int
         :param motif_type: The type of the Motif node.
@@ -284,6 +252,8 @@ class Motif(Node):
         :type calculated: bool
         :param properties: The properties of the Motif node.
         :type properties: ty.Dict[str, ty.Any]
+        :return: The Motif node sub-query and parameters.
+        :rtype: ty.Tuple[str, ty.Dict[str, ty.Any]]
         :raises TypeError: If the connection is not a Neo4jConnection.
         :raises ValueError: If any required fields are missing.
         :raises AssertionError: If the motif_type is not one of 'polyketide' or 'peptide'.
@@ -292,62 +262,77 @@ class Motif(Node):
         :raises ValueError: If the motif_type is 'peptide' and the properties are missing
             'peptide_source' or 'peptide_cid'.
         """
-        if not isinstance(conn, Neo4jConnection):
-            raise TypeError(f"Expected a Neo4jConnection but received {type(conn)}")
-        
-        # Check if any required fields are missing.
-        if any([not motif_type, not properties]) or calculated is None:
-            raise ValueError("Missing required fields.")
-
         # If the motif_type is 'polyketide' properties must contain 'polyketide_type' and 'polyketide_decoration_type'.
         if motif_type == "polyketide":
-            if not all([properties.get("polyketide_type"), properties.get("polyketide_decoration_type")]):
-                raise ValueError("Missing required fields for polyketide motif.")
-            
             # Create the polyketide Motif node.
-            conn.query(
-                (
-                    f"(u{index + 1}:Motif {{"
-                    "motif_type: $motif_type, "
-                    "calculated: $calculated, "
-                    "polyketide_type: $polyketide_type, "
-                    "polyketide_decoration_type: $polyketide_decoration_type "
-                    f"}})"
-                ),
-                {
-                    "motif_type": motif_type,
-                    "calculated": calculated,
-                    "polyketide_type": properties.get("polyketide_type", None),
-                    "polyketide_decoration_type": properties.get("polyketide_decoration_type", None),
-                },
+            return (
+                f"(u{index + 1}:Motif {{"
+                f"motif_type: '{motif_type}', "
+                f"calculated: {calculated}, "
+                f"polyketide_type: '{properties.get('polyketide_type', None)}', "
+                f"polyketide_decoration_type: {properties.get('polyketide_decoration_type', None)}"
+                f"}})"
             )
-            
+
         # If the motif_type is 'peptide' properties must contain 'peptide_source' and 'peptide_cid'.
         elif motif_type == "peptide":
-            if not all([properties.get("peptide_source"), properties.get("peptide_cid")]):
-                raise ValueError("Missing required fields for peptide motif.")
-            
             # Create the peptide Motif node.
-            conn.query(
-                (
-                    f"(u{index + 1}:Motif {{"
-                    "motif_type: $motif_type, "
-                    "calculated: $calculated, "
-                    "peptide_source: $peptide_source, "
-                    "peptide_cid: $peptide_cid "
-                    f"}})"
-                ),
-                {
-                    "motif_type": motif_type,
-                    "calculated": calculated,
-                    "peptide_source": properties.get("peptide_source", None),
-                    "peptide_cid": properties.get("peptide_cid", None),
-                },
+            return (
+                f"(u{index + 1}:Motif {{"
+                f"motif_type: '{motif_type}', "
+                f"calculated: {calculated}, "
+                f"peptide_source: '{properties.get('peptide_source', None)}', "
+                f"peptide_cid: '{properties.get('peptide_cid', None)}'"
+                f"}})"
             )
-            
         else:
             raise ValueError(f"Unknown motif type: {motif_type}")
+        
+    @classmethod
+    def from_string(cls, index: int, motif: str) -> str:
+        """Parse motif string (e.g., 'polyketide|A1' or 'peptide|pubchem|1234').
+
+        :param index: The index of the motif in the motif code.
+        :type index: int
+        :param motif: The motif string.
+        :type motif: str
+        :return: The Motif node sub-query and parameters.
+        :rtype: str
+        """
+        if match := re.match(r"polyketide\|([A-D])(\d{1,2})", motif):
+            motif_type = "polyketide"
+            calculated = True
+            polyketide_type = match.group(1)
+            polyketide_decoration_type = int(match.group(2))
             
+            return Motif.create_sub_query(
+                index=index,
+                motif_type=motif_type,
+                calculated=calculated,
+                properties={
+                    "polyketide_type": polyketide_type,
+                    "polyketide_decoration_type": polyketide_decoration_type,
+                }
+            )
+        
+        elif match := re.match(r"peptide\|(\w+)\|(.+)", motif):
+            motif_type = "peptide"
+            calculated = True
+            peptide_source = match.group(1)
+            peptide_cid = match.group(2)
+
+            return Motif.create_sub_query(
+                index=index,
+                motif_type=motif_type,
+                calculated=calculated,
+                properties={
+                    "peptide_source": peptide_source,
+                    "peptide_cid": peptide_cid,
+                }
+            )
+        
+        else:
+            raise ValueError(f"Unknown motif: {motif}") 
 
 
 class MotifCode(Node):
@@ -366,67 +351,56 @@ class MotifCode(Node):
         
         # Set constraints for MotifCode nodes.
         conn.query("CREATE CONSTRAINT FOR (m:MotifCode) REQUIRE (m.compound_identifier, m.compound_source, m.calculated) IS NODE KEY")  # noqa: E501
-        conn.query("CREATE CONSTRAINT FOR (m:MotifCode) REQUIRE m.compound_identifier IS NOT NULL")
-        conn.query("CREATE CONSTRAINT FOR (m:MotifCode) REQUIRE m.compound_source IS NOT NULL")
-        conn.query("CREATE CONSTRAINT FOR (m:MotifCode) REQUIRE m.calculated IS NOT NULL")
-        conn.query("CREATE CONSTRAINT FOR (m:MotifCode) REQUIRE m.calculated IS BOOLEAN")
-        conn.query("CREATE CONSTRAINT FOR (m:MotifCode) REQUIRE (m.source IS NOT NULL) IF m.calculated")
+        conn.query("CREATE CONSTRAINT FOR (m:MotifCode) REQUIRE m.compound_identifier IS NOT NULL")  # noqa: E501
+        conn.query("CREATE CONSTRAINT FOR (m:MotifCode) REQUIRE m.compound_source IS NOT NULL")  # noqa: E501
+        conn.query("CREATE CONSTRAINT FOR (m:MotifCode) REQUIRE m.calculated IS NOT NULL")  # noqa: E501
+        conn.query("CREATE CONSTRAINT FOR (m:MotifCode) REQUIRE m.calculated IS :: BOOLEAN")  # noqa: E501
+        # conn.query("CREATE CONSTRAINT FOR (m:MotifCode) REQUIRE (m.src IS NOT NULL) IF m.calculated")  # noqa: E501
+        # conn.query("CREATE CONSTRAINT FOR (m:MotifCode) REQUIRE (m.src IS NULL) IF NOT m.calculated")  # noqa: E501
+        # conn.query("CREATE CONSTRAINT FOR (m:MotifCode) REQUIRE (m.applied_reactions IS NOT NULL) IF m.calculated")  # noqa: E501
+        # conn.query("CREATE CONSTRAINT FOR (m:MotifCode) REQUIRE (m.applied_reactions IS NULL) IF NOT m.calculated")  # noqa: E501
+        # conn.query("CREATE CONSTRAINT FOR (m:MotifCode) REQUIRE all(x IN m.applied_reactions WHERE x IS NOT NULL) IF m.calculated")  # noqa: E501
 
     @classmethod
-    def create(
+    def create_sub_query(
         cls, 
-        conn: Neo4jConnection, 
         compound_identifier: str,
         compound_source: str,
         calculated: bool,
+        applied_reactions: ty.Optional[ty.List[str]] = None,
         src: ty.Optional[str] = None,
-    ) -> None:
+    ) -> ty.Tuple[str, ty.Dict[str, ty.Any]]:
         """Create the MotifCode node.
 
-        :param conn: The Neo4j connection.
-        :type conn: Neo4jConnection
         :param compound_identifier: The identifier of the MotifCode node.
         :type compound_identifier: str
         :param compound_source: The source of the MotifCode node.
         :type compound_source: str
         :param calculated: Whether the MotifCode node is calculated.
         :type calculated: bool
+        :param applied_reactions: The applied reactions of the MotifCode node.
+        :type applied_reactions: ty.Optional[ty.List[str]]
         :param src: The source of the MotifCode node.
         :type src: str
+        :return: The MotifCode node sub-query and parameters.
+        :rtype: ty.Tuple[str, ty.Dict[str, ty.Any]]
         :raises TypeError: If the connection is not a Neo4jConnection.
         """
-        if not isinstance(conn, Neo4jConnection):
-            raise TypeError(f"Expected a Neo4jConnection but received {type(conn)}")
-        
-        # Check if any required fields are missing.
-        if any([not compound_identifier, not compound_source]) or calculated is None:
-            return
-        
-        # src can only be None if calculated is False.
-        if calculated and src is None:
-            return
-        
-        # Check if the MotifCode node already exists.
-        if conn.query(
-            "MATCH (m:MotifCode {compound_identifier: $compound_identifier, compound_source: $compound_source, calculated: $calculated}) RETURN m",
-            {"compound_identifier": compound_identifier, "compound_source": compound_source, "calculated": calculated}
-        ):
-            return
-        
-        # Create the MotifCode node if it does not exist.
-        conn.query(
+        return (
             (
-                "MERGE (m:MotifCode {"
+                "(m:MotifCode {"
                 "compound_identifier: $compound_identifier, "
                 "compound_source: $compound_source, "
                 "calculated: $calculated, "
-                "src: $src "
+                "applied_reactions: $applied_reactions, "
+                "src: $src"
                 "})"
             ),
             {
                 "compound_identifier": compound_identifier,
                 "compound_source": compound_source,
                 "calculated": calculated,
+                "applied_reactions": applied_reactions,
                 "src": src,
             },
         )
@@ -447,11 +421,11 @@ class Organism(Node):
             raise TypeError(f"Expected a Neo4jConnection but received {type(conn)}")
         
         # Set constraints for Organism nodes.
-        conn.query("CREATE CONSTRAINT FOR (o:Organism) REQUIRE o.ncbi_id IS NODE KEY;")
-        conn.query("CREATE CONSTRAINT FOR (o:Organism) REQUIRE o.ncbi_id IS NOT NULL;")
-        conn.query("CREATE CONSTRAINT FOR (o:Organism) REQUIRE o.type IS NOT NULL;")
-        conn.query("CREATE CONSTRAINT FOR (o:Organism) REQUIRE o.genus IS NOT NULL;")
-        conn.query("CREATE CONSTRAINT FOR (o:Organism) REQUIRE o.species IS NOT NULL;")
+        conn.query("CREATE CONSTRAINT FOR (o:Organism) REQUIRE o.ncbi_id IS NODE KEY")
+        conn.query("CREATE CONSTRAINT FOR (o:Organism) REQUIRE o.ncbi_id IS NOT NULL")
+        conn.query("CREATE CONSTRAINT FOR (o:Organism) REQUIRE o.type IS NOT NULL")
+        conn.query("CREATE CONSTRAINT FOR (o:Organism) REQUIRE o.genus IS NOT NULL")
+        conn.query("CREATE CONSTRAINT FOR (o:Organism) REQUIRE o.species IS NOT NULL")
 
     @classmethod
     def create(
@@ -524,9 +498,9 @@ class Pathway(Node):
             raise TypeError(f"Expected a Neo4jConnection but received {type(conn)}")
         
         # Set constraints for Pathway nodes.
-        conn.query("CREATE CONSTRAINT FOR (p:Pathway) REQUIRE (p.name, p.source) IS NODE KEY;")
-        conn.query("CREATE CONSTRAINT FOR (p:Pathway) REQUIRE p.name IS NOT NULL;")
-        conn.query("CREATE CONSTRAINT FOR (p:Pathway) REQUIRE p.source IS NOT NULL;")
+        conn.query("CREATE CONSTRAINT FOR (p:Pathway) REQUIRE (p.name, p.source) IS NODE KEY")
+        conn.query("CREATE CONSTRAINT FOR (p:Pathway) REQUIRE p.name IS NOT NULL")
+        conn.query("CREATE CONSTRAINT FOR (p:Pathway) REQUIRE p.source IS NOT NULL")
 
     @classmethod
     def create(

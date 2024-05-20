@@ -35,6 +35,7 @@ def set_constraints(conn: Neo4jConnection) -> None:
     :raises TypeError: If the connection is not a Neo4jConnection.
     """
     logger = logging.getLogger(__name__)
+    logger.info("Setting constraints...")
 
     if not isinstance(conn, Neo4jConnection):
         msg = f"Expected a Neo4jConnection but received {type(conn)}"
@@ -50,13 +51,16 @@ def set_constraints(conn: Neo4jConnection) -> None:
     Organism.set_constraints(conn)
     Pathway.set_constraints(conn)
 
+    logger.info("Constraints set.")
+
 
 def create_database(
     conn: Neo4jConnection, 
     path_to_data: str,
     path_to_rxn: str,
     path_to_mon: str,
-    only_retrosynthesis: bool = False
+    only_retrosynthesis: bool = False,
+    num_workers: int = 1
 ) -> None:
     """Create the NPKG database.
     
@@ -70,6 +74,8 @@ def create_database(
     :type path_to_mon: str
     :param only_retrosynthesis: Only reparse retrosynthesis data.
     :type only_retrosynthesis: bool
+    :param num_workers: The number of workers to use for parsing.
+    :type num_workers: int
     :raises TypeError: If the connection is not a Neo4jConnection. 
     """
     logger = logging.getLogger(__name__)
@@ -102,7 +108,7 @@ def create_database(
         parse_mibig(conn, path_mibig)
 
         # Parse compounds.
-        parse_compounds(conn, path_to_rxn, path_to_mon)
+        parse_compounds(conn, path_to_rxn, path_to_mon, num_workers)
 
         logger.info("NPKG database created.")
     
@@ -112,7 +118,10 @@ def create_database(
         # Purge retrosynthesis data.
         purge_retrosynthesis_data(conn, only_calculated=True)
 
+        # Set constraints.
+        set_constraints(conn)
+
         # Load data.
-        parse_compounds(conn, path_to_rxn, path_to_mon)
+        parse_compounds(conn, path_to_rxn, path_to_mon, num_workers)
 
         logger.info("Retrosynthesis data re-parsed.")

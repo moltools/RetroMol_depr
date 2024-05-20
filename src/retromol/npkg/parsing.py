@@ -4,7 +4,9 @@
 
 import json
 import logging
+import multiprocessing as mp
 import os
+import typing as ty
 from collections import defaultdict
 
 from rdkit import Chem, RDLogger
@@ -21,23 +23,138 @@ from retromol.npkg.nodes import (
     Organism, 
     Pathway
 )
-from retromol.retrosynthesis.chem import Molecule
+from retromol.retrosynthesis.chem import Molecule, MolecularPattern, ReactionRule
+from retromol.retrosynthesis.helpers import timeout
 from retromol.retrosynthesis.parsing import (
-    parse_molecular_patterns,
-    parse_reaction_rules,
+    parse_molecular_patterns, 
+    parse_reaction_rules, 
     parse_mol
 )
+from retromol.retrosynthesis.result import Result
+
+
+@timeout(10)
+def parse_mol_timed(
+    record: ty.Tuple[
+        str,
+        str,
+        Molecule,
+        ty.List[ReactionRule],
+        ty.List[MolecularPattern]
+    ]
+) -> ty.Tuple[str, str, Result]:
+    """Parse a molecule with a timeout.
+
+    :param record: The record containing the compound_identifier, compound_source,
+        molecule, reaction rules, and molecular patterns.
+    :type record: Record
+    :return: The result of the parsing.
+    :rtype: Result
+    """
+    logger = logging.getLogger(__name__)
+
+    RDLogger.DisableLog("rdApp.*")
+
+    try:
+        compound_identifier, compound_source, mol, reactions, monomers = record
+        return compound_identifier, compound_source, parse_mol(mol, reactions, monomers)
+    
+    except Exception as e:
+        msg = f"Failed to parse {mol.name} and raised {e.__class__.__name__}: {e}"
+        logger.error(msg)
+        return compound_identifier, compound_source, Result(mol.name, mol.compiled, False)
+
+
+def parse_batch(conn: Neo4jConnection, num_workers: int, jobs: list) -> None:
+    """Parse a batch of compounds with RetroMol.
+    
+    :param conn: The Neo4j connection.
+    :type conn: Neo4jConnection
+    :param num_workers: The number of workers to use.
+    :type num_workers: int
+    :param jobs: The list of jobs to parse.
+    :type jobs: list
+    """
+    logger = logging.getLogger(__name__)
+        
+    # Determine number of workers.
+    num_workers = min(num_workers, mp.cpu_count())
+
+    # Create pool of workers.
+    with mp.Pool(num_workers) as pool:
+        for compound_identifier, compound_source, result in tqdm(
+            pool.imap_unordered(parse_mol_timed, jobs), 
+            total=len(jobs), 
+            desc="Parsing batch of compounds with RetroMol", 
+            leave=False
+        ):
+            # Skip if result is not successful.
+            if result.success is False:
+                continue 
+
+            # Retrieve information from result.
+            applied_reactions = result.applied_reactions
+            sequences = result.sequences
+
+            # Add biosynthetic fingerprint to database.
+            for sequence in sequences:
+                motif_code = sequence["motif_code"]
+
+                if len(motif_code) < 3:
+                    logger.warning(f"Skipping motif code with less than 3 motifs: {motif_code}")
+                    continue
+
+                # Create sub query for motif code.
+                mc_query, mc_query_props = MotifCode.create_sub_query(
+                    compound_identifier=compound_identifier,
+                    compound_source=compound_source,
+                    calculated=True,
+                    applied_reactions=applied_reactions,
+                    src=json.dumps(motif_code)
+                )
+
+                # Create full query.
+                query_begin = f"CREATE {mc_query}-[:START]->"
+                query_end = "-[:NEXT]->".join([
+                    Motif.from_string(motif_index, motif) 
+                    for motif_index, motif 
+                    in enumerate(motif_code)
+                ])
+                query_full = query_begin + query_end
+
+                # Execute query.
+                conn.query(query_full, mc_query_props)
+
+                # Connect MotifCode to Compound node.
+                conn.query(
+                    (
+                        "MATCH (c:Compound {identifier: $compound_identifier, source: $compound_source}) "
+                        "MATCH (mc:MotifCode {compound_identifier: $compound_identifier, compound_source: $compound_source}) "
+                        "MERGE (c)-[:HAS_MOTIF_CODE]->(mc)"
+                    ),
+                    {
+                        "compound_identifier": compound_identifier,
+                        "compound_source": compound_source,
+                    },
+                )
 
 
 def parse_compounds(
     conn: Neo4jConnection,
     path_to_rxn: str,
     path_to_mon: str,
+    num_workers: int = 1
 ) -> None:
     """Parse compounds from the Neo4j database with RetroMol.
     
     :param conn: The Neo4j connection.
     :type conn: Neo4jConnection
+    :param path_to_rxn: The path to the reaction rules in json format.
+    :type path_to_rxn: str
+    :param path_to_mon: The path to the molecular patterns in json format.
+    :type path_to_mon: str
+    :param num_workers: The number of workers to use.
+    :type num_workers: int
     """
     logger = logging.getLogger(__name__)
 
@@ -66,6 +183,9 @@ def parse_compounds(
         batch_size=1,
     )
 
+    # Collect jobs for multiprocessing.
+    jobs = []
+
     # Unpack results and parse with RetroMol.
     for result in tqdm(results, desc="Parsing compounds with RetroMol", leave=False):
         
@@ -81,14 +201,24 @@ def parse_compounds(
                 raise Exception(f"Failed to parse InChI")
 
             smi = Chem.MolToSmiles(mol)
-            rec = Molecule(f"{compound_source}|{compound_identifier}", smi)
+            rec = Molecule(compound_identifier, smi)
 
         except Exception as e:
             logger.error(f"Failed to parse compound {compound_identifier} with error: {e}")
             continue
 
         # Apply retrosynthesis to the compound record.
-        # TODO
+        job = (compound_identifier, compound_source, rec, reactions, monomers)
+        jobs.append(job)
+
+        # Collect jobs in batches of 1000.
+        if len(jobs) == 1000:
+            parse_batch(conn, num_workers, jobs)
+            jobs = []
+
+    # Parse remaining jobs.
+    if jobs:
+        parse_batch(conn, num_workers, jobs)
 
 
 def parse_donphan(conn: Neo4jConnection, path: str) -> None:

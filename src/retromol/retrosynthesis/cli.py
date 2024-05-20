@@ -14,7 +14,6 @@ from tqdm import tqdm
 from retromol.retrosynthesis.parsing import Result, parse_mol, parse_molecular_patterns, parse_reaction_rules
 from retromol.retrosynthesis.chem import MolecularPattern, Molecule, ReactionRule
 from retromol.retrosynthesis.helpers import timeout
-from retromol.version import get_version
 
 __all__ = ["main"]
 

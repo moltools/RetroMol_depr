@@ -67,7 +67,7 @@ class ReactionRule:
         :type pattern: str
         """
         self.name = name
-        self.patterns = pattern
+        self.pattern = pattern
         self.compiled = ReactionFromSmarts(pattern)
 
 
@@ -128,9 +128,9 @@ class Molecule:
                             except Exception:
                                 msg = (
                                     f"Failed to sanitize molecule {Chem.MolToSmiles(result)} "
-                                    f"after applying reaction {reaction.name}."
+                                    f"after applying reaction {reaction.name} ({reaction.pattern})."
                                 )
-                                logger.error(msg)
+                                logger.debug(msg)
                                 continue  # Quick fix for sanitization issues.
 
                             result_encoding = mol_to_encoding(result, num_atoms, radius, num_bits)
@@ -256,8 +256,6 @@ def greedy_max_set_cover(
             selected_subsets.append(info)
             covered_elements.update(uncovered_elements)
 
-    logger.debug(
-        f"Performed greedy maximum set cover and selected {len(selected_subsets)} subsets."
-    )
+    logger.debug(f"Performed greedy maximum set cover and selected {len(selected_subsets)} subsets.")  # noqa: E501
 
     return selected_subsets

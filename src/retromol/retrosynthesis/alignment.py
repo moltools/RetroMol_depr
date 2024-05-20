@@ -2,9 +2,11 @@
 
 """This module contains functions for sequence alignment."""
 
+import re
 import typing as ty
 
 from versalign.motif import Motif
+from versalign.sequence import Sequence
 
 
 class PolyketideMotif(Motif):
@@ -98,3 +100,47 @@ class PeptideMotif(Motif):
             return f"{self.source}:{self.cid}"
         
         return "?"
+
+
+def sequence_from_motif_string_list(name: str, motif_string_list: ty.List[str]) -> Sequence:
+    """Create a sequence from a list of motif strings.
+    
+    :param name: Name of sequence.
+    :type name: str
+    :param string_list: List of motif strings.
+    :type string_list: ty.List[str]
+    :return: Sequence.
+    :rtype: Sequence
+    """
+    motifs = []
+    
+    for motif_string in motif_string_list:
+        if match := re.match(r"polyketide\|([A-D])(\d{1,2})", motif_string):
+            motif_type = "polyketide"
+            calculated = True
+            polyketide_type = match.group(1)
+            polyketide_decoration_type = int(match.group(2))
+
+            motif = PolyketideMotif(
+                type=polyketide_type,
+                decoration=polyketide_decoration_type
+            )
+            motifs.append(motif)
+        
+        elif match := re.match(r"peptide\|(\w+)\|(.+)", motif_string):
+            motif_type = "peptide"
+            calculated = True
+            peptide_source = match.group(1)
+            peptide_cid = match.group(2)
+
+            motif = PeptideMotif(
+                source=peptide_source,
+                cid=peptide_cid
+            )
+            motifs.append(motif)
+        
+        else:
+            raise ValueError(f"Unknown motif: {motif_string}") 
+
+    
+    return Sequence(name, motifs)

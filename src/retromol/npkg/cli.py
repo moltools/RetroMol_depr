@@ -25,6 +25,7 @@ def add_subparsers(parser: argparse._SubParsersAction) -> None:
         parser.add_argument("--usr", type=str, default="neo4j", help="The user for the Neo4j database.")  # noqa: E501
         parser.add_argument("--pwd", type=str, default="password", help="The password for the Neo4j database.")  # noqa: E501
 
+    subparser_create.add_argument("--prc", type=int, default=1, help="Number of processes to use.")  # noqa: E501
     subparser_create.add_argument("--dir", type=str, required=True, help="Path to dir containing data for database construction.")  # noqa: E501
     subparser_create.add_argument("--only-retrosynthesis", action="store_true", help="Only reparse retrosynthesis data.")  # noqa: E501
 
@@ -53,7 +54,8 @@ def main(args: argparse.Namespace) -> None:
             path_to_data=args.dir, 
             path_to_rxn=args.rxn,
             path_to_mon=args.mon,
-            only_retrosynthesis=args.only_retrosynthesis
+            only_retrosynthesis=args.only_retrosynthesis,
+            num_workers=args.prc
         )
 
     elif args.mode == "npkg_purge":
