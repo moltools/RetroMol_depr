@@ -374,21 +374,6 @@ def parse_mibig(conn: Neo4jConnection, path: str) -> None:
                                     },
                                 )
 
-                                # Create relationship between BGC and bioactivity.
-                                conn.query(
-                                    (
-                                        "MATCH (b:BiosyntheticGeneCluster {identifier: $bgc_identifier, source: $bgc_source}) "  # noqa: E501
-                                        "MATCH (b:BioactivityLabel {name: $bioactivity, source: $bioactivity_source}) "  # noqa: E501
-                                        "MERGE (b)-[:PRODUCES_COMPOUND_WITH]->(b)"
-                                    ),
-                                    {
-                                        "bgc_identifier": bgc_identifier,
-                                        "bgc_source": bgc_source,
-                                        "bioactivity": bioactivity,
-                                        "bioactivity_source": bioactivity_source,
-                                    },
-                                )
-
 
 def parse_npatlas(conn: Neo4jConnection, path: str) -> None:
     """Parse the NPAtlas data.
