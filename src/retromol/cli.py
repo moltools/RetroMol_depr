@@ -5,8 +5,8 @@
 import argparse
 import logging
 
-import retromol.retrosynthesis.cli
 import retromol.npkg.cli
+import retromol.retrosynthesis.cli
 from retromol.version import get_version
 
 __all__ = ["main"]
@@ -19,9 +19,22 @@ def cli() -> argparse.Namespace:
     :rtype: argparse.Namespace
     """
     parser = argparse.ArgumentParser(add_help=False)
-    parser.add_argument("--version", action="version", version=f"%(prog)s {get_version()}", help="Show program's version number and exit.")  # noqa: E501
-    parser.add_argument("-h", "--help", action="help", default=argparse.SUPPRESS, help="Show this help message and exit.")  # noqa: E501
-    parser.add_argument("-l", "--logger-level", type=str, default="INFO", help="Logger verbosity level.")  # noqa: E501
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"%(prog)s {get_version()}",
+        help="Show program's version number and exit.",
+    )  # noqa: E501
+    parser.add_argument(
+        "-h",
+        "--help",
+        action="help",
+        default=argparse.SUPPRESS,
+        help="Show this help message and exit.",
+    )  # noqa: E501
+    parser.add_argument(
+        "-l", "--logger-level", type=str, default="INFO", help="Logger verbosity level."
+    )  # noqa: E501
     subparser = parser.add_subparsers(dest="mode", required=True)
 
     retromol.retrosynthesis.cli.add_subparsers(subparser)
@@ -37,12 +50,11 @@ def main() -> None:
 
     # Set up the logger.
     logging.basicConfig(
-        level=args.logger_level, 
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        level=args.logger_level, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     )
 
     # Dispatch to the appropriate mode.
-    if args.mode in ["single", "batch"]:
+    if args.mode in ["retrosynthesis_single", "retrosynthesis_batch"]:
         retromol.retrosynthesis.cli.main(args)
 
     elif args.mode in ["npkg_create", "npkg_purge"]:
@@ -52,7 +64,7 @@ def main() -> None:
         msg = f"Unknown mode: {args.mode}"
         logging.error(msg)
         raise ValueError(msg)
-    
+
     exit(0)
 
 

@@ -40,15 +40,15 @@ class Neo4jConnection:
             msg = f"Failed to create the driver: {e}"
             self.logger.error(msg)
             raise e
-        
-    def close(self) -> None:   
+
+    def close(self) -> None:
         """Close the Neo4j connection."""
         if self._driver is not None:
             self._driver.close()
 
     def query(
-        self, 
-        query: str, 
+        self,
+        query: str,
         parameters: ty.Dict[str, ty.Any] = None,
         db: str = None,
         batch_size: int = None,
@@ -68,25 +68,21 @@ class Neo4jConnection:
         :raises Exception: If the query fails.
         """
         assert self._driver is not None, "Driver not initialized!"
-        
+
         session = None
         response = None
 
         try:
-            session = (
-                self._driver.session(database=db) 
-                if db 
-                else self._driver.session()
-            )
+            session = self._driver.session(database=db) if db else self._driver.session()
             response = list(session.run(query, parameters, batch_size=batch_size))
 
         except Exception as e:
             msg = f"Failed to execute query: {e}"
             self.logger.error(msg)
             raise e
-        
+
         finally:
             if session is not None:
                 session.close()
-        
+
         return response

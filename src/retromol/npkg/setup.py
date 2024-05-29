@@ -10,20 +10,15 @@ from tqdm import tqdm
 from retromol.npkg.connection import Neo4jConnection
 from retromol.npkg.helpers import validate_path
 from retromol.npkg.nodes import (
-    BioactivityLabel, 
+    BioactivityLabel,
     BiosyntheticGeneCluster,
-    Compound, 
+    Compound,
     Motif,
     MotifCode,
-    Organism, 
-    Pathway
+    Organism,
+    Pathway,
 )
-from retromol.npkg.parsing import (
-    parse_compounds,
-    parse_donphan, 
-    parse_npatlas,
-    parse_mibig
-)
+from retromol.npkg.parsing import parse_compounds, parse_donphan, parse_mibig, parse_npatlas
 from retromol.npkg.purge import purge_retrosynthesis_data
 
 
@@ -41,7 +36,7 @@ def set_constraints(conn: Neo4jConnection) -> None:
         msg = f"Expected a Neo4jConnection but received {type(conn)}"
         logger.error(msg)
         raise TypeError(msg)
-    
+
     # Set node constraints.
     BioactivityLabel.set_constraints(conn)
     BiosyntheticGeneCluster.set_constraints(conn)
@@ -55,16 +50,16 @@ def set_constraints(conn: Neo4jConnection) -> None:
 
 
 def create_database(
-    conn: Neo4jConnection, 
+    conn: Neo4jConnection,
     path_to_data: str,
     path_to_rxn: str,
     path_to_mon: str,
     set_constraints: bool = True,
     only_retrosynthesis: bool = False,
-    num_workers: int = 1
+    num_workers: int = 1,
 ) -> None:
     """Create the NPKG database.
-    
+
     :param conn: The Neo4j connection.
     :type conn: Neo4jConnection
     :param path_to_data: The path to the directory containing the data for the database construction.
@@ -79,7 +74,7 @@ def create_database(
     :type only_retrosynthesis: bool
     :param num_workers: The number of workers to use for parsing.
     :type num_workers: int
-    :raises TypeError: If the connection is not a Neo4jConnection. 
+    :raises TypeError: If the connection is not a Neo4jConnection.
     """
     logger = logging.getLogger(__name__)
 
@@ -115,7 +110,7 @@ def create_database(
         parse_compounds(conn, path_to_rxn, path_to_mon, num_workers)
 
         logger.info("NPKG database created.")
-    
+
     else:
         logger.info("Re-parsing retrosynthesis data...")
 

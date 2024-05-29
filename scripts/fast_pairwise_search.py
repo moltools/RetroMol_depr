@@ -3,19 +3,19 @@
 """Script for investigation speed-up pairwise alignment in database."""
 
 import argparse
-import logging
-import typing as ty
-import time
 import json
+import logging
 import re
+import time
+import typing as ty
 
 from neo4j import GraphDatabase
 from tqdm import tqdm
-from versalign.motif import Motif 
-from versalign.sequence import Sequence
+from versalign.motif import Motif
 from versalign.pairwise import PairwiseAlignment, align_pairwise
+from versalign.sequence import Sequence
 
-from retromol.alignment import PolyketideMotif, PeptideMotif
+from retromol.alignment import PeptideMotif, PolyketideMotif
 
 GLOBAL = PairwiseAlignment.NEEDLEMAN_WUNSCH
 LOCAL = PairwiseAlignment.SMITH_WATERMAN
@@ -62,13 +62,7 @@ def cli() -> argparse.Namespace:
     :rtype: argparse.Namespace
     """
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--port", 
-        required=False,
-        default=7687, 
-        type=int, 
-        help="Neo4j port."
-    )
+    parser.add_argument("--port", required=False, default=7687, type=int, help="Neo4j port.")
     parser.add_argument(
         "--authentication",
         required=True,
@@ -99,14 +93,13 @@ def cli() -> argparse.Namespace:
 #             WITH nodes(s) AS motifs
 #             RETURN motifs
 #             """
-#         ), 
+#         ),
 #         identifier=identifier
 #     )
 
 #     for record in result: # an item could have multiple motif codes
 #         motifs = record["motifs"]
 
-    
 
 #     return Sequence("target", [])
 
@@ -117,7 +110,7 @@ def main() -> None:
 
     logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(message)s")
     logger = logging.getLogger(__name__)
-    
+
     db = GraphDatabase.driver(f"bolt://localhost:{args.port}", auth=tuple(args.authentication))
 
     start_time = time.time()
@@ -126,7 +119,7 @@ def main() -> None:
 
         # result = session.run("""
         #     MATCH (b:PrimarySequence)
-        #     WHERE (b)<-[:HAS_PRIMARY_SEQUENCE]-(:Compound) 
+        #     WHERE (b)<-[:HAS_PRIMARY_SEQUENCE]-(:Compound)
         #     OR (b)<-[:HAS_PRIMARY_SEQUENCE]-(:ProtoCluster)
         #     RETURN b""",
         #     fetch_size=1
@@ -134,25 +127,29 @@ def main() -> None:
 
         # result = session.run("""
         #     MATCH (b:PrimarySequence)
-        #     WHERE (b)<-[:HAS_PRIMARY_SEQUENCE]-(:Compound) 
+        #     WHERE (b)<-[:HAS_PRIMARY_SEQUENCE]-(:Compound)
         #     RETURN b""",
         #     fetch_size=1
         # )
 
-        result = session.run("""
+        result = session.run(
+            """
             MATCH (b:TestPrimarySequence)
             RETURN b""",
-            fetch_size=1
+            fetch_size=1,
         )
 
-        query = Sequence("query", [
-            PolyketideMotif("B", 7),
-            PolyketideMotif("B", 2),
-            PolyketideMotif("A", 2),
-            PolyketideMotif("D", 7),
-            PolyketideMotif("B", 2),
-            PolyketideMotif("B", 2),
-        ])
+        query = Sequence(
+            "query",
+            [
+                PolyketideMotif("B", 7),
+                PolyketideMotif("B", 2),
+                PolyketideMotif("A", 2),
+                PolyketideMotif("D", 7),
+                PolyketideMotif("B", 2),
+                PolyketideMotif("B", 2),
+            ],
+        )
 
         top_scores = []
         top_seqs = []
@@ -161,7 +158,7 @@ def main() -> None:
             # sequence: Sequence = record_to_sequence(session, record)
 
             name = record["b"]["identifier"]
-            
+
             sequences_str = record["b"]["sequences"]
 
             sequences_data = json.loads(sequences_str)
@@ -196,12 +193,12 @@ def main() -> None:
             if len(top_scores) < 10:
                 top_scores.append(score)
                 top_seqs.append(sequence)
-            
+
             elif score > min(top_scores):
                 index = top_scores.index(min(top_scores))
                 top_scores[index] = score
                 top_seqs[index] = sequence
-            
+
             else:
                 continue
 

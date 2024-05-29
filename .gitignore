@@ -903,3 +903,6 @@ scratch/
 
 # Test PyPI
 .pypirc
+
+# Other
+temp

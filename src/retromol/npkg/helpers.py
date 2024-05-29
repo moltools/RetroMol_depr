@@ -2,8 +2,8 @@
 
 """Helper functions for the NPKG package."""
 
-import os 
 import logging
+import os
 import typing as ty
 
 
@@ -19,17 +19,15 @@ def validate_path(path: str) -> None:
     if os.path.exists(path):
         msg = f"Path {path} exists."
         logger.info(msg)
-    
+
     else:
         msg = f"Path {path} does not exist."
         logger.error(msg)
         raise FileNotFoundError(msg)
-    
+
 
 def safe_get(
-    dictionary: dict, 
-    keys: ty.List[str], 
-    default: ty.Optional[ty.Any] = None
+    dictionary: dict, keys: ty.List[str], default: ty.Optional[ty.Any] = None
 ) -> ty.Optional[ty.Any]:
     """Safely get a value from a dictionary.
 
@@ -43,9 +41,9 @@ def safe_get(
     :rtype: ty.Any
     """
     for key in keys:
-        try: 
+        try:
             dictionary = dictionary[key]
         except (KeyError, TypeError):
             return default
-        
+
     return dictionary

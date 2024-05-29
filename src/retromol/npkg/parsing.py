@@ -15,33 +15,27 @@ from tqdm import tqdm
 from retromol.npkg.connection import Neo4jConnection
 from retromol.npkg.helpers import safe_get
 from retromol.npkg.nodes import (
-    BioactivityLabel, 
+    BioactivityLabel,
     BiosyntheticGeneCluster,
-    Compound, 
+    Compound,
     Motif,
     MotifCode,
-    Organism, 
-    Pathway
+    Organism,
+    Pathway,
 )
-from retromol.retrosynthesis.chem import Molecule, MolecularPattern, ReactionRule
+from retromol.retrosynthesis.chem import MolecularPattern, Molecule, ReactionRule
 from retromol.retrosynthesis.helpers import timeout
 from retromol.retrosynthesis.parsing import (
-    parse_molecular_patterns, 
-    parse_reaction_rules, 
-    parse_mol
+    parse_mol,
+    parse_molecular_patterns,
+    parse_reaction_rules,
 )
 from retromol.retrosynthesis.result import Result
 
 
 @timeout(10)
 def parse_mol_timed(
-    record: ty.Tuple[
-        str,
-        str,
-        Molecule,
-        ty.List[ReactionRule],
-        ty.List[MolecularPattern]
-    ]
+    record: ty.Tuple[str, str, Molecule, ty.List[ReactionRule], ty.List[MolecularPattern]]
 ) -> ty.Tuple[str, str, Result]:
     """Parse a molecule with a timeout.
 
@@ -58,7 +52,7 @@ def parse_mol_timed(
     try:
         compound_identifier, compound_source, mol, reactions, monomers = record
         return compound_identifier, compound_source, parse_mol(mol, reactions, monomers)
-    
+
     except Exception as e:
         msg = f"Failed to parse {mol.name} and raised {e.__class__.__name__}: {e}"
         logger.error(msg)
@@ -67,7 +61,7 @@ def parse_mol_timed(
 
 def parse_batch(conn: Neo4jConnection, num_workers: int, jobs: list) -> None:
     """Parse a batch of compounds with RetroMol.
-    
+
     :param conn: The Neo4j connection.
     :type conn: Neo4jConnection
     :param num_workers: The number of workers to use.
@@ -76,21 +70,21 @@ def parse_batch(conn: Neo4jConnection, num_workers: int, jobs: list) -> None:
     :type jobs: list
     """
     logger = logging.getLogger(__name__)
-        
+
     # Determine number of workers.
     num_workers = min(num_workers, mp.cpu_count())
 
     # Create pool of workers.
     with mp.Pool(num_workers) as pool:
         for compound_identifier, compound_source, result in tqdm(
-            pool.imap_unordered(parse_mol_timed, jobs), 
-            total=len(jobs), 
-            desc="Parsing batch of compounds with RetroMol", 
-            leave=False
+            pool.imap_unordered(parse_mol_timed, jobs),
+            total=len(jobs),
+            desc="Parsing batch of compounds with RetroMol",
+            leave=False,
         ):
             # Skip if result is not successful.
             if result.success is False:
-                continue 
+                continue
 
             # Retrieve information from result.
             applied_reactions = result.applied_reactions
@@ -110,16 +104,17 @@ def parse_batch(conn: Neo4jConnection, num_workers: int, jobs: list) -> None:
                     compound_source=compound_source,
                     calculated=True,
                     applied_reactions=applied_reactions,
-                    src=json.dumps(motif_code)
+                    src=json.dumps(motif_code),
                 )
 
                 # Create full query.
                 query_begin = f"CREATE {mc_query}-[:START]->"
-                query_end = "-[:NEXT]->".join([
-                    Motif.from_string(motif_index, motif) 
-                    for motif_index, motif 
-                    in enumerate(motif_code)
-                ])
+                query_end = "-[:NEXT]->".join(
+                    [
+                        Motif.from_string(motif_index, motif)
+                        for motif_index, motif in enumerate(motif_code)
+                    ]
+                )
                 query_full = query_begin + query_end
 
                 # Execute query.
@@ -140,13 +135,10 @@ def parse_batch(conn: Neo4jConnection, num_workers: int, jobs: list) -> None:
 
 
 def parse_compounds(
-    conn: Neo4jConnection,
-    path_to_rxn: str,
-    path_to_mon: str,
-    num_workers: int = 1
+    conn: Neo4jConnection, path_to_rxn: str, path_to_mon: str, num_workers: int = 1
 ) -> None:
     """Parse compounds from the Neo4j database with RetroMol.
-    
+
     :param conn: The Neo4j connection.
     :type conn: Neo4jConnection
     :param path_to_rxn: The path to the reaction rules in json format.
@@ -188,7 +180,7 @@ def parse_compounds(
 
     # Unpack results and parse with RetroMol.
     for result in tqdm(results, desc="Parsing compounds with RetroMol", leave=False):
-        
+
         compound_identifier = result["identifier"]
         compound_source = result["source"]
         compound_inchi = result["inchi"]
@@ -223,7 +215,7 @@ def parse_compounds(
 
 def parse_donphan(conn: Neo4jConnection, path: str) -> None:
     """Parse the DONPHAN data.
-    
+
     :param conn: The Neo4j connection.
     :type conn: Neo4jConnection
     :param path: The path to the DONPHAN data in csv format.
@@ -252,7 +244,9 @@ def parse_donphan(conn: Neo4jConnection, path: str) -> None:
             bioactivity_library[inchikey_connectivity].update(bioactivities)
 
     # Loop through the bioactivity library and add bioactivity nodes and relationships.
-    for inchikey_connectivity, bioactivities in tqdm(bioactivity_library.items(), desc="Parsing DONPHAN data", leave=False):  # noqa: E501
+    for inchikey_connectivity, bioactivities in tqdm(
+        bioactivity_library.items(), desc="Parsing DONPHAN data", leave=False
+    ):  # noqa: E501
 
         # First retrieve compounds with the given connectivity.
         results = conn.query(
@@ -260,18 +254,18 @@ def parse_donphan(conn: Neo4jConnection, path: str) -> None:
                 "MATCH (c:Compound {inchikey_connectivity: $inchikey_connectivity}) "
                 "RETURN c.identifier AS identifier, c.source AS source"
             ),
-            {"inchikey_connectivity": inchikey_connectivity}
+            {"inchikey_connectivity": inchikey_connectivity},
         )
-        
+
         # Annotate retrieved compounds with bioactivity data.
         for result in results:
-            
+
             compound_identifier = result["identifier"]
             compound_source = result["source"]
 
             for bioactivity in bioactivities:
                 bioactivity_source = "donphan"
-                
+
                 # Create bioactivity node.
                 BioactivityLabel.create(conn, name=bioactivity, source=bioactivity_source)
 
@@ -293,20 +287,20 @@ def parse_donphan(conn: Neo4jConnection, path: str) -> None:
 
 def parse_mibig(conn: Neo4jConnection, path: str) -> None:
     """Parse the MIBIG data.
-    
+
     :param conn: The Neo4j connection.
     :type conn: Neo4jConnection
     :param path: The path to the MIBIG data in json format.
     :type path: str
     """
     paths = [
-        os.path.join(path, file_path) 
-        for file_path in os.listdir(path) 
+        os.path.join(path, file_path)
+        for file_path in os.listdir(path)
         if file_path.endswith(".json")
     ]
 
     for path in tqdm(paths, desc="Parsing MIBIG data", leave=False):
-        
+
         # Get cluster data.
         data = json.load(open(path, "r", encoding="utf-8"))
         cluster = data["cluster"]
@@ -328,11 +322,11 @@ def parse_mibig(conn: Neo4jConnection, path: str) -> None:
                     for chem_act in chem_acts:
                         bioactivities.append(chem_act["activity"])
 
-                # Retrieve compound NPAtlas identifier, if any, and use it to 
+                # Retrieve compound NPAtlas identifier, if any, and use it to
                 # link to the compound.
                 if database_ids := compound.get("database_id", None):
                     for database_id in database_ids:
-                        
+
                         compound_source, compound_identifier = database_id.split(":")
                         if compound_source == "npatlas":
 
@@ -357,7 +351,9 @@ def parse_mibig(conn: Neo4jConnection, path: str) -> None:
                                 bioactivity_source = "mibig"
 
                                 # Create bioactivity node.
-                                BioactivityLabel.create(conn, name=bioactivity, source=bioactivity_source)  # noqa: E501
+                                BioactivityLabel.create(
+                                    conn, name=bioactivity, source=bioactivity_source
+                                )  # noqa: E501
 
                                 # Create relationship between compound and bioactivity.
                                 conn.query(

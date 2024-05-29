@@ -69,6 +69,7 @@ class ReactionRule:
         self.name = name
         self.pattern = pattern
         self.compiled = ReactionFromSmarts(pattern)
+        self.match_pattern = Chem.MolFromSmarts(pattern.split(">>")[0])
 
 
 class Molecule:
@@ -111,6 +112,8 @@ class Molecule:
         for atom in self.compiled.GetAtoms():
             atom.SetIsotope(atom.GetIdx() + 1)
 
+        reaction_matches = set()
+
         mols = [self.compiled]
         while mols:
             current = mols.pop()
@@ -119,6 +122,13 @@ class Molecule:
             mapping[current_encoding] = current
 
             for reaction in reactions:
+                
+                # Check if the current molecule matches the reactant reaction pattern.
+                if current.HasSubstructMatch(reaction.match_pattern):
+                    reaction_matches.add(reaction.name)
+                else:
+                    continue
+
                 for results in reaction.compiled.RunReactants([current]):
                     if len(results) > 0:
                         reaction_products = list()
@@ -140,6 +150,10 @@ class Molecule:
                                 mols.append(result)
 
                         tree[current_encoding][reaction.name].add(frozenset(reaction_products))
+
+        logger.debug(f"Tried to apply {len(reaction_matches)} reaction rules to the molecule:")
+        for reaction_name in reaction_matches:
+            logger.debug(f" >> {reaction_name}")
 
         return self.compiled, tree, mapping
 
@@ -256,6 +270,8 @@ def greedy_max_set_cover(
             selected_subsets.append(info)
             covered_elements.update(uncovered_elements)
 
-    logger.debug(f"Performed greedy maximum set cover and selected {len(selected_subsets)} subsets.")  # noqa: E501
+    logger.debug(
+        f"Performed greedy maximum set cover and selected {len(selected_subsets)} subsets."
+    )  # noqa: E501
 
     return selected_subsets

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-"""Command linwe interface for :mod:`retromol.retrosynthesis`."""
+"""Command line interface for :mod:`retromol.retrosynthesis`."""
 
 import argparse
 import json
@@ -11,9 +11,14 @@ import typing as ty
 
 from tqdm import tqdm
 
-from retromol.retrosynthesis.parsing import Result, parse_mol, parse_molecular_patterns, parse_reaction_rules
 from retromol.retrosynthesis.chem import MolecularPattern, Molecule, ReactionRule
 from retromol.retrosynthesis.helpers import timeout
+from retromol.retrosynthesis.parsing import (
+    Result,
+    parse_mol,
+    parse_molecular_patterns,
+    parse_reaction_rules,
+)
 
 __all__ = ["main"]
 
@@ -29,7 +34,7 @@ def add_subparsers(parser: argparse._SubParsersAction) -> None:
 
     repository_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
     fixtures_path = os.path.join(repository_path, "tests/fixtures")
-    
+
     subparser_single_mode.add_argument(
         "-r",
         "--reactions",
@@ -133,7 +138,7 @@ def main(args) -> None:
     logger.debug(f"Parsed {len(reactions)} reactions and {len(monomers)} monomers.")
 
     # Parse molecule in single mode.
-    if args.mode == "single":
+    if args.mode == "retrosynthesis_single":
         mol = Molecule("input", args.input)
         record = (mol, reactions, monomers)
         result = parse_mol_timed(record)
@@ -143,7 +148,7 @@ def main(args) -> None:
         exit(0)
 
     # Parse a batch of molecules.
-    elif args.mode == "batch":
+    elif args.mode == "retrosynthesis_batch":
 
         # Parse input file.
         records = []

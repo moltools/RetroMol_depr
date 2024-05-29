@@ -21,7 +21,7 @@ def remove_constraints(conn: Neo4jConnection) -> None:
         msg = f"Expected a Neo4jConnection but received {type(conn)}"
         logger.error(msg)
         raise TypeError(msg)
-    
+
     # Remove constraints.
     for constraint in conn.query("SHOW constraints"):
         constraint_name = constraint["name"]
@@ -44,16 +44,14 @@ def purge_database(conn: Neo4jConnection) -> None:
         msg = f"Expected a Neo4jConnection but received {type(conn)}"
         logger.error(msg)
         raise TypeError(msg)
-    
+
     # Remove contraints.
     remove_constraints(conn)
 
     # Purge the database.
     while True:
         query = (
-            "MATCH (n) WITH n LIMIT $limit "
-            "DETACH DELETE n "
-            "RETURN count(n) AS deleted_count"
+            "MATCH (n) WITH n LIMIT $limit " "DETACH DELETE n " "RETURN count(n) AS deleted_count"
         )
         result = conn.query(query, {"limit": 1000})
         deleted_count = result[0]["deleted_count"]
@@ -63,10 +61,7 @@ def purge_database(conn: Neo4jConnection) -> None:
     logger.info("Database purged.")
 
 
-def purge_retrosynthesis_data(
-    conn: Neo4jConnection, 
-    only_calculated: bool = True
-) -> None:
+def purge_retrosynthesis_data(conn: Neo4jConnection, only_calculated: bool = True) -> None:
     """Purge the retrosynthesis data from the Neo4j database.
 
     :param conn: The Neo4j connection.
@@ -82,10 +77,10 @@ def purge_retrosynthesis_data(
         msg = f"Expected a Neo4jConnection but received {type(conn)}"
         logger.error(msg)
         raise TypeError(msg)
-    
+
     # Remove contraints.
     remove_constraints(conn)
-    
+
     # Construct the query for purging database from MotifCodes.
     if only_calculated:
         query = (

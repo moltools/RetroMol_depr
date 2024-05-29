@@ -6,9 +6,14 @@ import typing as ty
 
 import pytest
 
-from retromol.retrosynthesis.parsing import Result, parse_mol, parse_molecular_patterns, parse_reaction_rules
 from retromol.retrosynthesis.chem import Molecule
 from retromol.retrosynthesis.helpers import RetroMolTimeoutError, timeout
+from retromol.retrosynthesis.parsing import (
+    Result,
+    parse_mol,
+    parse_molecular_patterns,
+    parse_reaction_rules,
+)
 
 TESTS_DIR_NAME = os.path.dirname(__file__)
 PATH_TO_MONOMERS = os.path.join(TESTS_DIR_NAME, "fixtures", "monomers.json")
