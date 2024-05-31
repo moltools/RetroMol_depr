@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-""""""
+"""The nodes module."""
 
 import re
 import typing as ty
