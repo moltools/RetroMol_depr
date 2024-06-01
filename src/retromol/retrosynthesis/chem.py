@@ -83,9 +83,18 @@ class Molecule:
         :param smiles: The SMILES representation of the molecule.
         :type smiles: str
         """
+        logger = logging.getLogger(__name__)
+
         self.name = name
         self.smiles = smiles
-        self.compiled = Chem.MolFromSmiles(smiles)
+        mol = Chem.MolFromSmiles(smiles)
+
+        if mol is None:
+            msg = f"Failed to parse the molecule {name} ({smiles})."
+            logger.error(msg)
+            raise ValueError(msg)
+        
+        self.compiled = mol
 
     def neutralize(self) -> None:
         """Neutralize the molecule."""
