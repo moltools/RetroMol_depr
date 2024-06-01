@@ -26,15 +26,65 @@ import {
 import InputForm from "../components/dashboard/InputForm";
 import LoadingOverlay from "../components/common/LoadingOverlay";
 import Page from "../components/common/Page";
+import ResultsDisplay from "../components/dashboard/ResultsDisplay";
 import Status from "../components/common/Status";
 
-function Dashboard () {
+const SidebarButtonHome = () => {
+    return (
+        <ListItem 
+            type="button" 
+            component={Link} 
+            to="/"
+            sx={{ textDecoration: "none", color: "#222" }}
+        >
+            <ListItemIcon>
+                <HomeIcon sx={{ color: "#222" }} />
+            </ListItemIcon>
+            <ListItemText primary="Home" />
+        </ListItem>
+    );
+};
+
+const SidebarButtonAbout = () => {
+    return (
+        <ListItem 
+            type="button" 
+            component={Link} 
+            to="/about"
+            sx={{ textDecoration: "none", color: "#222" }}
+        >
+            <ListItemIcon>
+                <InfoIcon sx={{ color: "#222" }} />
+            </ListItemIcon>
+            <ListItemText primary="About" />
+        </ListItem>
+    );
+};
+
+const SidebarButtonBugReport = () => {
+    return (
+        <ListItem 
+            type="button" 
+            component="a" 
+            href="https://github.com/moltools/RetroMol/issues" 
+            target="_blank"
+            sx={{ textDecoration: "none", color: "#222" }}
+        >
+            <ListItemIcon>
+                <BugReportIcon sx={{ color: "#222" }} />
+            </ListItemIcon>
+            <ListItemText primary="Report Bug" />
+        </ListItem>
+    );
+};
+
+const Dashboard = () => {
     const [isBusy, setIsBusy] = useState(false);
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [version, setVersion] = useState("0.0.0");
     const [statusServer, setStatusServer] = useState(true);
     const [statusDatabase, setStatusDatabase] = useState(false);
-    const [parseResults, setParseResults] = useState([]);
+    const [parsedResults, setParsedResults] = useState([]);
 
     const toggleDrawer = () => {
         setIsDrawerOpen(!isDrawerOpen);
@@ -58,8 +108,11 @@ function Dashboard () {
             const data = await response.json();
             if (data.status === "success") {
                 setStatusServer(true);
+            } else {
+                setStatusServer(false);
             };
         } catch (error) {
+            setStatusServer(false);
             console.error(error);
         };
     };
@@ -70,8 +123,11 @@ function Dashboard () {
             const data = await response.json();
             if (data.status === "success") {
                 setStatusDatabase(true);
+            } else {
+                setStatusDatabase(false);
             };
         } catch (error) {
+            setStatusDatabase(false);
             console.error(error);
         };
     };
@@ -98,6 +154,7 @@ function Dashboard () {
             const result = await response.json();
             if (result.status === "success") {
                 toast.success(result.message);
+                setParsedResults(result.payload.sequences);
             } else if (result.status === "warning") {
                 toast.warn(result.message);
             } else {
@@ -138,40 +195,9 @@ function Dashboard () {
                 sx={{ '& .MuiDrawer-paper': { width: 240 } }}
             >
                 <List>
-                    <ListItem 
-                        type="button" 
-                        component={Link} 
-                        to="/"
-                        sx={{ textDecoration: "none", color: "#222" }}
-                    >
-                        <ListItemIcon>
-                            <HomeIcon sx={{ color: "#222" }} />
-                        </ListItemIcon>
-                        <ListItemText primary="Home" />
-                    </ListItem>
-                    <ListItem 
-                        type="button" 
-                        component={Link} 
-                        to="/about"
-                        sx={{ textDecoration: "none", color: "#222" }}
-                    >
-                        <ListItemIcon>
-                            <InfoIcon sx={{ color: "#222" }} />
-                        </ListItemIcon>
-                        <ListItemText primary="About" />
-                    </ListItem>
-                    <ListItem 
-                        type="button" 
-                        component="a" 
-                        href="https://github.com/moltools/RetroMol/issues" 
-                        target="_blank"
-                        sx={{ textDecoration: "none", color: "#222" }}
-                    >
-                        <ListItemIcon>
-                            <BugReportIcon sx={{ color: "#222" }} />
-                        </ListItemIcon>
-                        <ListItemText primary="Report Bug" />
-                    </ListItem>
+                    <SidebarButtonHome />
+                    <SidebarButtonAbout />
+                    <SidebarButtonBugReport />
                     <Divider sx={{ mt: 2, mb: 2 }} />
                     <Status statusName="Server" status={statusServer} />
                     <Status statusName="Database" status={statusDatabase} />
@@ -187,6 +213,9 @@ function Dashboard () {
                     <Grid container spacing={3}>
                         <Grid item xs={12}>
                             <InputForm onSubmit={(data) => submit(data)} />
+                        </Grid>
+                        <Grid item xs={12}>
+                            <ResultsDisplay results={parsedResults} />
                         </Grid>
                     </Grid>
                 </Container>

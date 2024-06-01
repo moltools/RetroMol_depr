@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { 
     Button, 
     Box, 
+    Divider,
     FormControlLabel, 
     Paper, 
     Radio, 
@@ -9,13 +10,13 @@ import {
     TextField, 
     Typography 
 } from '@mui/material'
-
 import TypographyTooltip from "../common/TypographyTooltip";
 
+const smilesErythromycin = "CCC1C(C(C(C(=O)C(CC(C(C(C(C(C(=O)O1)C)OC2CC(C(C(O2)C)O)(C)OC)C)OC3C(C(CC(O3)C)N(C)C)O)(C)O)C)C)O)(C)O";
+
 const AntismashLogo = ({ style }) => {
-    const defaultStyle = {
-        boxShadow: "0 0 10px 5px white" // Make the logo stand out from the background.
-    };
+    // Make the logo stand out from the background.
+    const defaultStyle = { boxShadow: "0 0 10px 5px white" };
   
     return (
         <a href="https://antismash.secondarymetabolites.org/" target="_blank" rel="noreferrer">
@@ -86,7 +87,8 @@ const InputForm = ({ onSubmit }) => {
                 backgroundColor: "#f0f0f0",
                 borderRadius: 2,
                 boxShadow: 3,
-                width: "100%"
+                width: "100%",
+                border: "1px solid #ccc"
             }}
         >
             <form onSubmit={handleFormSubmit}>
@@ -97,6 +99,7 @@ const InputForm = ({ onSubmit }) => {
                         </Typography>
                     </TypographyTooltip>
                 </Box>
+                <Divider sx={{ mb: 2 }} />
                 <RadioGroup
                     value={selectedInputType}
                     onChange={(event) => handleInputTypeChange(event)}
@@ -166,7 +169,7 @@ const InputForm = ({ onSubmit }) => {
                         color="secondary"
                         onClick={() => {
                             setSelectedInputType("smiles");
-                            setInputValue("CCC1C(C(C(C(=O)C(CC(C(C(C(C(C(=O)O1)C)OC2CC(C(C(O2)C)O)(C)OC)C)OC3C(C(CC(O3)C)N(C)C)O)(C)O)C)C)O)(C)O")
+                            setInputValue(smilesErythromycin);
                         }}
                     >
                         Example
