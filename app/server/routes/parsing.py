@@ -4,6 +4,7 @@
 
 import json
 import os
+import typing as ty
 
 import neo4j
 from flask import Blueprint, Response, request
@@ -28,6 +29,21 @@ try:
 except Exception:
     REACTIONS = []
     MONOMERS = []
+
+
+def wrap_motif_code_to_query(motif_code: ty.List[str]) -> ty.List[ty.List[str]]:
+    """Convert motif code to a Cypher query.
+    
+    :param motif_code: List of motifs.
+    :type motif_code: list[str]
+    :return: List of queries.
+    :rtype: list[list[str]]
+    """
+    wrapped_motif_code = []
+    for motif in motif_code:
+        wrapped_motif_code.append([motif])  # Wrap individual motifs in a list.
+    
+    return wrapped_motif_code
 
 
 blueprint_parse_submission = Blueprint("parse_submission", __name__)
@@ -60,11 +76,10 @@ def parse_submission() -> Response:
         if input_type == "smiles":
             molecule = Molecule("input", input_value)
             result = parse_mol(molecule, REACTIONS, MONOMERS)
-            sequences = [sequence["motif_code"] for sequence in result.sequences]
-            payload = {"sequences": sequences}
-            
+            queries = [wrap_motif_code_to_query(seq["motif_code"]) for seq in result.sequences]
+
             if result.success is True:
-                return success("Molecule parsed successfully!", payload)
+                return success("Molecule parsed successfully!", {"queries": queries})
             else:
                 return fail("Failed to parse molecule!")
         
@@ -75,10 +90,9 @@ def parse_submission() -> Response:
         ########################################################################
         elif input_type == "jobId":
             data = get_antismash_data(input_value)
-            sequences = parse_antismash_json(data)
-            payload = {"sequences": sequences}
-
-            return success("Job parsed successfully!", payload)
+            seqs = parse_antismash_json(data)
+            queries = [wrap_motif_code_to_query(seq["motif_code"]) for seq in seqs]
+            return success("Job parsed successfully!", {"queries": queries})
         
         ########################################################################
         #
@@ -87,10 +101,9 @@ def parse_submission() -> Response:
         ########################################################################
         elif input_type == "json":
             data = json.loads(input_value)
-            sequences = parse_antismash_json(data)
-            payload = {"sequences": sequences}
-
-            return success("JSON parsed successfully!")
+            seqs = parse_antismash_json(data)
+            queries = [wrap_motif_code_to_query(seq["motif_code"]) for seq in seqs]
+            return success("JSON parsed successfully!", {"queries": queries})
     
     except Exception as e:
         error_type = e.__class__.__name__

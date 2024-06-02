@@ -6,15 +6,14 @@ const Status = ({ statusName, status }) => (
         variant="contained"
         sx={{
             mb: 1,
-            backgroundColor: status ? "#78c419" : "#ec462e",
+            backgroundColor: status ? "#28c840" : "#ff5f57",
             transition: "background-color 0.5s ease",
-            color: "white",
+            color: status ? "#006200" : "#990000",
             textAlign: "center",
             padding: "8px",
             borderRadius: "4px",
             cursor: "default",
             userSelect: "none",
-            color: "#222222",
             mx: 1
         }}
     >

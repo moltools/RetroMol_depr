@@ -399,7 +399,7 @@ def parse_antismash_json(data: ty.Dict[str, ty.Any]) -> ty.Any:
                         gene_dna_seq = Seq(gene_dna_seq).reverse_complement()
                     gene_protein_seq = Seq(gene_dna_seq).translate()
                     fasta_src = f">{gene_name}\n{gene_protein_seq}"
-                    predictions = predict_specificity(fasta_src)
+                    predictions = predict_specificity(fasta_src)  # TODO: parse all items to PARAS at once and predict in one go.
                     print(f"> Predictions:")
                     for domain_id, prediction in predictions:
                         print(f"\t{domain_id}: {prediction}")

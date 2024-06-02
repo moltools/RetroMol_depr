@@ -4,6 +4,7 @@ import {
     Box, 
     Divider,
     FormControlLabel, 
+    IconButton,
     Paper, 
     Radio, 
     RadioGroup, 
@@ -11,6 +12,7 @@ import {
     Typography 
 } from '@mui/material'
 import TypographyTooltip from "../common/TypographyTooltip";
+import RefreshIcon from '@mui/icons-material/Refresh';
 
 const smilesErythromycin = "CCC1C(C(C(C(=O)C(CC(C(C(C(C(C(=O)O1)C)OC2CC(C(C(O2)C)O)(C)OC)C)OC3C(C(CC(O3)C)N(C)C)O)(C)O)C)C)O)(C)O";
 
@@ -88,16 +90,30 @@ const InputForm = ({ onSubmit }) => {
                 borderRadius: 2,
                 boxShadow: 3,
                 width: "100%",
-                border: "1px solid #ccc"
+                border: "1px solid #ccc",
+                minHeight: "385px",
+                maxHeight: "385px",
             }}
         >
             <form onSubmit={handleFormSubmit}>
-                <Box sx={{ display: "flex", gap: 1 }}>
-                    <TypographyTooltip title="AntiSMASH results can be parsed by either passing along a job ID or uploading a result in JSON format.">
-                        <Typography variant="h6" gutterBottom>
-                            Select input type
-                        </Typography>
-                    </TypographyTooltip>
+                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <Box sx={{ display: "flex", gap: 1 }}>
+                        <TypographyTooltip title="AntiSMASH results can be parsed by either passing along a job ID or uploading a result in JSON format.">
+                            <Typography variant="h6" gutterBottom>
+                                Select input type
+                            </Typography>
+                        </TypographyTooltip>
+                    </Box>
+                    <Box>
+                        <IconButton
+                            type="button"
+                            onClick={handleRefresh}
+                            color="primary"
+                            sx={{ transform: "translateY(-3px)" }}
+                        >
+                            <RefreshIcon />
+                        </IconButton>
+                    </Box>
                 </Box>
                 <Divider sx={{ mb: 2 }} />
                 <RadioGroup
@@ -166,21 +182,13 @@ const InputForm = ({ onSubmit }) => {
                         type="button"
                         variant="contained"
                         sx={{ mt: 2, width: "150px" }}
-                        color="secondary"
+                        color="primary"
                         onClick={() => {
                             setSelectedInputType("smiles");
                             setInputValue(smilesErythromycin);
                         }}
                     >
                         Example
-                    </Button>
-                    <Button
-                        type="button"
-                        variant="contained"
-                        sx={{ mt: 2, width: "150px" }}
-                        onClick={handleRefresh}
-                    >
-                        Refresh
                     </Button>
                     <Button 
                         type="submit" 

@@ -13,6 +13,8 @@ import {
     ListItem, 
     ListItemIcon, 
     ListItemText, 
+    ToggleButton,
+    ToggleButtonGroup,
     Toolbar, 
     Typography 
 } from "@mui/material";
@@ -26,6 +28,7 @@ import {
 import InputForm from "../components/dashboard/InputForm";
 import LoadingOverlay from "../components/common/LoadingOverlay";
 import Page from "../components/common/Page";
+import QueryForm from "../components/dashboard/QueryForm";
 import ResultsDisplay from "../components/dashboard/ResultsDisplay";
 import Status from "../components/common/Status";
 
@@ -80,11 +83,13 @@ const SidebarButtonBugReport = () => {
 
 const Dashboard = () => {
     const [isBusy, setIsBusy] = useState(false);
+    const [queryOnly, setQueryOnly] = useState(false);
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [version, setVersion] = useState("0.0.0");
     const [statusServer, setStatusServer] = useState(true);
     const [statusDatabase, setStatusDatabase] = useState(false);
     const [parsedResults, setParsedResults] = useState([]);
+    const [selectedResultIndex, setSelectedResultIndex] = useState(null);
 
     const toggleDrawer = () => {
         setIsDrawerOpen(!isDrawerOpen);
@@ -154,7 +159,7 @@ const Dashboard = () => {
             const result = await response.json();
             if (result.status === "success") {
                 toast.success(result.message);
-                setParsedResults(result.payload.sequences);
+                setParsedResults(result.payload.queries);
             } else if (result.status === "warning") {
                 toast.warn(result.message);
             } else {
@@ -172,19 +177,24 @@ const Dashboard = () => {
     return (
         <Page sx={{ display: "flex", width: "100%", flexDirection: "column" }}>
             <AppBar position="fixed">
-                <Toolbar>
-                    <IconButton
-                        color="inherit"
-                        aria-label="open drawer"
-                        edge="start"
-                        onClick={toggleDrawer}
-                        sx={{ mr: 2 }}
-                    >
-                        <MenuIcon />
-                    </IconButton>
-                    <Typography variant="h6" noWrap>
-                        {`RetroMol (${version})`}
-                    </Typography>
+                <Toolbar sx={{ display: "flex", justifyContent: "space-between" }}>
+                    <Box sx={{ display: "flex", justifyContent: "left", width: "100%", alignItems: "center" }}>
+                        <IconButton
+                            color="inherit"
+                            aria-label="open drawer"
+                            edge="start"
+                            onClick={toggleDrawer}
+                            sx={{ mr: 2 }}
+                        >
+                            <MenuIcon />
+                        </IconButton>
+                        <Typography variant="h6" noWrap>
+                            {`RetroMol (${version})`}
+                        </Typography>
+                    </Box>
+                    <Box>
+                        
+                    </Box>
                 </Toolbar>
             </AppBar>
             <Drawer
@@ -212,10 +222,44 @@ const Dashboard = () => {
                     {isBusy && <LoadingOverlay />}
                     <Grid container spacing={3}>
                         <Grid item xs={12}>
-                            <InputForm onSubmit={(data) => submit(data)} />
+                            <ToggleButtonGroup
+                                value={queryOnly}
+                                exclusive
+                                onChange={() => setQueryOnly(!queryOnly)}
+                                aria-label="query only"
+                                sx={{
+                                    borderRadius: 2,
+                                    boxShadow: 3,
+                                }}
+                            >
+                                <ToggleButton value={false} aria-label="query and parse">
+                                    Parse and query
+                                </ToggleButton>
+                                <ToggleButton value={true} aria-label="query only">
+                                    Query only
+                                </ToggleButton>
+                            </ToggleButtonGroup>
                         </Grid>
+                        {!queryOnly && (
+                            <Grid item xs={12}>
+                                <InputForm onSubmit={(data) => submit(data)} />
+                            </Grid>
+                        )}
+                        {!queryOnly && (
+                            <Grid item xs={12}>
+                                <ResultsDisplay 
+                                    results={parsedResults} 
+                                    setResults={setParsedResults} 
+                                    selectedResultIndex={selectedResultIndex}
+                                    setSelectedResultIndex={setSelectedResultIndex}
+                                />
+                            </Grid>
+                        )}
                         <Grid item xs={12}>
-                            <ResultsDisplay results={parsedResults} />
+                            <QueryForm
+                                results={parsedResults}
+                                selectedResultIndex={selectedResultIndex}
+                            />
                         </Grid>
                     </Grid>
                 </Container>
