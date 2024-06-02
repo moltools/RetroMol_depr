@@ -4,6 +4,7 @@
 
 import json
 import os
+import re
 import typing as ty
 
 import neo4j
@@ -31,7 +32,7 @@ except Exception:
     MONOMERS = []
 
 
-def wrap_motif_code_to_query(motif_code: ty.List[str]) -> ty.List[ty.List[str]]:
+def motif_code_to_query(motif_code: ty.List[str]) -> ty.List[ty.List[str]]:
     """Convert motif code to a Cypher query.
     
     :param motif_code: List of motifs.
@@ -40,8 +41,36 @@ def wrap_motif_code_to_query(motif_code: ty.List[str]) -> ty.List[ty.List[str]]:
     :rtype: list[list[str]]
     """
     wrapped_motif_code = []
+
     for motif in motif_code:
-        wrapped_motif_code.append([motif])  # Wrap individual motifs in a list.
+        if match := re.match(r"polyketide\|([A-D])(\d{1,2})", motif):
+            polyketide_type = match.group(1)
+            polyketide_decor = int(match.group(2))
+            
+            parsed_motif = {
+                "motifType": "polyketide",
+                "polyketideType": polyketide_type,
+                "polyketideDecor": polyketide_decor,
+                "peptideSource": "Any",
+                "peptideCid": "Any"
+            }
+
+        elif match := re.match(r"peptide\|(\w+)\|(.+)", motif):
+            peptide_source = match.group(1)
+            peptide_cid = int(match.group(2))
+
+            parsed_motif = {
+                "motifType": "peptide",
+                "polyketideType": "Any",
+                "polyketideDecor": "Any",
+                "peptideSource": peptide_source,
+                "peptideCid": peptide_cid
+            }
+
+        else:
+            raise ValueError(f"Invalid motif: {motif}")    
+
+        wrapped_motif_code.append([parsed_motif])  # Wrap individual motifs in a list.
     
     return wrapped_motif_code
 
@@ -76,7 +105,7 @@ def parse_submission() -> Response:
         if input_type == "smiles":
             molecule = Molecule("input", input_value)
             result = parse_mol(molecule, REACTIONS, MONOMERS)
-            queries = [wrap_motif_code_to_query(seq["motif_code"]) for seq in result.sequences]
+            queries = [motif_code_to_query(seq["motif_code"]) for seq in result.sequences]
 
             if result.success is True:
                 return success("Molecule parsed successfully!", {"queries": queries})
@@ -89,9 +118,10 @@ def parse_submission() -> Response:
         #
         ########################################################################
         elif input_type == "jobId":
+            raise NotImplementedError("Endpoint not implemented yet!")
             data = get_antismash_data(input_value)
             seqs = parse_antismash_json(data)
-            queries = [wrap_motif_code_to_query(seq["motif_code"]) for seq in seqs]
+            queries = [motif_code_to_query(seq["motif_code"]) for seq in seqs]
             return success("Job parsed successfully!", {"queries": queries})
         
         ########################################################################
@@ -100,9 +130,10 @@ def parse_submission() -> Response:
         #
         ########################################################################
         elif input_type == "json":
+            raise NotImplementedError("Endpoint not implemented yet!")
             data = json.loads(input_value)
             seqs = parse_antismash_json(data)
-            queries = [wrap_motif_code_to_query(seq["motif_code"]) for seq in seqs]
+            queries = [motif_code_to_query(seq["motif_code"]) for seq in seqs]
             return success("JSON parsed successfully!", {"queries": queries})
     
     except Exception as e:

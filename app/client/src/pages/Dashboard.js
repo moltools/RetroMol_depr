@@ -13,6 +13,7 @@ import {
     ListItem, 
     ListItemIcon, 
     ListItemText, 
+    Modal,
     ToggleButton,
     ToggleButtonGroup,
     Toolbar, 
@@ -22,7 +23,8 @@ import {
     BugReport as BugReportIcon,
     Home as HomeIcon, 
     Info as InfoIcon, 
-    Menu as MenuIcon
+    Menu as MenuIcon,
+    Close as CloseIcon
 } from "@mui/icons-material";
 
 import InputForm from "../components/dashboard/InputForm";
@@ -90,6 +92,10 @@ const Dashboard = () => {
     const [statusDatabase, setStatusDatabase] = useState(false);
     const [parsedResults, setParsedResults] = useState([]);
     const [selectedResultIndex, setSelectedResultIndex] = useState(null);
+    
+    const [query, setQuery] = useState([]);
+    const [resultModalOpen, setResultModalOpen] = useState(false);
+    const [queryResult, setQueryResult] = useState({});
 
     const toggleDrawer = () => {
         setIsDrawerOpen(!isDrawerOpen);
@@ -174,8 +180,37 @@ const Dashboard = () => {
         setIsBusy(false);
     };
 
+    const submitQuery = async (data) => {
+        setIsBusy(true);
+
+        try {
+            const response = await fetch("/api/query_submission", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify(data)
+            });
+
+            const result = await response.json();
+            if (result.status === "success") {
+                toast.success(result.message);
+                setQueryResult(result.payload);
+                setResultModalOpen(true);
+            } else if (result.status === "warning") {
+                toast.warn(result.message);
+            } else {
+                toast.error(result.message);
+            };
+            
+        } catch (error) {
+            console.error(error);
+            toast.error("Something went wrong. Please file a bug report.");
+        };
+
+        setIsBusy(false);
+    };
+
     return (
-        <Page sx={{ display: "flex", width: "100%", flexDirection: "column" }}>
+        <Page sx={{ display: "flex", width: "100%", flexDirection: "column", minWidth: "1300px" }}>
             <AppBar position="fixed">
                 <Toolbar sx={{ display: "flex", justifyContent: "space-between" }}>
                     <Box sx={{ display: "flex", justifyContent: "left", width: "100%", alignItems: "center" }}>
@@ -218,6 +253,57 @@ const Dashboard = () => {
                 sx={{ flexGrow: 1, p: 3 }}
             >
                 <Toolbar />
+                <Modal
+                    open={resultModalOpen}
+                    onClose={() => setResultModalOpen(false)}
+                    aria-labelledby="modal-modal-title"
+                    aria-describedby="modal-modal-description"
+                >
+                    <Box
+                        sx={{
+                            position: "absolute",
+                            top: "50%",
+                            left: "50%",
+                            transform: "translate(-50%, -50%)",
+                            width: "90%",
+                            height: "80%",
+                            bgcolor: "background.paper",
+                            boxShadow: 24,
+                            borderRadius: 4,
+                        }}
+                    >   
+                        <Box sx={{ 
+                            display: "flex", 
+                            justifyContent: "space-between", 
+                            backgroundColor: "#555", 
+                            color: "white", 
+                            p: 2,
+                            borderTopLeftRadius: 16, 
+                            borderTopRightRadius: 16
+                        }}>
+                            <Typography id="modal-modal-title" variant="h6" component="h2">
+                                Query Result
+                            </Typography>
+                            <IconButton 
+                                onClick={() => setResultModalOpen(false)}
+                                style={{ color: "#990000", backgroundColor: "#ff5f57"}}
+                            >
+                                <CloseIcon style={{fontSize: "18px"}} />
+                            </IconButton>
+                        </Box>
+                        <Box 
+                            sx={{ 
+                                p: 2, 
+                                overflow: "auto", 
+                                height: "calc(100% - 64px)" 
+                            }}
+                        >
+                            <Typography id="modal-modal-description" sx={{ mt: 2 }}>
+                                {JSON.stringify(queryResult)}
+                            </Typography>
+                        </Box>
+                    </Box>
+                </Modal>
                 <Container>
                     {isBusy && <LoadingOverlay />}
                     <Grid container spacing={3}>
@@ -259,6 +345,9 @@ const Dashboard = () => {
                             <QueryForm
                                 results={parsedResults}
                                 selectedResultIndex={selectedResultIndex}
+                                columns={query}
+                                setColumns={setQuery}
+                                submit={submitQuery}
                             />
                         </Grid>
                     </Grid>

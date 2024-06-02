@@ -2,6 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
+import CineMol from "./pages/CineMol";
 import Dashboard from "./pages/Dashboard";
 import LandingPage from "./pages/LandingPage";
 import NotFoundPage from "./pages/NotFoundPage";
@@ -14,7 +15,8 @@ function AppRoutes () {
         <div>
             <Routes>
                 <Route path="/" element={<LandingPage />} />
-                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/cinemol" element={<CineMol />} />
+                <Route path="/retromol" element={<Dashboard />} />
                 <Route path="/*" element={<NotFoundPage />} />
             </Routes>
         </div>
