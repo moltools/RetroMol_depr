@@ -13,6 +13,7 @@ import {
 } from '@mui/material'
 import TypographyTooltip from "../common/TypographyTooltip";
 import RefreshIcon from '@mui/icons-material/Refresh';
+import { toast } from 'react-toastify';
 
 const smilesErythromycin = "CCC1C(C(C(C(=O)C(CC(C(C(C(C(C(=O)O1)C)OC2CC(C(C(O2)C)O)(C)OC)C)OC3C(C(CC(O3)C)N(C)C)O)(C)O)C)C)O)(C)O";
 
@@ -59,6 +60,10 @@ const InputForm = ({ onSubmit }) => {
 
     const handleFileChange = (event) => {
         const file = event.target.files[0];
+        if (file.size > 20000000) {
+            toast.warn("File size exceeds 20 MB. Please upload a smaller file.");
+            return;
+        }
         setJsonFileName(file.name);
         const reader = new FileReader();
         reader.onload = (event) => {

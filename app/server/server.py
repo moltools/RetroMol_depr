@@ -11,6 +11,7 @@ from routes.common import NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD, fail, warning, 
 from routes.fetching import blueprint_fetch_bioactivity_labels, blueprint_fetch_organism_labels
 from routes.parsing import blueprint_parse_submission
 from routes.querying import blueprint_query_submission
+from routes.cinemol import blueprint_draw_model, blueprint_fetch_cinemol_version
 
 
 app = Flask(__name__)
@@ -18,6 +19,8 @@ app.register_blueprint(blueprint_fetch_bioactivity_labels)
 app.register_blueprint(blueprint_fetch_organism_labels)
 app.register_blueprint(blueprint_parse_submission)
 app.register_blueprint(blueprint_query_submission)
+app.register_blueprint(blueprint_draw_model)
+app.register_blueprint(blueprint_fetch_cinemol_version)
 
 
 @app.route("/")

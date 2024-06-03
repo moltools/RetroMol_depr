@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { 
     AppBar, 
     Box, 
+    Button,
     Container,
     Divider,
     Drawer, 
@@ -27,6 +28,7 @@ import {
     Close as CloseIcon
 } from "@mui/icons-material";
 
+import Alignment from "../components/dashboard/Alignment";
 import InputForm from "../components/dashboard/InputForm";
 import LoadingOverlay from "../components/common/LoadingOverlay";
 import Page from "../components/common/Page";
@@ -155,6 +157,9 @@ const Dashboard = () => {
     const submit = async (data) => {
         setIsBusy(true);
 
+        // reset selectedResultIndex
+        setSelectedResultIndex(null);
+
         try {
             const response = await fetch("/api/parse_submission", {
                 method: "POST",
@@ -193,7 +198,7 @@ const Dashboard = () => {
             const result = await response.json();
             if (result.status === "success") {
                 toast.success(result.message);
-                setQueryResult(result.payload);
+                setQueryResult(result.payload["motif_codes"]);
                 setResultModalOpen(true);
             } else if (result.status === "warning") {
                 toast.warn(result.message);
@@ -207,6 +212,17 @@ const Dashboard = () => {
         };
 
         setIsBusy(false);
+    };
+
+    const handleDownload = () => {
+        const filename = "results.json";
+        const dataJson = JSON.stringify(queryResult, null, 4);
+        const blob = new Blob([dataJson], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = filename;
+        link.click();
     };
 
     return (
@@ -284,6 +300,12 @@ const Dashboard = () => {
                             <Typography id="modal-modal-title" variant="h6" component="h2">
                                 Query Result
                             </Typography>
+                            <Button
+                                variant="contained"
+                                onClick={handleDownload}
+                            >
+                                Download results
+                            </Button>
                         </Box>
                         <Box 
                             sx={{ 
@@ -292,9 +314,13 @@ const Dashboard = () => {
                                 height: "calc(100% - 64px)" 
                             }}
                         >
-                            <Typography id="modal-modal-description" sx={{ mt: 2 }}>
-                                {JSON.stringify(queryResult)}
-                            </Typography>
+                            {queryResult.length === 0 ? (
+                                <Typography id="modal-modal-description" sx={{ mt: 2 }}>
+                                    No results found.
+                                </Typography>
+                            ) : (
+                                <Alignment data={queryResult} />
+                            )}
                         </Box>
                     </Box>
                 </Modal>
@@ -339,6 +365,7 @@ const Dashboard = () => {
                             <QueryForm
                                 results={parsedResults}
                                 selectedResultIndex={selectedResultIndex}
+                                setSelectedResultIndex={setSelectedResultIndex}
                                 columns={query}
                                 setColumns={setQuery}
                                 submit={submitQuery}

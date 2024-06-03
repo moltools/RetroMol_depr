@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Box, Button, Divider, FormControl, FormControlLabel, IconButton, InputLabel, MenuItem, MenuProps, Paper, 
-    PaperProps, Select, Switch, TextField, Tooltip, Typography ,
+    PaperProps, Select, Switch, TextField, Tooltip, Typography,
     Radiogroup, Radio, RadioGroup
 } from "@mui/material";
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
@@ -20,11 +20,11 @@ const defaultMotif = {
     peptideCid: "Any",
 };
 
-const QueryForm = ({ results, selectedResultIndex, columns, setColumns, submit }) => {
+const QueryForm = ({ results, selectedResultIndex, setSelectedResultIndex, columns, setColumns, submit }) => {
     
     // query settings
     const [queryType, setQueryType] = useState("match"); // match or query
-    const [alignmentType, setAlignmentType] = useState("global"); // global or local
+    const [alignmentType, setAlignmentType] = useState("local"); // global or local
     const [gapPenalty, setGapPenalty] = useState(2);
     const [endGapPenalty, setEndGapPenalty] = useState(1);
     const [queryHasLeadingModules, setQueryHasLeadingModules] = useState(false);
@@ -35,7 +35,7 @@ const QueryForm = ({ results, selectedResultIndex, columns, setColumns, submit }
     const [allOrganismLabels, setAllOrganismLabels] = useState([]);
     const [selectedOrganismLabels, setSelectedOrganismLabels] = useState([]);
 
-    const [maxNumMatches, setMaxNumMatches] = useState(50);
+    const [maxNumMatches, setMaxNumMatches] = useState(10);
     const [queryAgainstMolecules, setQueryAgainstMolecules] = useState(true);
     const [queryAgainstProtoclusters, setQueryAgainstProtoclusters] = useState(false);
     const [minMatchLength, setMinMatchLength] = useState(1);
@@ -43,18 +43,19 @@ const QueryForm = ({ results, selectedResultIndex, columns, setColumns, submit }
 
     const handleRefresh = () => {
         setQueryType("match");
-        setAlignmentType("global");
+        setAlignmentType("local");
         setGapPenalty(2);
         setEndGapPenalty(1);
         setQueryHasLeadingModules(false);
         setQueryHasTrailingModules(false);
         setSelectedBioactivityLabels([]);
         setSelectedOrganismLabels([]);
-        setMaxNumMatches(50);
+        setMaxNumMatches(10);
         setQueryAgainstMolecules(true);
         setQueryAgainstProtoclusters(false);
         setMinMatchLength(1);
         setMaxMatchLength(100);
+        setSelectedResultIndex(null);
         
         // when you start querying right away, the selectedResultIndex is null
         if (selectedResultIndex === null) {
@@ -578,14 +579,14 @@ const QueryForm = ({ results, selectedResultIndex, columns, setColumns, submit }
                                 sx={{ mb: 2 }}
                             >
                                 <FormControlLabel
-                                    value="global"
-                                    control={<Radio />}
-                                    label="Global alignment strategy"
-                                />
-                                <FormControlLabel
                                     value="local"
                                     control={<Radio />}
                                     label="Local alignment strategy"
+                                />
+                                <FormControlLabel
+                                    value="global"
+                                    control={<Radio />}
+                                    label="Global alignment strategy"
                                 />
                             </RadioGroup>
                         )}
@@ -593,7 +594,14 @@ const QueryForm = ({ results, selectedResultIndex, columns, setColumns, submit }
                             <Box>
                                 <TextField
                                     value={gapPenalty}
-                                    onChange={(event) => setGapPenalty(event.target.value)}
+                                    onChange={(event) => {
+                                        const value = event.target.value;
+                                        const intValue = parseInt(value);
+                                        if (isNaN(intValue) || intValue < 1) {
+                                            return;
+                                        };
+                                        setGapPenalty(intValue);
+                                    }}
                                     label="Gap penalty"
                                     margin="normal"
                                     variant="outlined"
@@ -602,7 +610,14 @@ const QueryForm = ({ results, selectedResultIndex, columns, setColumns, submit }
                                 />
                                 <TextField
                                     value={endGapPenalty}
-                                    onChange={(event) => setEndGapPenalty(event.target.value)}
+                                    onChange={(event) => {
+                                        const value = event.target.value;
+                                        const intValue = parseInt(value);
+                                        if (isNaN(intValue) || intValue < 1) {
+                                            return;
+                                        };
+                                        setEndGapPenalty(intValue);
+                                    }}
                                     label="End gap penalty"
                                     margin="normal"
                                     variant="outlined"
@@ -712,7 +727,15 @@ const QueryForm = ({ results, selectedResultIndex, columns, setColumns, submit }
                     }}>
                         <TextField
                             value={maxNumMatches}
-                            onChange={(event) => setMaxNumMatches(event.target.value)}
+                            onChange={(event) => {
+                                const value = event.target.value;
+                                const intValue = parseInt(value);
+                                if (isNaN(intValue) || intValue < 1 || intValue > 100) {
+                                    return;
+                                };
+                                setMaxNumMatches(intValue);
+                            
+                            }}
                             label="Max shown matches"
                             margin="normal"
                             variant="outlined"
@@ -721,7 +744,14 @@ const QueryForm = ({ results, selectedResultIndex, columns, setColumns, submit }
                         />
                         <TextField
                             value={minMatchLength}
-                            onChange={(event) => setMinMatchLength(event.target.value)}
+                            onChange={(event) => {
+                                const value = event.target.value;
+                                const intValue = parseInt(value);
+                                if (isNaN(intValue) || intValue < 1 || intValue > 100 || intValue > maxMatchLength) {
+                                    return;
+                                };
+                                setMinMatchLength(intValue);
+                            }}
                             label="Min length motif code"
                             margin="normal"
                             variant="outlined"
@@ -730,7 +760,14 @@ const QueryForm = ({ results, selectedResultIndex, columns, setColumns, submit }
                         />
                         <TextField
                             value={maxMatchLength}
-                            onChange={(event) => setMaxMatchLength(event.target.value)}
+                            onChange={(event) => {
+                                const value = event.target.value;
+                                const intValue = parseInt(value);
+                                if (isNaN(intValue) || intValue < 1 || intValue > 100 || intValue < minMatchLength) {
+                                    return;
+                                };
+                                setMaxMatchLength(intValue);
+                            }}
                             label="Max length motif code"
                             margin="normal"
                             variant="outlined"
