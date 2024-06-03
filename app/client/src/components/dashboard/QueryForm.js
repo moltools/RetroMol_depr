@@ -145,8 +145,11 @@ const QueryForm = ({ results, selectedResultIndex, columns, setColumns, submit }
     useEffect(() => {
         fetchBioactivityLabels();
         fetchOrganismLabels();
+    }, []);
+
+    useEffect(() => {
         if (selectedResultIndex !== null) {
-            const selectedResult = results[selectedResultIndex];
+            const selectedResult = results[selectedResultIndex]["query"];
             setColumns(selectedResult);
         } else {
             setColumns([]);
@@ -267,7 +270,13 @@ const QueryForm = ({ results, selectedResultIndex, columns, setColumns, submit }
                                                                 <Tooltip title="Delete motif.">
                                                                     <IconButton 
                                                                         onClick={() => handleDeleteColumn(index)}
-                                                                        style={{ color: "#990000", backgroundColor: "#ff5f57", padding: "1px"}}
+                                                                        style={{ 
+                                                                            color: 
+                                                                            "#990000", 
+                                                                            backgroundColor: "#ff5f57", 
+                                                                            padding: "1px",
+                                                                            transform: "translateY(-5px) translateX(2px)"
+                                                                        }}
                                                                     >
                                                                         <CloseIcon style={{fontSize: "12px"}} />
                                                                     </IconButton>
@@ -321,7 +330,12 @@ const QueryForm = ({ results, selectedResultIndex, columns, setColumns, submit }
                                                                                             };
                                                                                             window.open(`https://pubchem.ncbi.nlm.nih.gov/compound/${motif.peptideCid}`, "_blank");
                                                                                         }}
-                                                                                        style={{ color: "#985600", backgroundColor: "#febc2e", padding: "1px"}}
+                                                                                        style={{ 
+                                                                                            color: "#985600", 
+                                                                                            backgroundColor: "#febc2e", 
+                                                                                            padding: "1px",
+                                                                                            transform: "translateY(-5px) translateX(2px)"
+                                                                                        }}
                                                                                     >
                                                                                         <SearchIcon style={{fontSize: "12px" }} />
                                                                                     </IconButton>
@@ -338,7 +352,12 @@ const QueryForm = ({ results, selectedResultIndex, columns, setColumns, submit }
                                                                                             );
                                                                                             setColumns(newColumns);
                                                                                         }}
-                                                                                        style={{ color: "#990000", backgroundColor: "#ff5f57", padding: "1px"}}
+                                                                                        style={{ 
+                                                                                            color: "#990000", 
+                                                                                            backgroundColor: "#ff5f57", 
+                                                                                            padding: "1px",
+                                                                                            transform: "translateY(-5px) translateX(2px)"
+                                                                                        }}
                                                                                     >
                                                                                         <CloseIcon style={{fontSize: "12px"}} />
                                                                                     </IconButton>
@@ -593,7 +612,7 @@ const QueryForm = ({ results, selectedResultIndex, columns, setColumns, submit }
                             </Box>
                         )}
                         {queryType === "query" && (
-                            <Box>
+                            <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
                                 <FormControlLabel
                                     control={<Switch 
                                         checked={queryHasLeadingModules}
@@ -627,7 +646,14 @@ const QueryForm = ({ results, selectedResultIndex, columns, setColumns, submit }
                     </Box>
                 </Box>
                 <Divider sx={{ mb: 2 }} />
-                <Box sx={{ display: "flex", gap: 2 }}>
+                <Box 
+                    sx={{ 
+                        display: "flex",
+                        flexDireciton: "row",
+                        gap: 2,
+                        padding: "10px"
+                    }}
+                >
                     <MultiSelect 
                         title="Select bioactivity labels"
                         labels={allBioactivityLabels}
@@ -658,7 +684,7 @@ const QueryForm = ({ results, selectedResultIndex, columns, setColumns, submit }
                         flex: "1 1 50%",
                         padding: "10px"
                     }}>
-                        <Box>
+                        <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
                             <FormControlLabel
                                 control={<Switch 
                                     checked={queryAgainstMolecules}

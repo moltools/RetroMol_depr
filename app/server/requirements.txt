@@ -1,2 +1,5 @@
+rdkit
+versalign
 flask
 neo4j
+tqdm

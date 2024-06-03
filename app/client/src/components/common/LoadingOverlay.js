@@ -1,32 +1,18 @@
 import React from "react";
+import Backdrop from "@mui/material/Backdrop";
+import CircularProgress from "@mui/material/CircularProgress";
 
 const LoadingOverlay = () => {
     return (
-        <div 
-            className="loader-overlay" 
-            style={{
-                position: "fixed", 
-                top: 0, 
-                left: 0, 
-                width: "100%", 
-                height: "100%", 
-                backgroundColor: "rgba(0, 0, 0, 0.5)", 
-                display: "flex", 
-                justifyContent: "center",
-                alignItems: "center",
-                zIndex: 1000,
+        <Backdrop
+            sx={{
+                color: "#fff",
+                zIndex: (theme) => theme.zIndex.drawer + 1,
             }}
+            open={true}
         >
-            <div 
-                className="loader" 
-                style={{
-                    position: "absolute", 
-                    top: "50%", 
-                    left: "50%", 
-                    transform: "translate(-50%, -50%)"
-                }} 
-            />
-        </div>
+            <CircularProgress color="inherit" />
+        </Backdrop>
     );
 };
 

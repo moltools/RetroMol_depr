@@ -284,12 +284,6 @@ const Dashboard = () => {
                             <Typography id="modal-modal-title" variant="h6" component="h2">
                                 Query Result
                             </Typography>
-                            <IconButton 
-                                onClick={() => setResultModalOpen(false)}
-                                style={{ color: "#990000", backgroundColor: "#ff5f57"}}
-                            >
-                                <CloseIcon style={{fontSize: "18px"}} />
-                            </IconButton>
                         </Box>
                         <Box 
                             sx={{ 

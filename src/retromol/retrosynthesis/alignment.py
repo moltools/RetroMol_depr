@@ -47,22 +47,25 @@ class PolyketideMotif(Motif):
         if self.type is not None and self.decoration is not None:
             return f"{self.type}{self.decoration}"
 
-        elif self.type is not None:
-            return f"{self.type}"
+        elif self.type is not None and self.decoration is None:
+            return f"{self.type}*"
+        
+        elif self.type is None and self.decoration is not None:
+            return f"*{self.decoration}"
 
-        return "?"
+        return "*"
 
 
-class PeptideMotif(Motif):
+class OtherMotif(Motif):
     """A peptide motif."""
 
     def __init__(self, source: ty.Optional[str] = None, cid: ty.Optional[str] = None) -> None:
-        """Initialize a peptide motif.
+        """Initialize an other motif.
 
-        :param type: Type of peptide.
-        :type type: ty.Optional[str]
-        :param sequence: Sequence of peptide.
-        :type sequence: ty.Optional[str]
+        :param source: Source of other motif.
+        :type source: ty.Optional[str]
+        :param cid: CID of other motif.
+        :type cid: ty.Optional[str]
         """
         super().__init__()
 
@@ -70,28 +73,28 @@ class PeptideMotif(Motif):
         self.cid = cid
 
     def __eq__(self, other: ty.Any) -> bool:
-        """Check if two peptide motifs are equal.
+        """Check if two other motifs are equal.
 
         :param other: Other peptide motif.
         :type other: ty.Any
         :return: True if equal, False otherwise.
         :rtype: bool
         """
-        if isinstance(other, PeptideMotif):
+        if isinstance(other, OtherMotif):
             return self.source == other.source and self.cid == other.cid
 
         return False
 
     def __str__(self) -> str:
-        """Return string representation of peptide motif.
+        """Return string representation of other motif.
 
-        :return: String representation of peptide motif.
+        :return: String representation of other motif.
         :rtype: str
         """
         if self.source is not None and self.cid is not None:
             return f"{self.source}:{self.cid}"
 
-        return "?"
+        return "*"
 
 
 def sequence_from_motif_string_list(name: str, motif_string_list: ty.List[str]) -> Sequence:
@@ -108,8 +111,6 @@ def sequence_from_motif_string_list(name: str, motif_string_list: ty.List[str]) 
 
     for motif_string in motif_string_list:
         if match := re.match(r"polyketide\|([A-D])(\d{1,2})", motif_string):
-            motif_type = "polyketide"
-            calculated = True
             polyketide_type = match.group(1)
             polyketide_decoration_type = int(match.group(2))
 
@@ -117,12 +118,10 @@ def sequence_from_motif_string_list(name: str, motif_string_list: ty.List[str]) 
             motifs.append(motif)
 
         elif match := re.match(r"peptide\|(\w+)\|(.+)", motif_string):
-            motif_type = "peptide"
-            calculated = True
             peptide_source = match.group(1)
             peptide_cid = match.group(2)
 
-            motif = PeptideMotif(source=peptide_source, cid=peptide_cid)
+            motif = OtherMotif(source=peptide_source, cid=peptide_cid)
             motifs.append(motif)
 
         else:

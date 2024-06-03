@@ -81,15 +81,23 @@ const ResultsDisplay = ({
                 }}>
                     {results.length ? (
                         <Box>
-                            {results.map((_, index) => (
+                            {results.map((result, index) => (
                                 <Button
                                     key={index}
                                     variant="contained"
                                     color={selectedResultIndex === index ? "secondary" : "primary"}
                                     onClick={() => handleSelectResultIndex(index)}
-                                    sx={{ width: "100%", margin: "5px 0" }}
+                                    sx={{ 
+                                        width: "100%", 
+                                        margin: "5px 0",
+                                        display: "flex",
+                                        justifyContent: "flex-start",
+                                        alignItems: "center",
+                                        textAlign: "left",
+                                    }}
                                 >
-                                    {`Cluster ${index + 1}`}
+                                    <span style={{ marginRight: "10px" }}>{index + 1}</span>
+                                    <span>{result["title"]}</span>
                                 </Button>
                             ))}
                         </Box>

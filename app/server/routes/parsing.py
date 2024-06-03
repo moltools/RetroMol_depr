@@ -105,7 +105,15 @@ def parse_submission() -> Response:
         if input_type == "smiles":
             molecule = Molecule("input", input_value)
             result = parse_mol(molecule, REACTIONS, MONOMERS)
-            queries = [motif_code_to_query(seq["motif_code"]) for seq in result.sequences]
+            queries = [
+                {   
+                    "title": f"Retrosynthesis",
+                    "queryType": "retrosynthesis",
+                    "query": motif_code_to_query(seq["motif_code"]),
+                    "metadata": {}
+                }
+                for seq_index, seq in enumerate(result.sequences)
+            ]
 
             if result.success is True:
                 return success("Molecule parsed successfully!", {"queries": queries})
@@ -118,10 +126,8 @@ def parse_submission() -> Response:
         #
         ########################################################################
         elif input_type == "jobId":
-            raise NotImplementedError("Endpoint not implemented yet!")
             data = get_antismash_data(input_value)
-            seqs = parse_antismash_json(data)
-            queries = [motif_code_to_query(seq["motif_code"]) for seq in seqs]
+            queries = parse_antismash_json(data)
             return success("Job parsed successfully!", {"queries": queries})
         
         ########################################################################
@@ -130,10 +136,8 @@ def parse_submission() -> Response:
         #
         ########################################################################
         elif input_type == "json":
-            raise NotImplementedError("Endpoint not implemented yet!")
             data = json.loads(input_value)
-            seqs = parse_antismash_json(data)
-            queries = [motif_code_to_query(seq["motif_code"]) for seq in seqs]
+            queries = parse_antismash_json(data)
             return success("JSON parsed successfully!", {"queries": queries})
     
     except Exception as e:

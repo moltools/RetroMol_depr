@@ -11,7 +11,63 @@ from collections import defaultdict
 from Bio.Seq import Seq
 import requests
 
-from retromol.npkg.paras import predict_specificity
+from retromol.npkg.paras import label_to_pubchem_cid, predict_specificity
+
+
+class Gene:
+    """Gene in AntiSMASH data."""
+
+    def __init__(
+        self, 
+        name: str,
+        start: int, 
+        end: int, 
+        strand: str, 
+    ) -> None:
+        """Initialize a gene.
+        
+        :param name: Name of the gene.
+        :type name: str
+        :param start: Start of the gene.
+        :type start: int
+        :param end: End of the gene.
+        :type end: int
+        :param strand: Strand of the gene.
+        :type strand: str
+        """
+        self.name = name
+        self.start = start
+        self.end = end
+        self.strand = strand
+        self.modules = list()
+
+    def __str__(self) -> str:
+        """Get the string representation of the gene.
+        
+        :return: String representation of the gene.
+        :rtype: str
+        """
+        return f"Gene(name={self.name}, start={self.start}, end={self.end}, strand={self.strand})"
+
+    def __hash__(self) -> int:
+        """Get the hash of the locus.
+        
+        :return: Hash of the locus.
+        :rtype: int
+        """
+        return hash(self.name)
+    
+    def __eq__(self, other: ty.Any) -> bool:
+        """Check if two genes are equal.
+
+        :param other: Other gene.
+        :type other: ty.Any
+        :return: True if the genes are equal, False otherwise.
+        :rtype: bool
+        """
+        if not isinstance(other, Gene):
+            return False
+        return self.name == other.name
 
 
 class ProtoCluster:
@@ -81,61 +137,125 @@ class ProtoCluster:
         :rtype: int
         """
         return len(self.genes)
-
-
-class Gene:
-    """Gene in AntiSMASH data."""
-
-    def __init__(
-        self, 
-        name: str,
-        start: int, 
-        end: int, 
-        strand: str, 
-    ) -> None:
-        """Initialize a gene.
-        
-        :param name: Name of the gene.
-        :type name: str
-        :param start: Start of the gene.
-        :type start: int
-        :param end: End of the gene.
-        :type end: int
-        :param strand: Strand of the gene.
-        :type strand: str
-        """
-        self.name = name
-        self.start = start
-        self.end = end
-        self.strand = strand
-
-    def __str__(self) -> str:
-        """Get the string representation of the gene.
-        
-        :return: String representation of the gene.
-        :rtype: str
-        """
-        return f"Gene(name={self.name}, start={self.start}, end={self.end}, strand={self.strand})"
-
-    def __hash__(self) -> int:
-        """Get the hash of the locus.
-        
-        :return: Hash of the locus.
-        :rtype: int
-        """
-        return hash(self.name)
     
-    def __eq__(self, other: ty.Any) -> bool:
-        """Check if two genes are equal.
-
-        :param other: Other gene.
-        :type other: ty.Any
-        :return: True if the genes are equal, False otherwise.
-        :rtype: bool
+    def to_motif_code(self, dna: str) -> ty.Dict[str, ty.Any]:
+        """Convert the proto cluster to a motif code.
+        
+        :param dna: DNA sequence of source.
+        :type dna: str
+        :return: Motif code.
+        :rtype: ty.Dict[str, ty.Any]
         """
-        if not isinstance(other, Gene):
-            return False
-        return self.name == other.name
+        logger = logging.getLogger(__name__)
+
+        # Collect sequences for PARAS A-domain specificity prediction.
+        to_predict = []
+
+        # Bundle relevant modules into putative domains.
+        groups = []
+        for gene in self.genes:
+            gene_sequence_added = False
+            modules = gene.modules
+
+            current_group = []
+            for module in modules:
+                if module in ["PKS_KS", "AMP-binding"]:
+                    if module == "AMP-binding" and not gene_sequence_added:
+                        gene_start = gene.start
+                        gene_end = gene.end
+                        gene_strand = gene.strand
+                        gene_dna = dna[gene_start:gene_end]
+                        if gene_strand == "-":
+                            gene_dna = str(Seq(gene_dna).reverse_complement())
+                        gene_protein = str(Seq(gene_dna).translate())
+                        gene_fasta = f">{gene.name}\n{gene_protein}"
+                        to_predict.append(gene_fasta)
+                        gene_sequence_added = True
+
+                    if current_group:
+                        groups.append(current_group)
+
+                    current_group = [module]
+
+                elif (
+                    module in ["PKS_DH", "PKS_ER", "PKS_KR"] 
+                    and current_group 
+                    and current_group[0] == "PKS_KS"
+                ):
+                    current_group.append(module)
+
+                else:
+                    continue 
+
+            if current_group:
+                groups.append(current_group)
+
+        # Predict specificity for A-domains.
+        to_predict = "\n".join(to_predict)
+        try:
+            predicted_specificities = predict_specificity(to_predict)
+            predicted_specificities = [p[1][0][1] for p in predicted_specificities]
+        except Exception as e:
+            logger.error(f"Could not predict A-domain specificities: {e}")
+            predicted_specificities = []
+
+        # Count number of groups with AMP-domains.
+        num_amp_binding = len([group for group in groups if "AMP-binding" in group])
+        if num_amp_binding != len(predicted_specificities):
+            predicted_specificities = ["Any"] * num_amp_binding
+
+        predicted_specificities = iter(predicted_specificities)
+        
+        # Parse the putative domains.
+        query = []
+        for group in groups:
+            if "PKS_KS" in group and "AMP-binding" in group:
+                raise ValueError("Found both PKS_KS and AMP-binding in the same domain.")
+            
+            elif "PKS_KS" in group:
+                polyketide_type = "A"
+                polyketide_decor = "Any"
+
+                if "PKS_ER" in group:
+                    polyketide_type = "D"
+                
+                elif "PKS_DH" in group:
+                    polyketide_type = "C" 
+                
+                elif "PKS_KR" in group:
+                    polyketide_type = "B"  
+                
+                query.append([{
+                    "motifType": "polyketide",
+                    "polyketideType": polyketide_type,
+                    "polyketideDecor": polyketide_decor,
+                    "peptideSource": "Any",
+                    "peptideCid": "Any"
+                }])
+
+            elif "AMP-binding" in group:
+                specificity = next(predicted_specificities)
+                pubchem_cid = label_to_pubchem_cid(specificity)
+                if pubchem_cid is None:
+                    pubchem_cid = "Any"
+
+                query.append([{
+                    "motifType": "peptide",
+                    "polyketideType": "Any",
+                    "polyketideDecor": "Any",
+                    "peptideSource": "Any",
+                    "peptideCid": pubchem_cid
+                }])
+
+            else: 
+                raise ValueError("Could not find PKS_KS or AMP-binding in the domain.")
+
+        return {   
+            "title": f"{self.category} ({self.product})",
+            "queryType": "parsed",
+            "query": query,
+            "metadata": {}
+        }
 
 
 class ProtoClusterDict:
@@ -206,7 +326,7 @@ def get_antismash_data(job_id: str) -> ty.Dict[str, ty.Any]:
     response = requests.get(url)
 
     if response.status_code != 200:
-        msg = f"Could not find AntiSMASH data for job ID {job_id}!"
+        msg = f"Could not find AntiSMASH data for job ID '{job_id}'."
         logger.error(msg)
         raise ValueError(msg)
 
@@ -341,29 +461,38 @@ def get_modules_from_record(record: ty.Dict[str, ty.Any]) -> ty.Dict[str, ty.Lis
     return modules_per_gene
 
 
-def parse_antismash_json(data: ty.Dict[str, ty.Any]) -> ty.Any:
+def parse_antismash_json(data: ty.Dict[str, ty.Any]) -> ty.List[ty.Dict[str, ty.Any]]:
     """Parse AntiSMASH JSON data.
     
     :param data: AntiSMASH JSON data.
     :type data: ty.Dict[str, ty.Any]
     :return: Parsed AntiSMASH data.
-    :rtype: ty.Any
+    :rtype: ty.List[ty.Dict[str, ty.Any]]
     :raises IndexError: If the JSON data is not in the expected format.
     """
+    logger = logging.getLogger(__name__)
+
     # First parse out all genes from the JSON data.
     records = data["records"]
 
-    for record in records:
+    queries = []
+    for record_index, record in enumerate(records):
         dna = record["seq"]["data"]
         genes = get_genes_from_record(record)
         modules = get_modules_from_record(record)
         protoclusters = get_protoclusters_from_record(record)
 
+        # Assign modules to genes.
+        for gene_name, gene in genes.items():
+            gene.modules = modules.get(gene_name, [])
+
         # Remove all genes that have no modules.
-        for gene_name in list(genes.keys()):
-            if gene_name not in modules:
-                print(f"Removing gene {gene_name} as it has no modules.")
-                del genes[gene_name]
+        genes = {
+            name: gene 
+            for name, gene 
+            in genes.items() 
+            if len(gene.modules) > 0
+        }
 
         # Continue if no genes or protoclusters.
         if len(protoclusters) == 0 or len(genes) == 0:
@@ -376,32 +505,10 @@ def parse_antismash_json(data: ty.Dict[str, ty.Any]) -> ty.Any:
         # Remove clusters without assigned genes.
         protoclusters.remove_empty_clusters()
 
-        ########################################################################
-        ########################################################################
-        ########################################################################
+        logger.debug(f"Found {len(protoclusters)} protoclusters for record {record_index}.")
 
-        # Loop over protoclusters and their genes. Print results.
         for protocluster in protoclusters.clusters.values():
-            print(f"\n> {protocluster}")
-            genes = protocluster.genes
-            for gene in genes:
-                print(f"> {gene}")
-                gene_modules = modules[gene.name]
-                print(f"> Modules:")
-                for gene_module in gene_modules:
-                    print(f"\t{gene_module}")
-                if "AMP-binding" in gene_modules:
-                    gene_start = gene.start
-                    gene_end = gene.end
-                    gene_strand = gene.strand
-                    gene_dna_seq = dna[gene_start:gene_end]
-                    if gene_strand == "-":
-                        gene_dna_seq = Seq(gene_dna_seq).reverse_complement()
-                    gene_protein_seq = Seq(gene_dna_seq).translate()
-                    fasta_src = f">{gene_name}\n{gene_protein_seq}"
-                    predictions = predict_specificity(fasta_src)  # TODO: parse all items to PARAS at once and predict in one go.
-                    print(f"> Predictions:")
-                    for domain_id, prediction in predictions:
-                        print(f"\t{domain_id}: {prediction}")
+            motif_code_query = protocluster.to_motif_code(dna)
+            queries.append(motif_code_query)
 
-    return []
+    return queries
