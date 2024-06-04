@@ -7,3 +7,4 @@ retromol @ git+https://github.com/moltools/retromol.git@develop
 cinemol==1.0.0
 biopython
 requests
+gunicorn
