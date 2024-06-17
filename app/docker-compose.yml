@@ -1,7 +1,7 @@
 version: "3.3"
 
 services:
-  api:
+  moltools-server:
     build:
       context: . 
       dockerfile: Dockerfile.server
@@ -13,7 +13,7 @@ services:
       - moltools-network
     container_name: moltools-server
 
-  client:
+  moltools-client:
     build: 
       context: . 
       dockerfile: Dockerfile.client 
@@ -25,7 +25,7 @@ services:
       - moltools-network
     container_name: moltools-client
 
-  database:
+  moltools-database:
     build:
       context: . 
       dockerfile: Dockerfile.database
