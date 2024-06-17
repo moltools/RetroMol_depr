@@ -49,7 +49,7 @@ docker-compose up --build --force-recreate
 Run in detached mode:
     
 ```bash
-docker-compose up --build --force-recreate -d
+docker-compose -p moltools up --build --force-recreate --remove-orphans -d
 ```
 
 The app will be available at `http://localhost:4001/`.
