@@ -43,15 +43,13 @@ Visit `http://localhost:3000/` to view the app.
 Run the following script to build and run the app in Docker:
 
 ```bash
-run_docker.sh <api_port> <client_port> -d
+docker-compose up --build --force-recreate
 ```
 
-The app will be available at `http://localhost:<client_port>/`.
-
-### Rebuild Docker image
-
-Run the following script to rebuild the Docker image:
-
+Run in detached mode:
+    
 ```bash
-SERVER_PORT=<server_port> CLIENT_PORT=<client_port> BROWSER_PORT=<browser_port> DATABASE_PORT=<database_port> docker-compose build
+docker-compose up --build --force-recreate -d
 ```
+
+The app will be available at `http://localhost:4001/`.
