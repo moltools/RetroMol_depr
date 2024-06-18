@@ -226,7 +226,7 @@ const Dashboard = () => {
     };
 
     return (
-        <Page sx={{ display: "flex", width: "100%", flexDirection: "column", minWidth: "1300px" }}>
+        <Page sx={{ display: "flex", width: "100%", flexDirection: "column" }}>
             <AppBar position="fixed">
                 <Toolbar sx={{ display: "flex", justifyContent: "space-between" }}>
                     <Box sx={{ display: "flex", justifyContent: "left", width: "100%", alignItems: "center" }}>
