@@ -11,6 +11,7 @@ import AddIcon from "@mui/icons-material/Add";
 import SearchIcon from "@mui/icons-material/Search";
 import { toast } from "react-toastify";
 import MultiSelect from "../common/MultiSelect";
+import { ExpandMore, ExpandLess } from "@mui/icons-material";
 
 const defaultMotif = {
     motifType: "polyketide",
@@ -40,6 +41,9 @@ const QueryForm = ({ results, selectedResultIndex, setSelectedResultIndex, colum
     const [queryAgainstProtoclusters, setQueryAgainstProtoclusters] = useState(false);
     const [minMatchLength, setMinMatchLength] = useState(1);
     const [maxMatchLength, setMaxMatchLength] = useState(100);
+
+    const [showQueryTypeOptions, setShowQueryTypeOptions] = useState(false);
+    const [showQuerySpaceOptions, setShowQuerySpaceOptions] = useState(false);
 
     const handleRefresh = () => {
         setQueryType("match");
@@ -544,111 +548,146 @@ const QueryForm = ({ results, selectedResultIndex, setSelectedResultIndex, colum
                     </Box>
                 </Box>
                 <Divider sx={{ mb: 2 }} />
-                <Box sx={{ display: "flex", gap: 2}}>
-                    <Box sx={{ 
-                        flexGrow: 1, 
-                        flex: "1 1 50%",
-                        padding: "10px"
-                    }}>
+                <Box sx={{ 
+                    flexGrow: 1, 
+                    flex: "1 1 50%",
+                    paddingLeft: "10px"
+                }}>
+                    <RadioGroup
+                        value={queryType}
+                        onChange={(event) => setQueryType(event.target.value)}
+                        sx={{ mb: 2 }}
+                    >
+                        <FormControlLabel
+                            value="match"
+                            control={<Radio />}
+                            label="Pairwise matching"
+                        />
+                        <FormControlLabel
+                            value="query"
+                            control={<Radio />}
+                            label="Pattern matching"
+                        />
+                    </RadioGroup>
+                </Box>
+                <Box sx={{ 
+                    display: "flex", 
+                    flexDirection: "column", 
+                    border: "none",
+                    borderRadius: "4px" 
+                }}>
+                {/* <Box> */}
+                    <Button
+                        variant="outlined"
+                        color="primary"
+                        onClick={() => setShowQueryTypeOptions(!showQueryTypeOptions)}
+                        style={{ 
+                            width: "100%", 
+                            display: "flex", 
+                            justifyContent: "space-between",
+                            borderBottomLeftRadius: showQueryTypeOptions ? "0px" : "4px",
+                            borderBottomRightRadius: showQueryTypeOptions ? "0px" : "4px",
+                        }}
+                        sx={{
+                            borderColor: "primary.main",
+                        
+                        }}
+                    >
+                        {showQueryTypeOptions ? <ExpandLess /> : <ExpandMore />}
+                        {showQueryTypeOptions ? "Hide options" : "Show options"}
+                        {showQueryTypeOptions ? <ExpandLess /> : <ExpandMore />}
+                    </Button>
+                {/* </Box> */}
+                {showQueryTypeOptions && (
+                <Box sx={{ 
+                    flexGrow: 1, 
+                    // flex: "1 1 50%",
+                    padding: "10px",
+                    border: "1px solid #ccc",
+                    borderColor: "primary.main",
+                    backgroundColor: "#d3d3d3",
+                    borderTop: "none",
+                    borderBottomLeftRadius: "4px",
+                    borderBottomRightRadius: "4px",
+                }}>
+                    {queryType === "match" && (
                         <RadioGroup
-                            value={queryType}
-                            onChange={(event) => setQueryType(event.target.value)}
+                            value={alignmentType}
+                            onChange={(event) => setAlignmentType(event.target.value)}
                             sx={{ mb: 2 }}
                         >
                             <FormControlLabel
-                                value="match"
+                                value="local"
                                 control={<Radio />}
-                                label="Pairwise matching"
+                                label="Local alignment strategy"
                             />
                             <FormControlLabel
-                                value="query"
+                                value="global"
                                 control={<Radio />}
-                                label="Pattern matching"
+                                label="Global alignment strategy"
                             />
                         </RadioGroup>
-                    </Box>
-                    <Box sx={{ 
-                        flexGrow: 1, 
-                        flex: "1 1 50%",
-                        padding: "10px"
-                    }}>
-                        {queryType === "match" && (
-                            <RadioGroup
-                                value={alignmentType}
-                                onChange={(event) => setAlignmentType(event.target.value)}
-                                sx={{ mb: 2 }}
-                            >
-                                <FormControlLabel
-                                    value="local"
-                                    control={<Radio />}
-                                    label="Local alignment strategy"
-                                />
-                                <FormControlLabel
-                                    value="global"
-                                    control={<Radio />}
-                                    label="Global alignment strategy"
-                                />
-                            </RadioGroup>
-                        )}
-                        {queryType === "match" && (
-                            <Box>
-                                <TextField
-                                    value={gapPenalty}
-                                    onChange={(event) => {
-                                        const value = event.target.value;
-                                        const intValue = parseInt(value);
-                                        if (isNaN(intValue) || intValue < 1) {
-                                            return;
-                                        };
-                                        setGapPenalty(intValue);
-                                    }}
-                                    label="Gap penalty"
-                                    margin="normal"
-                                    variant="outlined"
-                                    type="number"
-                                    sx={{ width: "100%", mb: 2 }}
-                                />
-                                <TextField
-                                    value={endGapPenalty}
-                                    onChange={(event) => {
-                                        const value = event.target.value;
-                                        const intValue = parseInt(value);
-                                        if (isNaN(intValue) || intValue < 1) {
-                                            return;
-                                        };
-                                        setEndGapPenalty(intValue);
-                                    }}
-                                    label="End gap penalty"
-                                    margin="normal"
-                                    variant="outlined"
-                                    type="number"
-                                    sx={{ width: "100%", mb: 2 }}
-                                />
-                            </Box>
-                        )}
-                        {queryType === "query" && (
-                            <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                                <FormControlLabel
-                                    control={<Switch 
-                                        checked={queryHasLeadingModules}
-                                        onChange={(event) => setQueryHasLeadingModules(event.target.checked)}
-                                        color="primary"
-                                        name="queryHasLeadingModules"
-                                    />}
-                                    label="Query has leading modules"
-                                />
-                                <FormControlLabel
-                                    control={<Switch 
-                                        checked={queryHasTrailingModules}
-                                        onChange={(event) => setQueryHasTrailingModules(event.target.checked)}
-                                        color="primary"
-                                        name="queryHasTrailingModules"
-                                    />}
-                                    label="Query has trailing modules"
-                                />
-                            </Box>
-                        )}
-                    </Box>
+                    )}
+                    {queryType === "match" && (
+                        <Box>
+                            <TextField
+                                value={gapPenalty}
+                                onChange={(event) => {
+                                    const value = event.target.value;
+                                    const intValue = parseInt(value);
+                                    if (isNaN(intValue) || intValue < 1) {
+                                        return;
+                                    };
+                                    setGapPenalty(intValue);
+                                }}
+                                label="Gap penalty"
+                                margin="normal"
+                                variant="outlined"
+                                type="number"
+                                sx={{ width: "100%", mb: 2 }}
+                            />
+                            <TextField
+                                value={endGapPenalty}
+                                onChange={(event) => {
+                                    const value = event.target.value;
+                                    const intValue = parseInt(value);
+                                    if (isNaN(intValue) || intValue < 1) {
+                                        return;
+                                    };
+                                    setEndGapPenalty(intValue);
+                                }}
+                                label="End gap penalty"
+                                margin="normal"
+                                variant="outlined"
+                                type="number"
+                                sx={{ width: "100%" }}
+                            />
+                        </Box>
+                    )}
+                    {queryType === "query" && (
+                        <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                            <FormControlLabel
+                                control={<Switch 
+                                    checked={queryHasLeadingModules}
+                                    onChange={(event) => setQueryHasLeadingModules(event.target.checked)}
+                                    color="primary"
+                                    name="queryHasLeadingModules"
+                                />}
+                                label="Query has leading modules"
+                            />
+                            <FormControlLabel
+                                control={<Switch 
+                                    checked={queryHasTrailingModules}
+                                    onChange={(event) => setQueryHasTrailingModules(event.target.checked)}
+                                    color="primary"
+                                    name="queryHasTrailingModules"
+                                />}
+                                label="Query has trailing modules"
+                            />
+                        </Box>
+                    )}
+                </Box>
+                )}
                 </Box>
 
                 <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "20px" }}>
@@ -660,28 +699,28 @@ const QueryForm = ({ results, selectedResultIndex, setSelectedResultIndex, colum
                         </TypographyTooltip>
                     </Box>
                 </Box>
-                <Divider sx={{ mb: 2 }} />
-                <Box 
+                <Divider sx={{ mb: 4 }} />
+                {/* <Box 
                     sx={{ 
                         display: "flex",
                         flexDireciton: "row",
                         gap: 2,
                         padding: "10px"
                     }}
-                >
+                > */}
                     <MultiSelect 
-                        title="Select bioactivity labels"
+                        title="Select for bioactivity label"
                         labels={allBioactivityLabels}
                         selectedLabels={selectedBioactivityLabels}
                         setSelectedLabels={setSelectedBioactivityLabels}
                     />
                     <MultiSelect 
-                        title="Select organisms"
+                        title="Select for genus"
                         labels={allOrganismLabels}
                         selectedLabels={selectedOrganismLabels}
                         setSelectedLabels={setSelectedOrganismLabels}
                     />
-                </Box>
+                {/* </Box> */}
 
                 <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "20px" }}>
                     <Box sx={{ display: "flex", gap: 1 }}>
@@ -693,37 +732,75 @@ const QueryForm = ({ results, selectedResultIndex, setSelectedResultIndex, colum
                     </Box>
                 </Box>
                 <Divider sx={{ mb: 2 }} />
-                <Box sx={{ display: "flex", gap: 2 }}>
-                    <Box sx={{ 
-                        flexGrow: 1, 
-                        flex: "1 1 50%",
-                        padding: "10px"
-                    }}>
-                        <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                            <FormControlLabel
-                                control={<Switch 
-                                    checked={queryAgainstMolecules}
-                                    onChange={(event) => setQueryAgainstMolecules(event.target.checked)}
-                                    color="primary"
-                                    name="queryAgainstMolecules"
-                                />}
-                                label="Query against molecules"
-                            />
-                            <FormControlLabel
-                                control={<Switch 
-                                    checked={queryAgainstProtoclusters}
-                                    onChange={(event) => setQueryAgainstProtoclusters(event.target.checked)}
-                                    color="primary"
-                                    name="queryAgainstProtoclusters"
-                                />}
-                                label="Query against protoclusters"
-                            />
-                        </Box>
+                <Box sx={{ 
+                    flexGrow: 1, 
+                    flex: "1 1 50%",
+                    padding: "10px"
+                }}>
+                    <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                        <FormControlLabel
+                            control={<Switch 
+                                checked={queryAgainstMolecules}
+                                onChange={(event) => setQueryAgainstMolecules(event.target.checked)}
+                                color="primary"
+                                name="queryAgainstMolecules"
+                            />}
+                            label="Query against molecules"
+                        />
+                        <FormControlLabel
+                            control={<Switch 
+                                checked={queryAgainstProtoclusters}
+                                onChange={(event) => setQueryAgainstProtoclusters(event.target.checked)}
+                                color="primary"
+                                name="queryAgainstProtoclusters"
+                            />}
+                            label="Query against protoclusters"
+                        />
                     </Box>
+                </Box>
+                <Box sx={{ 
+                    display: "flex", 
+                    flexDirection: "column", 
+                    border: "none",
+                    borderRadius: "4px" ,
+                    paddingTop: "5px",
+                }}>
+                    <Button
+                            variant="outlined"
+                            color="primary"
+                            onClick={() => setShowQuerySpaceOptions(!showQuerySpaceOptions)}
+                            style={{ 
+                                width: "100%", 
+                                display: "flex", 
+                                justifyContent: "space-between",
+                                borderBottomLeftRadius: showQuerySpaceOptions ? "0px" : "4px",
+                                borderBottomRightRadius: showQuerySpaceOptions ? "0px" : "4px",
+                            }}
+                            sx={{
+                                borderColor: "primary.main",
+                            
+                            }}
+                        >
+                            {showQuerySpaceOptions ? <ExpandLess /> : <ExpandMore />}
+                            {showQuerySpaceOptions ? "Hide options" : "Show options"}
+                            {showQuerySpaceOptions ? <ExpandLess /> : <ExpandMore />}
+                    </Button>
+                    {showQuerySpaceOptions && (
+                    // <Box sx={{ 
+                    //     flexGrow: 1, 
+                    //     flex: "1 1 50%",
+                    //     padding: "10px"
+                    // }}>
                     <Box sx={{ 
                         flexGrow: 1, 
-                        flex: "1 1 50%",
-                        padding: "10px"
+                        // flex: "1 1 50%",
+                        padding: "10px",
+                        border: "1px solid #ccc",
+                        borderColor: "primary.main",
+                        backgroundColor: "#d3d3d3",
+                        borderTop: "none",
+                        borderBottomLeftRadius: "4px",
+                        borderBottomRightRadius: "4px",
                     }}>
                         <TextField
                             value={maxNumMatches}
@@ -775,6 +852,7 @@ const QueryForm = ({ results, selectedResultIndex, setSelectedResultIndex, colum
                             sx={{ width: "100%", mb: 2 }}
                         />
                     </Box>
+                    )}
                 </Box>
                 
                 <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", marginTop: "20px" }}>

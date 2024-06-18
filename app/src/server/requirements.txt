@@ -4,7 +4,7 @@ flask
 neo4j
 tqdm
 retromol @ git+https://github.com/moltools/retromol.git@develop
-cinemol==1.0.0
+cinemol==1.0.1
 biopython
 requests
 gunicorn

@@ -40,8 +40,8 @@ const ResultsDisplay = ({
                 border: "1px solid #ccc",
                 display: "flex",
                 flexDirection: "column",
-                minHeight: "385px",
-                maxHeight: "385px",
+                // minHeight: "385px",
+                // maxHeight: "400px",
             }}
         >
             <Box sx={{ flexShrink: 0 }}>
@@ -66,11 +66,26 @@ const ResultsDisplay = ({
                 </Box>
                 <Divider sx={{ mb: 2 }} />
             </Box>
-            <Box sx={{ display: "flex", gap: 2 }}>
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                <Box sx={{ 
+                    flex: "1 1 100%",
+                    display: "flex", 
+                    // alignItems: "center", 
+                    // justifyContent: "center", 
+                    padding: "10px", // delete this line when centering component to be implemented
+                    backgroundColor: "white", 
+                    borderRadius: "4px", 
+                    border: "1px solid #bbb",
+                    boxShadow: "inset 0 2px 5px rgba(0, 0, 0, 0.1)",
+                }}>
+                    <Typography>
+                        Result views coming soon.
+                    </Typography>
+                </Box>
                 <Box sx={{ 
                     flexGrow: 1, 
                     overflowY: "auto", 
-                    minHeight: "275px",
+                    // minHeight: "275px",
                     maxHeight: "275px", 
                     flex: "1 1 50%",
                     backgroundColor: "white",
@@ -107,21 +122,7 @@ const ResultsDisplay = ({
                         </Typography>
                     )}
                 </Box>
-                <Box sx={{ 
-                    flex: "1 1 50%",
-                    display: "flex", 
-                    // alignItems: "center", 
-                    // justifyContent: "center", 
-                    padding: "10px", // delete this line when centering component to be implemented
-                    backgroundColor: "white", 
-                    borderRadius: "4px", 
-                    border: "1px solid #bbb",
-                    boxShadow: "inset 0 2px 5px rgba(0, 0, 0, 0.1)",
-                }}>
-                    <Typography>
-                        Result views coming soon.
-                    </Typography>
-                </Box>
+                
             </Box>
         </Paper>
     );

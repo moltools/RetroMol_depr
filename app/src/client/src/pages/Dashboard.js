@@ -239,9 +239,14 @@ const Dashboard = () => {
                         >
                             <MenuIcon />
                         </IconButton>
-                        <Typography variant="h6" noWrap>
-                            {`RetroMol (${version})`}
-                        </Typography>
+                        <Box sx={{ display: "flex", alignItems: "center" }}>
+                            <Box sx={{ display: "flex", alignItems: "center", mr: 2 }}>
+                                <img src="/retromol.svg" alt="RetroMol" style={{ width: 40, height: 40 }} />
+                            </Box>
+                            <Typography variant="h6" noWrap>
+                                {`RetroMol (${version})`}
+                            </Typography>
+                        </Box>
                     </Box>
                     <Box>
                         
