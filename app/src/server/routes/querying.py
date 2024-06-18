@@ -103,6 +103,24 @@ def get_bioactivity_labels(session: neo4j.Session, compound_identifier: str) -> 
     return bioactivities
 
 
+def get_genus_labels(session: neo4j.Session, compound_identifier: str) -> ty.List[str]:
+    """Get genus labels for a compound.
+    
+    :param session: Neo4j session.
+    :type session: neo4j.Session
+    :param compound_identifier: Compound identifier.
+    :type compound_identifier: str
+    :return: Genus labels.
+    :rtype: ty.List[str]
+    """
+    genus = []
+    query = "MATCH (c:Compound {identifier: $identifier})-[:PRODUCED_BY]->(o:Organism) RETURN o"
+    result = session.run(query, identifier=compound_identifier)
+    for record in result:
+        genus.append(record["o"]["genus"])
+    return genus
+
+
 def construct_statement_query_space(
     start_statement: str, 
     return_statement: str,
@@ -172,6 +190,7 @@ def prep_query_results(
     for item in results:
         motif_code_identifier = item.identifier
         bioactivities = get_bioactivity_labels(session, motif_code_identifier)
+        genus = get_genus_labels(session, motif_code_identifier)
 
         motif_code = []
         for motif in item._motifs:
@@ -209,7 +228,8 @@ def prep_query_results(
         motif_codes.append({
             "motifCode": motif_code,
             "motifCodeIdentifier": motif_code_identifier,
-            "bioactivities": bioactivities
+            "bioactivities": bioactivities,
+            "genus": genus
         })
 
     return motif_codes
@@ -580,7 +600,8 @@ def query_submission() -> Response:
             raise ValueError("Invalid alignment strategy.")
         
         selected_bioactivity_labels = [x["value"] for x in selected_bioactivity_labels]
-        selected_organism_labels = [x["value"] for x in selected_organism_labels]
+        selected_organism_labels = [x["value"] for x in selected_organism_labels] # list of lists
+        selected_organism_labels = [item for sublist in selected_organism_labels for item in sublist] # unpack list of lists
 
     except Exception as e:
         error_type = e.__class__.__name__

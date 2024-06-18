@@ -6,6 +6,7 @@ import json
 import os
 import re
 import typing as ty
+from collections import defaultdict
 
 import neo4j
 from flask import Blueprint, Response, request
@@ -51,8 +52,9 @@ def fetch_organism_labels() -> Response:
         driver = neo4j.GraphDatabase.driver(NEO4J_URI)
 
     # Retrieve all producing organisms
-    retrieved_ncbi_ids = set()
-    producing_organisms = []
+    # retrieved_ncbi_ids = set()
+    # producing_organisms = []
+    producing_genus = defaultdict(set)
     with driver.session() as session:
         query = """
         MATCH (o:Organism)
@@ -61,15 +63,24 @@ def fetch_organism_labels() -> Response:
         result = session.run(query)
         for record in result:
             genus = record["o"]["genus"]
-            species = record["o"]["species"]
+            # species = record["o"]["species"]
             ncbi = record["o"]["ncbi_id"]
-            name = f"{genus} {species}"
-            if ncbi in retrieved_ncbi_ids:
-                continue
-            producing_organisms.append({"label": name, "value": ncbi})
-            retrieved_ncbi_ids.add(ncbi)
+            # name = f"{genus} {species}"
+            # if ncbi in retrieved_ncbi_ids:
+            #     continue
+            # producing_organisms.append({"label": name, "value": ncbi})
+            # retrieved_ncbi_ids.add(ncbi)
+            producing_genus[genus].add(ncbi)
 
-    producing_organisms.sort(key=lambda x: x["label"])
-    payload = {"organismLabels": producing_organisms}
+    # producing_organisms.sort(key=lambda x: x["label"])
+
+    producing_genus = [
+        {"label": genus, "value": list(ncbi_ids)}
+        for genus, ncbi_ids in producing_genus.items()
+    ]
+    producing_genus.sort(key=lambda x: x["label"])
+
+    # payload = {"organismLabels": producing_organisms}
+    payload = {"organismLabels": producing_genus}
 
     return success("Organism labels fetched successfully!", payload)

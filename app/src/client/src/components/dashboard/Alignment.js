@@ -114,6 +114,7 @@ const Alignment = ({ data }) => {
                                     </TableCell>
                                 ))}
                                 <TableCell style={{ textAlign: "left" }}>Bioactivity</TableCell>
+                                <TableCell style={{ textAlign: "left" }}>Genus</TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
@@ -171,6 +172,9 @@ const Alignment = ({ data }) => {
                                     ))}
                                     <TableCell style={{ textAlign: "left", whiteSpace: "nowrap" }}>
                                         {item.bioactivities.length ? item.bioactivities.join(", ").charAt(0).toUpperCase() + item.bioactivities.join(", ").slice(1) : "N/A"}
+                                    </TableCell>
+                                    <TableCell style={{ textAlign: "left", whiteSpace: "nowrap" }}>
+                                        {item.genus.length ? item.genus.join(", ").charAt(0).toUpperCase() + item.genus.join(", ").slice(1) : "N/A"}
                                     </TableCell>
                                 </TableRow>
                             ))}

@@ -605,7 +605,7 @@ const QueryForm = ({ results, selectedResultIndex, setSelectedResultIndex, colum
                     padding: "10px",
                     border: "1px solid #ccc",
                     borderColor: "primary.main",
-                    backgroundColor: "#d3d3d3",
+                    backgroundColor: "#cccccc",
                     borderTop: "none",
                     borderBottomLeftRadius: "4px",
                     borderBottomRightRadius: "4px",
@@ -708,18 +708,22 @@ const QueryForm = ({ results, selectedResultIndex, setSelectedResultIndex, colum
                         padding: "10px"
                     }}
                 > */}
+                    <Box sx={{ m: 0, p: 0, mb: 2, marginLeft: "-5px", paddingRight: "10px" }}>
                     <MultiSelect 
                         title="Select for bioactivity label"
                         labels={allBioactivityLabels}
                         selectedLabels={selectedBioactivityLabels}
                         setSelectedLabels={setSelectedBioactivityLabels}
                     />
+                    </Box>
+                    <Box sx={{ m: 0, p: 0, mb: 2, marginLeft: "-5px", paddingRight: "10px" }}>
                     <MultiSelect 
                         title="Select for genus"
                         labels={allOrganismLabels}
                         selectedLabels={selectedOrganismLabels}
                         setSelectedLabels={setSelectedOrganismLabels}
                     />
+                    </Box>
                 {/* </Box> */}
 
                 <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "20px" }}>
@@ -797,7 +801,7 @@ const QueryForm = ({ results, selectedResultIndex, setSelectedResultIndex, colum
                         padding: "10px",
                         border: "1px solid #ccc",
                         borderColor: "primary.main",
-                        backgroundColor: "#d3d3d3",
+                        backgroundColor: "#cccccc",
                         borderTop: "none",
                         borderBottomLeftRadius: "4px",
                         borderBottomRightRadius: "4px",
