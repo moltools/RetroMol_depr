@@ -85,7 +85,7 @@ const SidebarButtonBugReport = () => {
     );
 };
 
-const Dashboard = () => {
+const RetroMol = () => {
     const [isBusy, setIsBusy] = useState(false);
     const [queryOnly, setQueryOnly] = useState(false);
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -248,9 +248,6 @@ const Dashboard = () => {
                             </Typography>
                         </Box>
                     </Box>
-                    <Box>
-                        
-                    </Box>
                 </Toolbar>
             </AppBar>
             <Drawer
@@ -383,4 +380,4 @@ const Dashboard = () => {
     );
 };
 
-export default Dashboard;
+export default RetroMol;

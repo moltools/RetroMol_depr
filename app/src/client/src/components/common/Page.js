@@ -5,7 +5,7 @@ const Page = ({ children, ...props }) => {
     return (
         <Container {...props}>
             <CssBaseline />
-            <Box my={4}>
+            <Box>
                 {children}
             </Box>
         </Container>

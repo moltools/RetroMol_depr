@@ -72,9 +72,17 @@ def compile_motif_query_item(motif: ty.Dict[str, ty.Any]) -> ty.List[ty.Dict[str
     :rtype: ty.List[ty.Dict[str, ty.Any]]
     """
     if motif["motifType"] == "polyketide":
+        polyketide_type = motif["polyketideType"]
+        polyketide_decor = motif["polyketideDecor"]
+
+        # TODO: quick fix to remove stereochem for now
+        polyketide_type = re.sub(r'[rR|sS]', '', str(polyketide_type))
+        polyketide_decor = re.sub(r'[rR|sS]', '', str(polyketide_decor))
+        polyketide_decor = int(polyketide_decor) if polyketide_decor != "Any" else "Any"
+
         return PolyketideMotif(
-            type=motif["polyketideType"],
-            decoration=motif["polyketideDecor"]
+            type=polyketide_type,
+            decoration=polyketide_decor
         )
     elif motif["motifType"] == "peptide":
         return OtherMotif(
@@ -462,6 +470,11 @@ def pattern_match(
                 polyketide_type = option["polyketideType"] # A-D or Any
                 polyketide_decor = option["polyketideDecor"] # 1-12 or Any
 
+                # TODO: quick fix to remove stereochem for now
+                polyketide_type = re.sub(r'[rR|sS]', '', str(polyketide_type))
+                polyketide_decor = re.sub(r'[rR|sS]', '', str(polyketide_decor))
+                polyketide_decor = int(polyketide_decor) if polyketide_decor != "Any" else "Any"
+
                 if polyketide_type == "Any":
                     polyketide_type = None
                 
@@ -552,6 +565,9 @@ def pattern_match(
             motif_code = json.loads(motif_code)
             sequence = sequence_from_motif_string_list(name, motif_code)
             sequences.append(sequence)
+
+        if len(sequences) == 0:
+            return {"motif_codes": []}
 
         msa = multiple_sequence_alignment(sequences, gap_penalty, end_gap_penalty, score_func)
         motif_codes = prep_query_results(session, msa)

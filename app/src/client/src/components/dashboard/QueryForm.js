@@ -30,6 +30,8 @@ const QueryForm = ({ results, selectedResultIndex, setSelectedResultIndex, colum
     const [endGapPenalty, setEndGapPenalty] = useState(1);
     const [queryHasLeadingModules, setQueryHasLeadingModules] = useState(false);
     const [queryHasTrailingModules, setQueryHasTrailingModules] = useState(false);
+
+    const [allowStereochemistry, setAllowStereochemistry] = useState(false);
     
     const [allBioactivityLabels, setAllBioactivityLabels] = useState([]);
     const [selectedBioactivityLabels, setSelectedBioactivityLabels] = useState([]);
@@ -48,6 +50,7 @@ const QueryForm = ({ results, selectedResultIndex, setSelectedResultIndex, colum
     const handleRefresh = () => {
         setQueryType("match");
         setAlignmentType("local");
+        setAllowStereochemistry(false);
         setGapPenalty(2);
         setEndGapPenalty(1);
         setQueryHasLeadingModules(false);
@@ -212,6 +215,16 @@ const QueryForm = ({ results, selectedResultIndex, setSelectedResultIndex, colum
                         >
                             Add motif
                         </Button>
+                        <FormControlLabel
+                            control={<Switch 
+                                checked={allowStereochemistry}
+                                onChange={(event) => setAllowStereochemistry(event.target.checked)}
+                                color="primary"
+                                name="allowStereochemistry"
+                            />}
+                            label={allowStereochemistry ? "PK stereochemistry" : "No PK stereochemistry"}
+                            style={{ color: "white", margin: "8px" }}
+                        />
                     </Box>
                     <Box sx={{ 
                         flexGrow: 1, 
@@ -410,8 +423,12 @@ const QueryForm = ({ results, selectedResultIndex, setSelectedResultIndex, colum
                                                                                         <MenuItem value="Any">Any</MenuItem>
                                                                                         <MenuItem value="A">A</MenuItem>
                                                                                         <MenuItem value="B">B</MenuItem>
+                                                                                        {allowStereochemistry && <MenuItem value="Br">Br</MenuItem>}
+                                                                                        {allowStereochemistry && <MenuItem value="Bs">Bs</MenuItem>}
                                                                                         <MenuItem value="C">C</MenuItem>
                                                                                         <MenuItem value="D">D</MenuItem>
+                                                                                        {allowStereochemistry && <MenuItem value="Dr">Dr</MenuItem>}
+                                                                                        {allowStereochemistry && <MenuItem value="Ds">Ds</MenuItem>}
                                                                                     </Select>
                                                                                 </FormControl>
                                                                             </Box>
@@ -452,20 +469,50 @@ const QueryForm = ({ results, selectedResultIndex, setSelectedResultIndex, colum
                                                                                     >
                                                                                         <MenuItem value="Any">Any</MenuItem>
                                                                                         <MenuItem value="1">1</MenuItem>
+                                                                                        {allowStereochemistry && <MenuItem value="1s">1s</MenuItem>}
+                                                                                        {allowStereochemistry && <MenuItem value="1r">1r</MenuItem>}
                                                                                         <MenuItem value="2">2</MenuItem>
+                                                                                        {allowStereochemistry && <MenuItem value="2s">2s</MenuItem>}
+                                                                                        {allowStereochemistry && <MenuItem value="2r">2r</MenuItem>}
                                                                                         <MenuItem value="3">3</MenuItem>
+                                                                                        {allowStereochemistry && <MenuItem value="3s">3s</MenuItem>}
+                                                                                        {allowStereochemistry && <MenuItem value="3r">3r</MenuItem>}
                                                                                         <MenuItem value="4">4</MenuItem>
+                                                                                        {allowStereochemistry && <MenuItem value="4s">4s</MenuItem>}
+                                                                                        {allowStereochemistry && <MenuItem value="4r">4r</MenuItem>}
                                                                                         <MenuItem value="5">5</MenuItem>
+                                                                                        {allowStereochemistry && <MenuItem value="5s">5s</MenuItem>}
+                                                                                        {allowStereochemistry && <MenuItem value="5r">5r</MenuItem>}
                                                                                         <MenuItem value="6">6</MenuItem>
+                                                                                        {allowStereochemistry && <MenuItem value="6s">6s</MenuItem>}
+                                                                                        {allowStereochemistry && <MenuItem value="6r">6r</MenuItem>}
                                                                                         <MenuItem value="7">7</MenuItem>
+                                                                                        {allowStereochemistry && <MenuItem value="7s">7s</MenuItem>}
+                                                                                        {allowStereochemistry && <MenuItem value="7r">7r</MenuItem>}
                                                                                         <MenuItem value="8">8</MenuItem>
+                                                                                        {allowStereochemistry && <MenuItem value="8s">8s</MenuItem>}
+                                                                                        {allowStereochemistry && <MenuItem value="8r">8r</MenuItem>}
                                                                                         <MenuItem value="9">9</MenuItem>
+                                                                                        {allowStereochemistry && <MenuItem value="9s">9s</MenuItem>}
+                                                                                        {allowStereochemistry && <MenuItem value="9r">9r</MenuItem>}
                                                                                         <MenuItem value="10">10</MenuItem>
+                                                                                        {allowStereochemistry && <MenuItem value="10s">10s</MenuItem>}
+                                                                                        {allowStereochemistry && <MenuItem value="10r">10r</MenuItem>}
                                                                                         <MenuItem value="11">11</MenuItem>
+                                                                                        {allowStereochemistry && <MenuItem value="11s">11s</MenuItem>}
+                                                                                        {allowStereochemistry && <MenuItem value="11r">11r</MenuItem>}
                                                                                         <MenuItem value="12">12</MenuItem>
+                                                                                        {allowStereochemistry && <MenuItem value="12s">12s</MenuItem>}
+                                                                                        {allowStereochemistry && <MenuItem value="12r">12r</MenuItem>}
                                                                                         <MenuItem value="13">13</MenuItem>
+                                                                                        {allowStereochemistry && <MenuItem value="13s">13s</MenuItem>}
+                                                                                        {allowStereochemistry && <MenuItem value="13r">13r</MenuItem>}
                                                                                         <MenuItem value="14">14</MenuItem>
+                                                                                        {allowStereochemistry && <MenuItem value="14s">14s</MenuItem>}
+                                                                                        {allowStereochemistry && <MenuItem value="14r">14r</MenuItem>}
                                                                                         <MenuItem value="15">15</MenuItem>
+                                                                                        {allowStereochemistry && <MenuItem value="15s">15s</MenuItem>}
+                                                                                        {allowStereochemistry && <MenuItem value="15r">15r</MenuItem>}
                                                                                     </Select>
                                                                                 </FormControl>
                                                                             </Box>
@@ -710,7 +757,7 @@ const QueryForm = ({ results, selectedResultIndex, setSelectedResultIndex, colum
                 > */}
                     <Box sx={{ m: 0, p: 0, mb: 2, marginLeft: "-5px", paddingRight: "10px" }}>
                     <MultiSelect 
-                        title="Select for bioactivity label"
+                        title="Select for bioactivity"
                         labels={allBioactivityLabels}
                         selectedLabels={selectedBioactivityLabels}
                         setSelectedLabels={setSelectedBioactivityLabels}
