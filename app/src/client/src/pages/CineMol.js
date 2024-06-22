@@ -180,7 +180,7 @@ const CineMol = () => {
 
     // General state variables.
     const [version, setVersion] = useState("0.0.0");                    // Version of the CineMol component.
-    const [mode, setMode] = useState("light");                           // Dark or light background of the molecular model.
+    const [mode, setMode] = useState("dark");                           // Dark or light background of the molecular model.
     const [svgString, setSvgString] = useState("");                     // SVG representation of the molecular model.
     const [isLoading, setIsLoading] = useState(false);                  // App grays out when loading.
     const [initialRender, setInitialRender] = useState(true);           // Initial render of the molecular model.
@@ -453,6 +453,7 @@ const CineMol = () => {
                     <Draggable
                         defaultPosition={{ x: 0, y: 0 }}
                         scale={1}
+                        handle=".drag-handle"
                     >
                         <Box sx={{ 
                             position: "absolute",
@@ -462,19 +463,22 @@ const CineMol = () => {
                             flexDirection: "column", 
                             maxWidth: "250px" 
                         }}>
-                            <Box sx={{ 
-                                display: "flex", 
-                                flexDirection: "row", 
-                                justifyContent: "center", 
-                                alignItems: "center", 
-                                backgroundColor: "#555", 
-                                padding: 1, 
-                                borderRadius: 4, 
-                                borderBottomLeftRadius: 0, 
-                                borderBottomRightRadius: 0, 
-                                width: "100%",
-                                cursor: "move"
-                            }}>
+                            <Box 
+                                sx={{ 
+                                    display: "flex", 
+                                    flexDirection: "row", 
+                                    justifyContent: "center", 
+                                    alignItems: "center", 
+                                    backgroundColor: "#555", 
+                                    padding: 1, 
+                                    borderRadius: 4, 
+                                    borderBottomLeftRadius: 0, 
+                                    borderBottomRightRadius: 0, 
+                                    width: "100%",
+                                    cursor: "move"
+                                }}
+                                className="drag-handle"
+                            >
                                 <DragHandleIcon />
                             </Box>
                             <Box sx={{
@@ -664,20 +668,23 @@ const CineMol = () => {
                                     </Box>
                                 </List>
                             </Box>
-                            <Box sx={{ 
-                                display: "flex", 
-                                flexDirection: "row", 
-                                justifyContent: "center", 
-                                alignItems: "center", 
-                                backgroundColor: "#555", 
-                                padding: 1, 
-                                borderRadius: 4, 
-                                borderTopLeftRadius: 0, 
-                                borderTopRightRadius: 0, 
-                                width: "100%",
-                                cursor: "move",
-                                paddingTop: "1px",
-                            }}>
+                            <Box 
+                                sx={{ 
+                                    display: "flex", 
+                                    flexDirection: "row", 
+                                    justifyContent: "center", 
+                                    alignItems: "center", 
+                                    backgroundColor: "#555", 
+                                    padding: 1, 
+                                    borderRadius: 4, 
+                                    borderTopLeftRadius: 0, 
+                                    borderTopRightRadius: 0, 
+                                    width: "100%",
+                                    cursor: "move",
+                                    paddingTop: "1px",
+                                }}
+                                className="drag-handle"
+                            >
                                 <DragHandleIcon />
                             </Box>
                         </Box>
