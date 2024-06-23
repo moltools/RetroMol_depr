@@ -7,8 +7,9 @@ import logging
 import os
 
 from retromol.npkg.connection import Neo4jConnection
-from retromol.npkg.purge import purge_database
+from retromol.npkg.purge import purge_database, purge_protoclusters
 from retromol.npkg.setup import create_database
+from retromol.npkg.antismash import add_protoclusters
 
 
 def add_subparsers(parser: argparse._SubParsersAction) -> None:
@@ -19,8 +20,10 @@ def add_subparsers(parser: argparse._SubParsersAction) -> None:
     """
     subparser_create = parser.add_parser("npkg_create")
     subparser_purge = parser.add_parser("npkg_purge")
+    subparser_add_protoclusters = parser.add_parser("npkg_add_protoclusters")
+    subparser_purge_protoclusters = parser.add_parser("npkg_purge_protoclusters")
 
-    for parser in [subparser_create, subparser_purge]:
+    for parser in [subparser_create, subparser_purge, subparser_add_protoclusters, subparser_purge_protoclusters]:
         parser.add_argument(
             "--uri",
             type=str,
@@ -60,7 +63,7 @@ def add_subparsers(parser: argparse._SubParsersAction) -> None:
         type=str,
         required=False,
         default=path_to_rxn,
-        help="Path to JSON file containing reaction.",
+        help="Path to JSON file containing reactions.",
     )  # noqa: E501
     subparser_create.add_argument(
         "--mon",
@@ -68,6 +71,18 @@ def add_subparsers(parser: argparse._SubParsersAction) -> None:
         required=False,
         default=path_to_mon,
         help="Path to JSON file containing monomer patterns.",
+    )  # noqa: E501
+
+    subparser_add_protoclusters.add_argument(
+        "--asdb-json",
+        type=str,
+        required=True,
+        help="Path directory containing ASDB JSON files.", 
+    )  # noqa: E501
+    subparser_add_protoclusters.add_argument(
+        "--predict-specificities",
+        action="store_true",
+        help="Predict specificities of protoclusters.",
     )  # noqa: E501
 
 
@@ -94,5 +109,15 @@ def main(args: argparse.Namespace) -> None:
 
     elif args.mode == "npkg_purge":
         purge_database(conn)
+
+    elif args.mode == "npkg_add_protoclusters":
+        add_protoclusters(
+            conn, 
+            path_to_asdb_jsons=args.asdb_json, 
+            predict_specificities=args.predict_specificities
+        )
+
+    elif args.mode == "npkg_purge_protoclusters":
+        purge_protoclusters(conn)
 
     exit(0)

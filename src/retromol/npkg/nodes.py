@@ -274,13 +274,20 @@ class Motif(Node):
         """
         # If the motif_type is 'polyketide' properties must contain 'polyketide_type' and 'polyketide_decoration_type'.
         if motif_type == "polyketide":
+
+            polyketide_decoration_type = properties.get("polyketide_decoration_type", None)
+            if polyketide_decoration_type is None or polyketide_decoration_type == "Any":
+                polyketide_decoration_type_query_str = f"polyketide_decoration_type: 'Any'"
+            else:
+                polyketide_decoration_type_query_str = f"polyketide_decoration_type: {polyketide_decoration_type}"
+            
             # Create the polyketide Motif node.
             return (
                 f"(u{index + 1}:Motif {{"
                 f"motif_type: '{motif_type}', "
                 f"calculated: {calculated}, "
                 f"polyketide_type: '{properties.get('polyketide_type', None)}', "
-                f"polyketide_decoration_type: {properties.get('polyketide_decoration_type', None)}"
+                f"{polyketide_decoration_type_query_str}"
                 f"}})"
             )
 
@@ -553,4 +560,56 @@ class Pathway(Node):
         # Create the Pathway node if it does not exist.
         conn.query(
             "MERGE (p:Pathway {name: $name, source: $source})", {"name": name, "source": source}
+        )
+
+
+class Protocluster(Node):
+    """The Protocluster node."""
+
+    @classmethod
+    def set_constraints(cls, conn: Neo4jConnection) -> None:
+        """Set constraints on the Neo4j database.
+
+        :param conn: The Neo4j connection.
+        :type conn: Neo4jConnection
+        :raises TypeError: If the connection is not a Neo4jConnection.
+        """
+        if not isinstance(conn, Neo4jConnection):
+            raise TypeError(f"Expected a Neo4jConnection but received {type(conn)}")
+
+        # Set constraints for Protocluster nodes.
+        conn.query(
+            "CREATE CONSTRAINT FOR (p:Protocluster) REQUIRE (p.identifier, p.source) IS NODE KEY"
+        )
+        conn.query("CREATE CONSTRAINT FOR (p:Protocluster) REQUIRE p.identifier IS NOT NULL")
+        conn.query("CREATE CONSTRAINT FOR (p:Protocluster) REQUIRE p.source IS NOT NULL")
+
+    @classmethod
+    def create(
+        cls,
+        conn: Neo4jConnection,
+        identifier: str,
+        source: str,
+    ) -> None:
+        """Create the Protocluster node.
+
+        :param conn: The Neo4j connection.
+        :type conn: Neo4jConnection
+        :param identifier: The identifier of the Protocluster node.
+        :type identifier: str
+        :param source: The source of the Protocluster node.
+        :type source: str
+        :raises TypeError: If the connection is not a Neo4jConnection.
+        """
+        if not isinstance(conn, Neo4jConnection):
+            raise TypeError(f"Expected a Neo4jConnection but received {type(conn)}")
+
+        # Check if any required fields are missing.
+        if any([not identifier, not source]):
+            return
+
+        # Create the Protocluster node if it does not exist.
+        conn.query(
+            "MERGE (p:Protocluster {identifier: $identifier, source: $source})",
+            {"identifier": identifier, "source": source},
         )

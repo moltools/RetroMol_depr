@@ -17,6 +17,7 @@ from retromol.npkg.nodes import (
     MotifCode,
     Organism,
     Pathway,
+    Protocluster,
 )
 from retromol.npkg.parsing import parse_compounds, parse_donphan, parse_mibig, parse_npatlas
 from retromol.npkg.purge import purge_retrosynthesis_data
@@ -45,6 +46,7 @@ def set_constraints(conn: Neo4jConnection) -> None:
     MotifCode.set_constraints(conn)
     Organism.set_constraints(conn)
     Pathway.set_constraints(conn)
+    Protocluster.set_constraints(conn)
 
     logger.info("Constraints set.")
 
@@ -115,7 +117,7 @@ def create_database(
         logger.info("Re-parsing retrosynthesis data...")
 
         # Purge retrosynthesis data.
-        purge_retrosynthesis_data(conn, only_calculated=True)
+        purge_retrosynthesis_data(conn)
 
         # Set constraints.
         if set_constraints:

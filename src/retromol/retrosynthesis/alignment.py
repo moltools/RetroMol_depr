@@ -110,16 +110,33 @@ def sequence_from_motif_string_list(name: str, motif_string_list: ty.List[str]) 
     motifs = []
 
     for motif_string in motif_string_list:
-        if match := re.match(r"polyketide\|([A-D])(\d{1,2})", motif_string):
-            polyketide_type = match.group(1)
-            polyketide_decoration_type = int(match.group(2))
+
+        if match := re.match(r"polyketide\|([A-D]|\*)(\d{1,2}|\*)", motif_string):
+            
+            if match.group(1) == "*":
+                polyketide_type = "Any"
+            else:
+                polyketide_type = match.group(1)
+
+            if match.group(2) == "*":
+                polyketide_decoration_type = "Any"
+            else:
+                polyketide_decoration_type = int(match.group(2))
 
             motif = PolyketideMotif(type=polyketide_type, decoration=polyketide_decoration_type)
             motifs.append(motif)
 
-        elif match := re.match(r"peptide\|(\w+)\|(.+)", motif_string):
-            peptide_source = match.group(1)
-            peptide_cid = match.group(2)
+        elif match := re.match(r"peptide\|(\w+|\*)\|(.+|\*)", motif_string):
+
+            if match.group(1) == "*":
+                peptide_source = "Any"
+            else:
+                peptide_source = match.group(1)
+
+            if match.group(2) == "*":
+                peptide_cid = "Any"
+            else:
+                peptide_cid = match.group(2)
 
             motif = OtherMotif(source=peptide_source, cid=peptide_cid)
             motifs.append(motif)

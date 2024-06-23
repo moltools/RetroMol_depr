@@ -133,17 +133,19 @@ const Alignment = ({ data }) => {
                                             whiteSpace: "nowrap",
                                         }}
                                     >
-                                        {item.motifCodeIdentifier.startsWith("NPA") ? (
-                                            <a
-                                                href={`https://www.npatlas.org/explore/compounds/${item.motifCodeIdentifier}`}
-                                                target="_blank"
-                                                rel="noreferrer"
-                                            >
-                                                {item.motifCodeIdentifier}
-                                            </a>
-                                        ) : (
-                                            item.motifCodeIdentifier
-                                        )}
+                                        <Tooltip title={item.motifCodeIdentifier} placement="top">
+                                            {item.motifCodeIdentifier.startsWith("NPA") ? (
+                                                <a
+                                                    href={`https://www.npatlas.org/explore/compounds/${item.motifCodeIdentifier}`}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                >
+                                                    {item.motifCodeIdentifier}
+                                                </a>
+                                            ) : (
+                                                item.motifCodeIdentifier
+                                            )}
+                                        </Tooltip>
                                     </TableCell>
                                     {item.motifCode.map((motif, index) => (
                                         <TableCell

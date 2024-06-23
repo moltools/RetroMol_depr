@@ -2,6 +2,7 @@
 
 """Functions for parsing AntiSMASH output."""
 
+import json
 import os
 import logging
 import re
@@ -11,6 +12,9 @@ from collections import defaultdict
 from Bio.Seq import Seq
 import requests
 
+from retromol.npkg.connection import Neo4jConnection
+from retromol.npkg.helpers import validate_path
+from retromol.npkg.nodes import Motif, MotifCode, Protocluster
 from retromol.npkg.paras import label_to_pubchem_cid, predict_specificity
 
 
@@ -138,11 +142,13 @@ class ProtoCluster:
         """
         return len(self.genes)
     
-    def to_motif_code(self, dna: str) -> ty.Dict[str, ty.Any]:
+    def to_motif_code(self, dna: str, predict_specificities: bool = True) -> ty.Dict[str, ty.Any]:
         """Convert the proto cluster to a motif code.
         
         :param dna: DNA sequence of source.
         :type dna: str
+        :param predict_specificities: Whether to predict A-domain specificities.
+        :type predict_specificities: bool
         :return: Motif code.
         :rtype: ty.Dict[str, ty.Any]
         """
@@ -192,12 +198,15 @@ class ProtoCluster:
 
         # Predict specificity for A-domains.
         to_predict = "\n".join(to_predict)
-        try:
-            predicted_specificities = predict_specificity(to_predict)
-            predicted_specificities = [p[1][0][1] for p in predicted_specificities]
-        except Exception as e:
-            logger.error(f"Could not predict A-domain specificities: {e}")
+        if not predict_specificities:
             predicted_specificities = []
+        else:
+            try:
+                predicted_specificities = predict_specificity(to_predict)
+                predicted_specificities = [p[1][0][1] for p in predicted_specificities]
+            except Exception as e:
+                logger.error(f"Could not predict A-domain specificities: {e}")
+                predicted_specificities = []
 
         # Count number of groups with AMP-domains.
         num_amp_binding = len([group for group in groups if "AMP-binding" in group])
@@ -461,11 +470,16 @@ def get_modules_from_record(record: ty.Dict[str, ty.Any]) -> ty.Dict[str, ty.Lis
     return modules_per_gene
 
 
-def parse_antismash_json(data: ty.Dict[str, ty.Any]) -> ty.List[ty.Dict[str, ty.Any]]:
+def parse_antismash_json(
+    data: ty.Dict[str, ty.Any],
+    predict_specificities: bool = True
+) -> ty.List[ty.Dict[str, ty.Any]]:
     """Parse AntiSMASH JSON data.
     
     :param data: AntiSMASH JSON data.
     :type data: ty.Dict[str, ty.Any]
+    :param predict_specificities: Whether to predict A-domain specificities.
+    :type predict_specificities: bool
     :return: Parsed AntiSMASH data.
     :rtype: ty.List[ty.Dict[str, ty.Any]]
     :raises IndexError: If the JSON data is not in the expected format.
@@ -508,7 +522,130 @@ def parse_antismash_json(data: ty.Dict[str, ty.Any]) -> ty.List[ty.Dict[str, ty.
         logger.debug(f"Found {len(protoclusters)} protoclusters for record {record_index}.")
 
         for protocluster in protoclusters.clusters.values():
-            motif_code_query = protocluster.to_motif_code(dna)
+            motif_code_query = protocluster.to_motif_code(dna, predict_specificities=predict_specificities)
             queries.append(motif_code_query)
 
     return queries
+
+
+def parse_motif_code_query(query: ty.List[ty.Dict[str, ty.Any]]) -> ty.List[str]:
+    """Parse a motif code query.
+    
+    :param query: Motif code query.
+    :type query: ty.List[ty.Dict[str, ty.Any]]
+    :return: Motif code.
+    :rtype: ty.List[str]
+    """
+    parsed_query = []
+
+    for item in query:
+        if item["motifType"] == "polyketide":
+            polyketide_type = item["polyketideType"]
+            polyketide_decor = item["polyketideDecor"]
+
+            if polyketide_type == "Any":
+                polyketide_type = "*"
+            
+            if polyketide_decor == "Any":
+                polyketide_decor = "*"
+
+            parsed_query.append(f"polyketide|{polyketide_type}{polyketide_decor}")
+
+        elif item["motifType"] == "peptide":
+            # peptide_source = item["peptideSource"]
+            peptide_cid = item["peptideCid"]
+            parsed_query.append(f"peptide|pubchem|{peptide_cid}")
+
+    return parsed_query
+
+
+def add_protoclusters(
+    conn: Neo4jConnection,
+    path_to_asdb_jsons: str,
+    predict_specificities: bool = True
+) -> None:
+    """Add protoclusters to the database.
+
+    :param conn: Neo4j connection.
+    :type conn: Neo4jConnection
+    :param path_to_asdb_jsons: Path to directory containing AntiSMASH JSON files.
+    :type path_to_asdb_jsons: str
+    """
+    logger = logging.getLogger(__name__)
+
+    # Validate the path.
+    validate_path(path_to_asdb_jsons)
+    
+    # Loop over JSON paths in the directory.
+    for root, _, files in os.walk(path_to_asdb_jsons):
+        for file in files:
+            if not file.endswith(".json"):
+                continue
+            
+            logger.debug(f"Reading {file}...")
+            path_to_file = os.path.join(root, file)
+            data = json.load(open(path_to_file, "r"))
+            queries = parse_antismash_json(data, predict_specificities=predict_specificities)
+
+            for query_index, query in enumerate(queries):
+                query_index += 1
+
+                # Skip any query with less than 3 motifs.
+                if len(query["query"]) < 3:
+                    continue
+
+                compound_identifier = f"{file[:-5]}|{query_index}"
+                compound_source = "asdb4"
+
+                Protocluster.create(
+                    conn=conn,
+                    identifier=compound_identifier,
+                    source=compound_source,
+                )
+
+                motif_code = [x[0] for x in query["query"]]
+
+                # Create sub query for motif code.
+                mc_query, mc_query_props = MotifCode.create_sub_query(
+                    compound_identifier=compound_identifier,
+                    compound_source=compound_source,
+                    calculated=False,
+                    applied_reactions=None,
+                    src=json.dumps(parse_motif_code_query(motif_code))
+                )
+
+                # Create full query.
+                query_begin = f"CREATE {mc_query}-[:START]->"
+                query_end = "-[:NEXT]->".join(
+                    [
+                        Motif.create_sub_query(
+                            index=motif_index,
+                            motif_type=motif["motifType"],
+                            calculated=False,
+                            properties={
+                                "polyketide_type": motif["polyketideType"],
+                                "polyketide_decoration_type": motif["polyketideDecor"] if motif["polyketideDecor"] is not "Any" else None,
+                                "peptide_source": motif["peptideSource"],
+                                "peptide_cid": motif["peptideCid"],
+                            }
+                        )
+                        for motif_index, motif in enumerate(motif_code)
+                    ]
+                )
+                query_full = query_begin + query_end
+
+                # Execute query.
+                conn.query(query_full, mc_query_props)
+
+                # Connect MotifCode to Compound node.
+                conn.query(
+                    (
+                        "MATCH (c:Protocluster {identifier: $compound_identifier, source: $compound_source}) "
+                        "MATCH (mc:MotifCode {compound_identifier: $compound_identifier, compound_source: $compound_source}) "
+                        "MERGE (c)-[:HAS_MOTIF_CODE]->(mc)"
+                    ),
+                    {
+                        "compound_identifier": compound_identifier,
+                        "compound_source": compound_source,
+                    },
+                )

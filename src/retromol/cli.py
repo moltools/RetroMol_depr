@@ -57,7 +57,7 @@ def main() -> None:
     if args.mode in ["retrosynthesis_single", "retrosynthesis_batch"]:
         retromol.retrosynthesis.cli.main(args)
 
-    elif args.mode in ["npkg_create", "npkg_purge"]:
+    elif args.mode in ["npkg_create", "npkg_purge", "npkg_add_protoclusters", "npkg_purge_protoclusters"]:
         retromol.npkg.cli.main(args)
 
     else:

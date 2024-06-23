@@ -739,7 +739,7 @@ const QueryForm = ({ results, selectedResultIndex, setSelectedResultIndex, colum
 
                 <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "20px" }}>
                     <Box sx={{ display: "flex", gap: 1 }}>
-                        <TypographyTooltip title="Select filters to filter results on. If no filters are selected, all results will be shown.">
+                        <TypographyTooltip title="Select filters to filter results on. If no filters are selected, all results will be shown. Setting bioactivity or genus filters will filter out all protoclusters.">
                             <Typography variant="h6" gutterBottom>
                                 Filters
                             </Typography>

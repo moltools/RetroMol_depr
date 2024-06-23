@@ -8,6 +8,7 @@ import re
 import typing as ty
 
 import neo4j
+import numpy as np
 from flask import Blueprint, Response, request
 from versalign.motif import Motif, Gap
 from versalign.msa import multiple_sequence_alignment
@@ -18,6 +19,11 @@ from tqdm import tqdm
 from retromol.retrosynthesis.alignment import OtherMotif, PolyketideMotif, sequence_from_motif_string_list
 
 from .common import NEO4J_PASSWORD, NEO4J_URI, NEO4J_USER, fail, success, warning
+
+
+# SCORING_MATRIX = pd.read_csv(os.path.join(os.path.dirname(os.path.dirname(__file__)), "data/scoring_matrix.csv"), index_col=0)
+SCORING_MATRIX_LABELS = np.loadtxt(os.path.join(os.path.dirname(os.path.dirname(__file__)), "data/scoring_matrix.csv"), delimiter=",", max_rows=1, dtype=str)
+SCORING_MATRIX = np.loadtxt(os.path.join(os.path.dirname(os.path.dirname(__file__)), "data/scoring_matrix.csv"), delimiter=",", skiprows=1)
 
 
 # TODO: This is a quick fix, bug in versalign.
@@ -47,20 +53,40 @@ def score_func(a: Motif, b: Motif) -> int:
         return 4
     
     elif isinstance(a, PolyketideMotif) and isinstance(b, PolyketideMotif):
-        if a.type == b.type:
+        if (
+            a.type == b.type
+            and a.decoration == b.decoration
+        ):
             return 3
-        elif a.decoration == b.decoration:
+        elif (
+            a.type == b.type
+            and (a.decoration == "Any" or b.decoration == "Any")
+        ):
+            return 3
+        elif a.type == "Any" or b.type == "Any":
             return 2
-        else: 
-            1
+        elif a.decoration == b.decoration:
+            return 1
+        else:
+            0
     
     elif isinstance(a, OtherMotif) and isinstance(b, OtherMotif):
-        if a.cid == b.cid:
-            return 4
-        else:
-            return 2
+
+        try:
+            cid_a = str(a.cid)
+            cid_b = str(b.cid)
+
+            idx_cid_a = SCORING_MATRIX_LABELS.tolist().index(cid_a)
+            idx_cid_b = SCORING_MATRIX_LABELS.tolist().index(cid_b)
+
+            score = SCORING_MATRIX[idx_cid_a, idx_cid_b]
+        
+        except ValueError:
+            return 0
+
+        return score
     
-    return 0
+    return -1
 
 
 def compile_motif_query_item(motif: ty.Dict[str, ty.Any]) -> ty.List[ty.Dict[str, ty.Any]]:
@@ -157,11 +183,11 @@ def construct_statement_query_space(
     statement = start_statement
 
     if query_against_molecules and query_against_protoclusters:
-        statement += "((b)<-[:HAS_MOTIF_CODE]-(:Compound) OR (b)<-[:HAS_MOTIF_CODE]-(:ProtoCluster)) "
+        statement += "((b)<-[:HAS_MOTIF_CODE]-(:Compound) OR (b)<-[:HAS_MOTIF_CODE]-(:Protocluster)) "
     elif query_against_molecules:
         statement += "(b)<-[:HAS_MOTIF_CODE]-(:Compound) "
     elif query_against_protoclusters:
-        statement += "(b)<-[:HAS_MOTIF_CODE]-(:ProtoCluster) "
+        statement += "(b)<-[:HAS_MOTIF_CODE]-(:Protocluster) "
     else:
         raise ValueError("No query space specified.") 
     
@@ -327,7 +353,11 @@ def pairwise_match(
                 continue
             
             # Parse motif code.
-            sequence = sequence_from_motif_string_list(name, motif_code)
+            try:
+                sequence = sequence_from_motif_string_list(name, motif_code)
+            except Exception as e:
+                print(e) # Put this in because I had some erroneous motif codes in my local db
+                continue
             
             # Define alignment options.
             if alignment_type == PairwiseAlignment.SMITH_WATERMAN:
@@ -563,7 +593,11 @@ def pattern_match(
             name = record["b"]["compound_identifier"]
             motif_code = record["b"]["src"]
             motif_code = json.loads(motif_code)
-            sequence = sequence_from_motif_string_list(name, motif_code)
+            try:
+                sequence = sequence_from_motif_string_list(name, motif_code)
+            except Exception as e:
+                print(e) # Put this in because I had some erroneous motif codes in my local db
+                continue
             sequences.append(sequence)
 
         if len(sequences) == 0:
