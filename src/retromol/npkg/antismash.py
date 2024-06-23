@@ -625,7 +625,7 @@ def add_protoclusters(
                             calculated=False,
                             properties={
                                 "polyketide_type": motif["polyketideType"],
-                                "polyketide_decoration_type": motif["polyketideDecor"] if motif["polyketideDecor"] is not "Any" else None,
+                                "polyketide_decoration_type": motif["polyketideDecor"] if motif["polyketideDecor"] != "Any" else None,
                                 "peptide_source": motif["peptideSource"],
                                 "peptide_cid": motif["peptideCid"],
                             }
