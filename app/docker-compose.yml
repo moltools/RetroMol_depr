@@ -36,7 +36,7 @@ services:
       - "4002:7474"
       - "4003:7687"
     volumes:
-      - "/local/data/meije132/npkg_v3:/data"
+      - "/local/data/meije132/npkg_current:/data"
       # - "/Users/davidmeijer/Desktop/test_npkg:/data"
     restart: always
     networks:
