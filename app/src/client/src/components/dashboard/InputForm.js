@@ -9,13 +9,19 @@ import {
     Radio, 
     RadioGroup, 
     TextField, 
-    Typography 
+    Typography,
+    FormControl,
+    InputLabel,
+    Select,
+    MenuItem 
 } from '@mui/material'
 import TypographyTooltip from "../common/TypographyTooltip";
 import RefreshIcon from '@mui/icons-material/Refresh';
 import { toast } from 'react-toastify';
 
 const smilesErythromycin = "CCC1C(C(C(C(=O)C(CC(C(C(C(C(C(=O)O1)C)OC2CC(C(C(O2)C)O)(C)OC)C)OC3C(C(CC(O3)C)N(C)C)O)(C)O)C)C)O)(C)O";
+const smilesEnterobactin = "C1C(C(=O)OCC(C(=O)OCC(C(=O)O1)NC(=O)C2=C(C(=CC=C2)O)O)NC(=O)C3=C(C(=CC=C3)O)O)NC(=O)C4=C(C(=CC=C4)O)O";
+const smilesDaptomycin = "CCCCCCCCCC(=O)NC(CC1=CNC2=CC=CC=C21)C(=O)NC(CC(=O)N)C(=O)NC(CC(=O)O)C(=O)NC3C(OC(=O)C(NC(=O)C(NC(=O)C(NC(=O)CNC(=O)C(NC(=O)C(NC(=O)C(NC(=O)C(NC(=O)CNC3=O)CCCN)CC(=O)O)C)CC(=O)O)CO)C(C)CC(=O)O)CC(=O)C4=CC=CC=C4N)C";
 
 const AntismashLogo = ({ style }) => {
     // Make the logo stand out from the background.
@@ -40,11 +46,20 @@ const InputForm = ({ onSubmit }) => {
     const [jsonContent, setJsonContent] = useState("");
     const [jsonFileName, setJsonFileName] = useState(jsonFileNameDefault);
 
+    const [selectedExample, setSelectedExample] = useState("");
+
+    const handleChangeExample = (event) => {
+        setSelectedExample(event.target.value);
+        setSelectedInputType("smiles");
+        setInputValue(event.target.value);
+    };
+
     const handleRefresh = () => {
         setInputValue("");
         setJsonContent("");
         setJsonFileName(jsonFileNameDefault);
         setSelectedInputType("smiles");
+        setSelectedExample("");
     };
 
     const handleInputTypeChange = (event) => {
@@ -183,18 +198,23 @@ const InputForm = ({ onSubmit }) => {
                     </Button>
                 )}
                 <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 2 }}>
-                    <Button
-                        type="button"
-                        variant="contained"
-                        sx={{ mt: 2, width: "150px" }}
-                        color="primary"
-                        onClick={() => {
-                            setSelectedInputType("smiles");
-                            setInputValue(smilesErythromycin);
-                        }}
+                    <FormControl sx={{ mt:2, width: 150 }} size="small">
+                    <InputLabel id="demo-select-small-label">Example</InputLabel>
+                    <Select
+                        labelId="demo-select-small-label"
+                        id="demo-select-small"
+                        value={selectedExample}
+                        label="Example"
+                        onChange={handleChangeExample}
                     >
-                        Example
-                    </Button>
+                        <MenuItem value="">
+                        <em>None</em>
+                        </MenuItem>
+                        <MenuItem value={smilesDaptomycin}>Daptomycin</MenuItem>
+                        <MenuItem value={smilesEnterobactin}>Enterobactin</MenuItem>
+                        <MenuItem value={smilesErythromycin}>Erythromycin</MenuItem>
+                    </Select>
+                    </FormControl>
                     <Button 
                         type="submit" 
                         variant="contained" 

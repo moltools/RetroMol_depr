@@ -814,6 +814,16 @@ def parse_mol_timed(mol: Molecule) -> Result:
             ],
             None,
         ),
+        (
+            "enterobactin",
+            r"C1C(C(=O)OCC(C(=O)OCC(C(=O)O1)NC(=O)C2=C(C(=CC=C2)O)O)NC(=O)C3=C(C(=CC=C3)O)O)NC(=O)C4=C(C(=CC=C4)O)O",
+            [
+                [],
+                [],
+                [],
+            ],
+            None,
+        )
     ],
 )
 def test_modular_natural_produts(
