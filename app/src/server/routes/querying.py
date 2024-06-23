@@ -72,6 +72,9 @@ def score_func(a: Motif, b: Motif) -> int:
     
     elif isinstance(a, OtherMotif) and isinstance(b, OtherMotif):
 
+        if a.cid == "Any" and b.cid == "Any":
+            return 1
+
         try:
             cid_a = str(a.cid)
             cid_b = str(b.cid)

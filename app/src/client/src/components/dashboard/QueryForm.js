@@ -26,8 +26,8 @@ const QueryForm = ({ results, selectedResultIndex, setSelectedResultIndex, colum
     // query settings
     const [queryType, setQueryType] = useState("match"); // match or query
     const [alignmentType, setAlignmentType] = useState("local"); // global or local
-    const [gapPenalty, setGapPenalty] = useState(2);
-    const [endGapPenalty, setEndGapPenalty] = useState(1);
+    const [gapPenalty, setGapPenalty] = useState(3);
+    const [endGapPenalty, setEndGapPenalty] = useState(2);
     const [queryHasLeadingModules, setQueryHasLeadingModules] = useState(false);
     const [queryHasTrailingModules, setQueryHasTrailingModules] = useState(false);
 

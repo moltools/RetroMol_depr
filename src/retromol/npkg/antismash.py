@@ -10,6 +10,7 @@ import typing as ty
 from collections import defaultdict
 
 from Bio.Seq import Seq
+from tqdm import tqdm
 import requests
 
 from retromol.npkg.connection import Neo4jConnection
@@ -578,7 +579,7 @@ def add_protoclusters(
     
     # Loop over JSON paths in the directory.
     for root, _, files in os.walk(path_to_asdb_jsons):
-        for file in files:
+        for file in tqdm(files):
             if not file.endswith(".json"):
                 continue
             
