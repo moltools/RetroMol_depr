@@ -55,7 +55,11 @@ def score_func(a: Motif, b: Motif) -> int:
     elif isinstance(a, PolyketideMotif) and isinstance(b, PolyketideMotif):
         if (
             a.type == b.type
-            and a.decoration == b.decoration
+            and (
+                a.decoration == b.decoration
+                or a.decoration == "Any"
+                or b.decoration == "Any"
+            )
         ):
             return 3
         elif (

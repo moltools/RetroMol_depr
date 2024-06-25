@@ -82,6 +82,21 @@ def parse_mol(
     """
     logger = logging.getLogger(__name__)
 
+    # check if all reaction names are unique
+    reaction_names = [reaction.name for reaction in reactions]
+    if len(reaction_names) != len(set(reaction_names)):
+
+        # get non unique reaction names
+        non_unique_reaction_names = list(set([
+            reaction_name 
+            for reaction_name in reaction_names 
+            if reaction_names.count(reaction_name) > 1
+        ]))
+
+        msg = f"Reaction names are not unique: {non_unique_reaction_names}"
+        logger.error(msg)
+        raise ValueError(msg)
+
     name = mol.name
 
     if neutralize:
@@ -155,7 +170,8 @@ def parse_mol(
                 logger.debug(f"Found identity for {node}: {items['identity']}")
 
     try:
-        seqs = parse_modular_natural_product(new_reaction_tree, new_monomer_graph)
+        used_reactions = [r for r in reactions if r.name in applied_reactions]
+        seqs = parse_modular_natural_product(new_reaction_tree, new_monomer_graph, used_reactions)
     except Exception as e:
         logger.error(f" Error while parsing modular natural product: {e}")
     finally:

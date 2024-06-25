@@ -43,9 +43,17 @@ def motif_code_to_query(motif_code: ty.List[str]) -> ty.List[ty.List[str]]:
     wrapped_motif_code = []
 
     for motif in motif_code:
-        if match := re.match(r"polyketide\|([A-D])(\d{1,2})", motif):
-            polyketide_type = match.group(1)
-            polyketide_decor = int(match.group(2))
+        if match := re.match(r"polyketide\|([A-D]|\*)(\d{1,2}|\*)", motif):
+
+            if match.group(1) == "*":
+                polyketide_type = "Any"
+            else:
+                polyketide_type = match.group(1)
+
+            if match.group(2) == "*":
+                polyketide_decor = "Any"
+            else:
+                polyketide_decor = int(match.group(2))
             
             parsed_motif = {
                 "motifType": "polyketide",
@@ -57,7 +65,11 @@ def motif_code_to_query(motif_code: ty.List[str]) -> ty.List[ty.List[str]]:
 
         elif match := re.match(r"peptide\|(\w+)\|(.+)", motif):
             peptide_source = match.group(1)
-            peptide_cid = int(match.group(2))
+
+            if match.group(2) == "*":
+                peptide_cid = "Any"
+            else:
+                peptide_cid = match.group(2)
 
             parsed_motif = {
                 "motifType": "peptide",
@@ -105,12 +117,16 @@ def parse_submission() -> Response:
         if input_type == "smiles":
             molecule = Molecule("input", input_value)
             result = parse_mol(molecule, REACTIONS, MONOMERS)
+            result.applied_reactions.sort()
             queries = [
                 {   
                     "title": f"Retrosynthesis",
                     "queryType": "retrosynthesis",
                     "query": motif_code_to_query(seq["motif_code"]),
-                    "metadata": {}
+                    "metaData": {
+                        "inputSmiles": input_value,
+                        "appliedRules": result.applied_reactions
+                    }
                 }
                 for seq_index, seq in enumerate(result.sequences)
             ]

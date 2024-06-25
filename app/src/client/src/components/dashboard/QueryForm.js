@@ -926,7 +926,7 @@ const QueryForm = ({ results, selectedResultIndex, setSelectedResultIndex, colum
                             minMatchLength: minMatchLength,
                             maxMatchLength: maxMatchLength,
                         })}
-                        style={{ width: "150px" }}
+                        style={{ width: "100%" }}
                     >
                         Submit query
                     </Button>

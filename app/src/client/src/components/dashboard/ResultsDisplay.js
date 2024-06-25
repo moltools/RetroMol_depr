@@ -20,6 +20,7 @@ const ResultsDisplay = ({
         if (selectedResultIndex === index) {
             setSelectedResultIndex(null); // Deselect the result if it is already selected.
         } else {
+
             setSelectedResultIndex(index); // Select the result.
         }
     };
@@ -78,9 +79,51 @@ const ResultsDisplay = ({
                     border: "1px solid #bbb",
                     boxShadow: "inset 0 2px 5px rgba(0, 0, 0, 0.1)",
                 }}>
-                    <Typography>
-                        Result views coming soon.
-                    </Typography>
+                    {selectedResultIndex !== null ? (
+                        <Box>
+                            {results[selectedResultIndex]["queryType"] === "retrosynthesis" ? (
+                                <Box>
+                                    <Typography>
+                                        Applied rules:
+                                    </Typography>
+                                    {results[selectedResultIndex]["metaData"]["appliedRules"].map((reaction, index) => (
+                                        <Box key={index} sx={{ ml: 2 }}>
+                                            <Typography>
+                                                {reaction}
+                                            </Typography>
+                                        </Box>
+                                    ))}
+                                    <Box sx={{ mt: 1 }}>
+                                        <Typography>
+                                            {`Number of motifs: ${results[selectedResultIndex]["query"].length}`}
+                                        </Typography>
+                                    </Box>
+                                </Box>
+                            ) : (
+                                <Box>
+                                    <Typography>
+                                        {`Category: ${results[selectedResultIndex]["metaData"]["category"]}`}
+                                    </Typography>
+                                    <Typography>
+                                        {`Product: ${results[selectedResultIndex]["metaData"]["product"]}`}
+                                    </Typography>
+                                    <Typography>
+                                        {`Start position: ${results[selectedResultIndex]["metaData"]["startProtocluster"]}`}
+                                    </Typography>
+                                    <Typography>
+                                        {`End position: ${results[selectedResultIndex]["metaData"]["endProtocluster"]}`}
+                                    </Typography>
+                                    <Typography>
+                                        {`Number of motifs: ${results[selectedResultIndex]["query"].length}`}
+                                    </Typography>
+                                </Box>
+                            )}
+                        </Box>
+                    ) : (
+                        <Typography>
+                            No result selected.
+                        </Typography>
+                    )}
                 </Box>
                 <Box sx={{ 
                     flexGrow: 1, 

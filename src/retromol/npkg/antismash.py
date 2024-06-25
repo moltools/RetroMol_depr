@@ -264,7 +264,12 @@ class ProtoCluster:
             "title": f"{self.category} ({self.product})",
             "queryType": "parsed",
             "query": query,
-            "metadata": {}
+            "metaData": {
+                "startProtocluster": self.start,
+                "endProtocluster": self.end,
+                "product": self.product,
+                "category": self.category,
+            }
         }
 
 

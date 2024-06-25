@@ -852,6 +852,7 @@ def test_modular_natural_produts(
 
         if len(sequences) > 0:
             motif_codes = [seq["motif_code"] for seq in sequences]
+            print(motif_codes)
             assert expected in motif_codes
 
         else:

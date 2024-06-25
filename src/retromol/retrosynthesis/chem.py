@@ -71,6 +71,9 @@ class ReactionRule:
         self.compiled = ReactionFromSmarts(pattern)
         self.match_pattern = Chem.MolFromSmarts(pattern.split(">>")[0])
 
+        forward_pattern = pattern.split(">>")[1] + ">>" + pattern.split(">>")[0]
+        self.forward = ReactionFromSmarts(forward_pattern)
+
 
 class Molecule:
     """A class to represent a molecule."""

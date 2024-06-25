@@ -4,6 +4,8 @@ import { Slider, Typography, Box,
 import * as htmlToImage from 'html-to-image';
 import { toast } from "react-toastify";
 
+import { ZoomIn, ZoomOut } from "@mui/icons-material";
+
 
 const Alignment = ({ data }) => {
     const [zoom, setZoom] = useState(1);
@@ -81,19 +83,20 @@ const Alignment = ({ data }) => {
 
     return (
         <div>
-            <Box display="flex" flexDirection="column" alignItems="center" marginBottom="1rem">
-                {/* <Typography variant="body1" gutterBottom>
-                    Zoom Level
-                </Typography> */}
-                {/* <Slider
-                    value={zoom}
-                    min={0.5}
-                    max={2}
-                    step={0.1}
-                    onChange={handleZoomChange}
-                    aria-labelledby="zoom-slider"
-                    style={{ width: '200px' }}
-                /> */}
+            <Box display="flex" flexDirection="column" alignItems="left" marginBottom="1rem">
+                <Box display="flex" alignItems="center" gap={1}>
+                    <ZoomOut />
+                    <Slider
+                        value={zoom}
+                        min={0.5}
+                        max={2}
+                        step={0.1}
+                        onChange={handleZoomChange}
+                        aria-labelledby="zoom-slider"
+                        style={{ width: '200px' }}
+                    />
+                    <ZoomIn />
+                </Box>
                 {/* <Button
                     variant="contained"
                     onClick={handleDownloadPng}
@@ -104,7 +107,7 @@ const Alignment = ({ data }) => {
             </Box>
             <div ref={tableRef} style={{ overflowX: "auto", overflowY: "auto", transform: `scale(${zoom})`, transformOrigin: '0 0' }}>
                 <TableContainer component={Paper}>
-                    <Table style={{ borderCollapse: "collapse" }}>
+                    <Table style={{ borderCollapse: "collapse", width: "auto" }}>
                         <TableHead>
                             <TableRow>
                                 <TableCell>Identifier</TableCell>
@@ -133,7 +136,7 @@ const Alignment = ({ data }) => {
                                             whiteSpace: "nowrap",
                                         }}
                                     >
-                                        <Tooltip title={item.motifCodeIdentifier} placement="top">
+                                        <Tooltip title={item.motifCodeIdentifier} placement="top" arrow>
                                             {item.motifCodeIdentifier.startsWith("NPA") ? (
                                                 <a
                                                     href={`https://www.npatlas.org/explore/compounds/${item.motifCodeIdentifier}`}
@@ -167,17 +170,33 @@ const Alignment = ({ data }) => {
                                                 textAlign: "center"
                                             }}
                                         >   
-                                            <Tooltip title={getLabel(motif)} placement="top">
+                                            <Tooltip title={getLabel(motif)} placement="top" arrow>
                                                 <span>{getLabel(motif)}</span>
                                             </Tooltip>
                                         </TableCell>
                                     ))}
-                                    <TableCell style={{ textAlign: "left", whiteSpace: "nowrap" }}>
-                                        {item.bioactivities.length ? item.bioactivities.join(", ").charAt(0).toUpperCase() + item.bioactivities.join(", ").slice(1) : "N/A"}
-                                    </TableCell>
-                                    <TableCell style={{ textAlign: "left", whiteSpace: "nowrap" }}>
-                                        {item.genus.length ? item.genus.join(", ").charAt(0).toUpperCase() + item.genus.join(", ").slice(1) : "N/A"}
-                                    </TableCell>
+                                    <Tooltip title={item.bioactivities.length ? item.bioactivities.join(", ") : "N/A"} placement="top" arrow>
+                                        <TableCell style={{ 
+                                            textAlign: "left", 
+                                            whiteSpace: "nowrap",
+                                            overflow: "hidden", 
+                                            textOverflow: "ellipsis", 
+                                            maxWidth: 300 // Adjust the width as needed 
+                                        }}>
+                                            {item.bioactivities.length ? item.bioactivities.join(", ").charAt(0).toUpperCase() + item.bioactivities.join(", ").slice(1) : "N/A"}
+                                        </TableCell>
+                                    </Tooltip>
+                                    <Tooltip title={item.genus.length ? item.genus.join(", ") : "N/A"} placement="top" arrow>
+                                        <TableCell style={{ 
+                                            textAlign: "left", 
+                                            whiteSpace: "nowrap",
+                                            overflow: "hidden",
+                                            textOverflow: "ellipsis",
+                                            maxWidth: 300 // Adjust the width as needed 
+                                        }}>
+                                            {item.genus.length ? item.genus.join(", ").charAt(0).toUpperCase() + item.genus.join(", ").slice(1) : "N/A"}
+                                        </TableCell>
+                                    </Tooltip>
                                 </TableRow>
                             ))}
                         </TableBody>

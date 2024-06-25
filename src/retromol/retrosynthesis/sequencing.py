@@ -5,12 +5,138 @@
 import logging
 import typing as ty
 from collections import defaultdict
+from copy import deepcopy 
 
 import networkx as nx
 from rdkit import Chem
 
 
 def parse_modular_natural_product(
+    reaction_tree,
+    monomer_graph,
+    applied_reactions
+):
+    """Parse out modular natural product motif code v2."""
+    logger = logging.getLogger(__name__)
+    logger.debug("Starting modular natural product sequencing v2 ...")
+
+    # Get monomers and their atom map numbers.
+    monomers = []
+    for _, props in monomer_graph.items():
+        identity = props["identity"]
+        if identity is not None:
+            mol = Chem.MolFromSmiles(reaction_tree[props["reaction_tree_id"]]["smiles"])
+            amns = [atom.GetAtomMapNum() for atom in mol.GetAtoms() if atom.GetAtomMapNum() > 0]
+            monomers.append((identity, amns))
+
+    # Compile all reaction tree nodes as Chem.Mol objects.
+    reaction_tree_nodes = {}
+    for node_id, props in reaction_tree.items():
+        reaction_tree_nodes[node_id] = Chem.MolFromSmiles(props["smiles"])
+
+    def check_template_presence(template):
+        nodes_with_template = []
+        for node_id, mol in reaction_tree_nodes.items():
+            if mol.HasSubstructMatch(template):
+                nodes_with_template.append(mol)
+        return nodes_with_template
+    
+    # Define the patterns for the modular natural product.
+    pattern_polyketide_start = r"[C;!R](=[O])(-[OH])~[C;!R]~[C;!R]"
+    pattern_polyketide = r"~[C;!R]~[C;!R]"
+    pattern_alpha_amino_acid_start = r"[C;!R](=[O])(-[OH])~[C;!R]~[N;!R]"
+    pattern_alpha_amino_acid = r"~[C;!R]~[C;!R]~[N;!R]"
+    pattern_beta_amino_acid_start = r"[C;!R](=[O])(-[OH])~[C;!R]~[C;!R]~[N;!R]"
+    pattern_beta_amino_acid = r"~[C;!R]~[C;!R]~[C;!R]~[N;!R]"
+    pattern_wildcard = r"~[*]"
+
+    ############################################################################
+
+    starts = [
+        pattern_polyketide_start,
+        pattern_alpha_amino_acid_start,
+        pattern_beta_amino_acid_start
+    ]
+
+    # tree = Tree()
+
+    pattern_current = pattern_polyketide_start
+
+    # Check if starting pattern is present in the reaction tree.
+    template = Chem.MolFromSmarts(pattern_current + pattern_wildcard)
+    nodes_with_template = check_template_presence(template)
+    if len(nodes_with_template) == 0:
+        msg = "Starting pattern not found in reaction tree."
+        logger.debug(msg)
+        return []
+
+    motif_mapping = [[3, 4]]
+    acc = 4
+    while True:
+        pattern_new = pattern_current + pattern_polyketide
+        template = Chem.MolFromSmarts(pattern_new + pattern_wildcard)
+        nodes_with_template = check_template_presence(template)
+        if len(nodes_with_template) == 0:
+            break
+        pattern_current = pattern_new
+        motif_mapping.append([acc + 1, acc + 2])
+        acc += 2
+
+    # TODO: gather all possible max sequences from reaction tree
+
+    ############################################################################
+
+    retrieved_backbones = set()
+
+    # Retrieve atom map numbers for the constructed backbone template. 
+    backbone_template = Chem.MolFromSmarts(pattern_current + pattern_wildcard)
+    nodes_with_template = check_template_presence(backbone_template)
+    for node_with_template in nodes_with_template:
+        matches = node_with_template.GetSubstructMatches(backbone_template)
+        for match in matches:
+            
+            atom_map_nums = []
+            for atom_index in match:
+                atom = node_with_template.GetAtomWithIdx(atom_index)
+                atom_map_num = atom.GetAtomMapNum()
+                if atom_map_num > 0:
+                    atom_map_nums.append(atom_map_num)
+                else:
+                    atom_map_nums.append(None)
+            
+            if len(atom_map_nums) != 0: 
+                retrieved_backbones.add(tuple(atom_map_nums[:-1]))  # last item is wildcard
+
+    # Map backbone atom map numbers to monomer identities.
+    retrieved_seqs = []
+    for backbone in retrieved_backbones:
+        temp_monomers = deepcopy(monomers)
+        backbone = list(backbone)
+        retrieved_seq = []
+        for motif_inds in motif_mapping:
+            amns = [backbone[ind] for ind in motif_inds]
+            for monomer in temp_monomers:
+                if set(amns).issubset(set(monomer[1])):
+                    retrieved_seq.append(monomer[0])
+                    # cannot use same monomer twice
+                    temp_monomers.remove(monomer)
+                    break
+            else:
+                retrieved_seq.append("polyketide|**")
+        retrieved_seqs.append(retrieved_seq[::-1])
+
+    seqs = []
+    for seq in retrieved_seqs:
+        seqs.append(dict(
+            smiles="",
+            motif_code=seq
+        ))
+
+    logger.debug("Finished modular natural product sequencing v2.")
+    return seqs
+
+
+def parse_modular_natural_product_depr(
     reaction_tree: ty.Dict[int, ty.List[int]],
     monomer_graph: ty.Dict[str, ty.Any],
     core_types: ty.List[str] = ["polyketide", "peptide"],
