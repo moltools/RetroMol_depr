@@ -148,18 +148,18 @@ const RetroMol = () => {
     useEffect(() => {
         fetchVersion();
 
-        toast.warning(
-            "SMILES parsing is under active development and may not work as expected. Please report any issues.",
-            {
-                position: "top-center",
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                autoClose: false,
-            }
-        );
+        // toast.warning(
+        //     "SMILES parsing is under active development and may not work as expected. Please report any issues.",
+        //     {
+        //         position: "top-center",
+        //         hideProgressBar: false,
+        //         closeOnClick: true,
+        //         pauseOnHover: true,
+        //         draggable: true,
+        //         progress: undefined,
+        //         autoClose: false,
+        //     }
+        // );
 
         if (isDrawerOpen) {
             checkStatusServer();
