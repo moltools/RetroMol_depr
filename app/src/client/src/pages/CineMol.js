@@ -378,18 +378,21 @@ const CineMol = () => {
      * change, the component will re-render and the useEffect hook will run again.
      */ 
     useEffect(() => {
-        if (isDrawerOpen) {
-            checkStatusServer();
-        };
-
         if (initialRender) {
             handleGetVersion();
             setInitialRender(false);
             // toast.warn("CineMol is currently under development, and may not look as expected!", { autoClose: false });
         } else {
             handleDrawModel();
-        }
-    }, [isDrawerOpen, sdfString, style, look, includeHydrogens, resolution, rotationX, rotationY, rotationZ, width, height]);
+        };
+    }, [sdfString, style, look, includeHydrogens, resolution, rotationX, rotationY, rotationZ, width, height]);
+
+    useEffect(() => {
+        if (isDrawerOpen) {
+            checkStatusServer();
+        };
+    }, [isDrawerOpen]);
+
 
     return (
         <Box sx={{ display: "flex", width: "100%", flexDirection: "column" }}>
