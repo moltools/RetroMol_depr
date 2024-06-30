@@ -9,6 +9,7 @@ import typing as ty
 
 import neo4j
 from flask import Blueprint, Response, request
+from rdkit import Chem
 
 from retromol.npkg.antismash import get_antismash_data, parse_antismash_json
 from retromol.retrosynthesis.parsing import (
@@ -124,8 +125,9 @@ def parse_submission() -> Response:
                     "queryType": "retrosynthesis",
                     "query": motif_code_to_query(seq["motif_code"]),
                     "metaData": {
-                        "inputSmiles": input_value,
-                        "appliedRules": result.applied_reactions
+                        "inputSmiles": Chem.MolToSmiles(result.mol),
+                        "appliedRules": result.applied_reactions,
+                        "mapping": seq["meta_data"]
                     }
                 }
                 for seq_index, seq in enumerate(result.sequences)

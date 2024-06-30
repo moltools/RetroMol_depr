@@ -95,7 +95,7 @@ def reaction_tree_to_monomer_graph(
         monomer_graph.add_node(amns[0])
         for amn in amns[1:]:
             monomer_graph = nx.contracted_nodes(monomer_graph, amns[0], amn, self_loops=False)
-        logger.debug("... merged nodes with identifierd AMNs in monomer graph.")
+        logger.debug("... merged nodes with identifier AMNs in monomer graph.")
 
         monomer_graph_mapping[subgraph[0]] = (amns[0], subgraph[1])
     logger.debug("... created monomer graph.")

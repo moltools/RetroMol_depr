@@ -201,6 +201,8 @@ const RetroMol = () => {
     const submitQuery = async (data) => {
         setIsBusy(true);
 
+        setParsedResults([]);
+
         try {
             const response = await fetch("/api/query_submission", {
                 method: "POST",

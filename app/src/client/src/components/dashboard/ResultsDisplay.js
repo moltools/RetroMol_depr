@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import {
     Box,
     Button,
@@ -9,6 +9,7 @@ import {
 } from "@mui/material";
 import TypographyTooltip from "../common/TypographyTooltip";
 import RefreshIcon from "@mui/icons-material/Refresh";
+import { toast } from "react-toastify";
 
 const ResultsDisplay = ({ 
     results, 
@@ -16,18 +17,84 @@ const ResultsDisplay = ({
     selectedResultIndex,
     setSelectedResultIndex
 }) => {
-    const handleSelectResultIndex = (index) => {
-        if (selectedResultIndex === index) {
-            setSelectedResultIndex(null); // Deselect the result if it is already selected.
-        } else {
+    const boxRef = useRef(null);
+    const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
+    const [svgString, setSvgString] = useState("");
+    const [smiles, setSmiles] = useState("");
+    const [highlights, setHighlights] = useState([]);
 
-            setSelectedResultIndex(index); // Select the result.
+    useEffect(() => {
+        function updateSize() {
+            if (boxRef.current) {
+                setDimensions({
+                    width: boxRef.current.offsetWidth,
+                    height: boxRef.current.offsetHeight,
+                });
+            }
         }
-    };
+    
+        window.addEventListener('resize', updateSize);
+        updateSize(); // Initial size update
+    
+        return () => window.removeEventListener('resize', updateSize);
+    }, []); // Empty array ensures this effect runs only once at mount
+    
 
     const handleRefresh = () => {
         setSelectedResultIndex(null);
         setResults([]);
+    };
+
+    const handleDrawSmilesWithHighlights = async () => { 
+        if (smiles.length === 0) {
+            return;
+        };
+    
+        try {
+            const response = await fetch("/api/draw_smiles_with_highlights", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    "smiles": smiles,
+                    "highlights": highlights,
+                    "dimensions": dimensions
+                }),
+            });
+    
+            if (!response.ok) {
+                throw new Error("Network response was not ok!");
+            };
+    
+            const json = await response.json();
+
+            if (json.status === "success") {
+                setSvgString(json.payload.svgString);
+            } else if (json.status === "warning") {
+                toast.warn(json.message);
+            } else if (json.status === "failure") {
+                toast.error(json.message);
+            };
+
+        } catch (error) {
+            const msg = "Could not draw SMILES string!";
+            toast.error(msg, { autoClose: true });
+            console.error(error);
+        };
+    };
+
+    useEffect (() => {
+        handleDrawSmilesWithHighlights();
+    }, [smiles, highlights, dimensions]);
+
+    const handleSelectResultIndex = (index) => {
+        if (selectedResultIndex === index) {
+            setSelectedResultIndex(null); // Deselect the result if it is already selected.
+        } else {
+            console.log(results[index]);
+            setSelectedResultIndex(index); // Select the result.
+            setSmiles(results[index].metaData.inputSmiles);
+            setHighlights(results[index].metaData.mapping)
+        }
     };
 
     return (
@@ -68,36 +135,40 @@ const ResultsDisplay = ({
                 <Divider sx={{ mb: 2 }} />
             </Box>
             <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                <Box sx={{ 
-                    flex: "1 1 100%",
-                    display: "flex", 
-                    // alignItems: "center", 
-                    // justifyContent: "center", 
-                    padding: "10px", // delete this line when centering component to be implemented
-                    backgroundColor: "white", 
-                    borderRadius: "4px", 
-                    border: "1px solid #bbb",
-                    boxShadow: "inset 0 2px 5px rgba(0, 0, 0, 0.1)",
-                }}>
+                <Box 
+                    ref={boxRef}
+                    sx={{ 
+                        flex: "1 1 100%",
+                        display: "flex", 
+                        alignItems: "center", 
+                        justifyContent: "center", 
+                        padding: "10px", // delete this line when centering component to be implemented
+                        backgroundColor: "white", 
+                        borderRadius: "4px", 
+                        border: "1px solid #bbb",
+                        boxShadow: "inset 0 2px 5px rgba(0, 0, 0, 0.1)",
+                    }}
+                >
                     {selectedResultIndex !== null ? (
                         <Box>
                             {results[selectedResultIndex]["queryType"] === "retrosynthesis" ? (
-                                <Box>
-                                    <Typography>
-                                        Applied rules:
-                                    </Typography>
-                                    {results[selectedResultIndex]["metaData"]["appliedRules"].map((reaction, index) => (
-                                        <Box key={index} sx={{ ml: 2 }}>
+                                <Box sx={{
+                                    height: "500px",
+                                }}>
+                                    {svgString !== "" ? (
+                                        <Box sx={{ 
+                                            height: "500px",
+                                            backgroundColor: "#fff",
+                                        }}>
+                                            <div dangerouslySetInnerHTML={{ __html: svgString }} />
+                                        </Box>
+                                    ) : (
+                                        <Box>
                                             <Typography>
-                                                {reaction}
+                                                Nothing to see here.
                                             </Typography>
                                         </Box>
-                                    ))}
-                                    <Box sx={{ mt: 1 }}>
-                                        <Typography>
-                                            {`Number of motifs: ${results[selectedResultIndex]["query"].length}`}
-                                        </Typography>
-                                    </Box>
+                                    )}
                                 </Box>
                             ) : (
                                 <Box>

@@ -171,7 +171,7 @@ def parse_mol(
 
     try:
         used_reactions = [r for r in reactions if r.name in applied_reactions]
-        seqs = parse_modular_natural_product(new_reaction_tree, new_monomer_graph, used_reactions)
+        seqs = parse_modular_natural_product(new_reaction_tree, new_monomer_graph)
     except Exception as e:
         logger.error(f" Error while parsing modular natural product: {e}")
     finally:
