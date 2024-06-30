@@ -68,6 +68,10 @@ const ResultsDisplay = ({
             const json = await response.json();
 
             if (json.status === "success") {
+                setDimensions({
+                    width: boxRef.current.offsetWidth,
+                    height: boxRef.current.offsetHeight,
+                })
                 setSvgString(json.payload.svgString);
             } else if (json.status === "warning") {
                 toast.warn(json.message);
@@ -191,9 +195,19 @@ const ResultsDisplay = ({
                             )}
                         </Box>
                     ) : (
-                        <Typography>
-                            No result selected.
-                        </Typography>
+                        <Box 
+                            sx={{
+                                width: "100%"
+                            }}
+                        >
+                            <Typography 
+                                sx={{
+                                    textAlign: "left"
+                                }}
+                            >
+                                No result selected.
+                            </Typography>
+                        </Box>
                     )}
                 </Box>
                 <Box sx={{ 
