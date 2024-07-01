@@ -171,6 +171,7 @@ const RetroMol = () => {
         setIsBusy(true);
 
         // reset selectedResultIndex
+        setParsedResults([]);
         setSelectedResultIndex(null);
 
         try {
@@ -201,7 +202,7 @@ const RetroMol = () => {
     const submitQuery = async (data) => {
         setIsBusy(true);
 
-        setParsedResults([]);
+        // setParsedResults([]);
 
         try {
             const response = await fetch("/api/query_submission", {

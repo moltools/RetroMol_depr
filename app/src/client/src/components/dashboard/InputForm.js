@@ -22,6 +22,7 @@ import { toast } from 'react-toastify';
 const smilesErythromycin = "CCC1C(C(C(C(=O)C(CC(C(C(C(C(C(=O)O1)C)OC2CC(C(C(O2)C)O)(C)OC)C)OC3C(C(CC(O3)C)N(C)C)O)(C)O)C)C)O)(C)O";
 const smilesEnterobactin = "C1C(C(=O)OCC(C(=O)OCC(C(=O)O1)NC(=O)C2=C(C(=CC=C2)O)O)NC(=O)C3=C(C(=CC=C3)O)O)NC(=O)C4=C(C(=CC=C4)O)O";
 const smilesDaptomycin = "CCCCCCCCCC(=O)NC(CC1=CNC2=CC=CC=C21)C(=O)NC(CC(=O)N)C(=O)NC(CC(=O)O)C(=O)NC3C(OC(=O)C(NC(=O)C(NC(=O)C(NC(=O)CNC(=O)C(NC(=O)C(NC(=O)C(NC(=O)C(NC(=O)CNC3=O)CCCN)CC(=O)O)C)CC(=O)O)CO)C(C)CC(=O)O)CC(=O)C4=CC=CC=C4N)C";
+const smilesMicacocidinA = "CCCCCC1=C(C(=CC=C1)[O-])C2=N[C@H](CS2)[C@@H]3N([C@@H](CS3)[C@@H](C(C)(C)C4=N[C@@](CS4)(C)C(=O)[O-])O)C"
 
 const AntismashLogo = ({ style }) => {
     // Make the logo stand out from the background.
@@ -211,8 +212,9 @@ const InputForm = ({ onSubmit }) => {
                         <em>None</em>
                         </MenuItem>
                         <MenuItem value={smilesDaptomycin}>Daptomycin</MenuItem>
-                        <MenuItem value={smilesEnterobactin}>Enterobactin</MenuItem>
+                        {/* <MenuItem value={smilesEnterobactin}>Enterobactin</MenuItem> */}
                         <MenuItem value={smilesErythromycin}>Erythromycin</MenuItem>
+                        <MenuItem value={smilesMicacocidinA}>Micacocidin A</MenuItem>
                     </Select>
                     </FormControl>
                     <Button 

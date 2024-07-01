@@ -148,6 +148,10 @@
         "pattern": "[C,c;R:1]-[C;R:2](=[O:3])-[O;R:4]-[C,c;R:5]>>([C,c:1]-[C:2](=[O:3])-[OH].[OH:4]-[C,c:5])"
     },
     {
+        "name": "break ester bond",
+        "pattern": "[C;!R:1][OH0;!R:2][C;!R:3](=[O:4])[C;!R:5]>>[C:1][OH1:2].[OH][C:3](=[O:4])[C:5]"
+    },
+    {
         "name": "macrocyclization (thioester)",
         "pattern": "[C,c;R:1]-[C;R:2](=[O:3])-[S;R:4]-[C,c;R:5]>>([C,c:1]-[C:2](=[O:3])-[OH].[SH:4]-[C,c:5])"
     },

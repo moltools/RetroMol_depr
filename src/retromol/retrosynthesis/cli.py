@@ -33,7 +33,8 @@ def add_subparsers(parser: argparse._SubParsersAction) -> None:
     subparser_batch_mode = parser.add_parser("retrosynthesis_batch")
 
     repository_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
-    fixtures_path = os.path.join(repository_path, "tests/fixtures")
+    # fixtures_path = os.path.join(repository_path, "tests/fixtures")
+    fixtures_path = fixtures_path = os.path.join("app", "src", "server", "data")
 
     subparser_single_mode.add_argument(
         "-r",

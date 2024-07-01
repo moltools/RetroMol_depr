@@ -18,7 +18,7 @@ const ResultsDisplay = ({
     setSelectedResultIndex
 }) => {
     const boxRef = useRef(null);
-    const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
+    const [dimensions, setDimensions] = useState({ width: 0, height: 522 });
     const [svgString, setSvgString] = useState("");
     const [smiles, setSmiles] = useState("");
     const [highlights, setHighlights] = useState([]);
@@ -28,7 +28,8 @@ const ResultsDisplay = ({
             if (boxRef.current) {
                 setDimensions({
                     width: boxRef.current.offsetWidth,
-                    height: boxRef.current.offsetHeight,
+                    // height: boxRef.current.offsetHeight,
+                    height: 522
                 });
             }
         }
@@ -46,11 +47,23 @@ const ResultsDisplay = ({
     };
 
     const handleDrawSmilesWithHighlights = async () => { 
+
+        // also check if it is either null or undefined
+        if (smiles === null || smiles === undefined) {
+            return;
+        }
+
+        // check if smiles is defined
+        if (smiles === "") {
+            return;
+        }
+
         if (smiles.length === 0) {
             return;
         };
     
         try {
+            // console.log(dimensions)
             const response = await fetch("/api/draw_smiles_with_highlights", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -68,10 +81,6 @@ const ResultsDisplay = ({
             const json = await response.json();
 
             if (json.status === "success") {
-                setDimensions({
-                    width: boxRef.current.offsetWidth,
-                    height: boxRef.current.offsetHeight,
-                })
                 setSvgString(json.payload.svgString);
             } else if (json.status === "warning") {
                 toast.warn(json.message);
@@ -87,6 +96,15 @@ const ResultsDisplay = ({
     };
 
     useEffect (() => {
+
+        // if (prevDimensions.width === dimensions.width && prevDimensions.height === dimensions.height) {
+        //     return;
+        // };
+
+        // console.log(prevDimensions.width === dimensions.width && prevDimensions.height === dimensions.height)
+        // console.log(prevDimensions, dimensions);
+        // console.log("Drawing smiles with highlights...")
+        
         handleDrawSmilesWithHighlights();
     }, [smiles, highlights, dimensions]);
 
@@ -94,7 +112,6 @@ const ResultsDisplay = ({
         if (selectedResultIndex === index) {
             setSelectedResultIndex(null); // Deselect the result if it is already selected.
         } else {
-            console.log(results[index]);
             setSelectedResultIndex(index); // Select the result.
             setSmiles(results[index].metaData.inputSmiles);
             setHighlights(results[index].metaData.mapping)
@@ -144,8 +161,8 @@ const ResultsDisplay = ({
                     sx={{ 
                         flex: "1 1 100%",
                         display: "flex", 
-                        alignItems: "center", 
-                        justifyContent: "center", 
+                        alignItems: "left", 
+                        justifyContent: "left", 
                         padding: "10px", // delete this line when centering component to be implemented
                         backgroundColor: "white", 
                         borderRadius: "4px", 
@@ -155,9 +172,12 @@ const ResultsDisplay = ({
                 >
                     {selectedResultIndex !== null ? (
                         <Box>
-                            {results[selectedResultIndex]["queryType"] === "retrosynthesis" ? (
+                            {results[selectedResultIndex].queryType === "retrosynthesis" ? (
                                 <Box sx={{
                                     height: "500px",
+                                    display: "flex", 
+                                    alignItems: "center", 
+                                    justifyContent: "center", 
                                 }}>
                                     {svgString !== "" ? (
                                         <Box sx={{ 
@@ -175,7 +195,12 @@ const ResultsDisplay = ({
                                     )}
                                 </Box>
                             ) : (
-                                <Box>
+                                <Box
+                                    // align all to left
+                                    sx={{
+                                        textAlign: "left"
+                                    }}
+                                >
                                     <Typography>
                                         {`Category: ${results[selectedResultIndex]["metaData"]["category"]}`}
                                     </Typography>

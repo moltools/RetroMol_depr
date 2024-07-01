@@ -12,7 +12,7 @@ from routes.fetching import blueprint_fetch_bioactivity_labels, blueprint_fetch_
 from routes.parsing import blueprint_parse_submission
 from routes.querying import blueprint_query_submission
 from routes.cinemol import blueprint_draw_model, blueprint_fetch_cinemol_version
-from routes.drawing import blueprint_draw_smiles_with_highlights
+from routes.drawing import blueprint_draw_smiles_with_highlights, blueprint_draw_smiles
 
 
 app = Flask(__name__)
@@ -22,6 +22,7 @@ app.register_blueprint(blueprint_parse_submission)
 app.register_blueprint(blueprint_query_submission)
 app.register_blueprint(blueprint_draw_model)
 app.register_blueprint(blueprint_fetch_cinemol_version)
+app.register_blueprint(blueprint_draw_smiles)
 app.register_blueprint(blueprint_draw_smiles_with_highlights)
 
 

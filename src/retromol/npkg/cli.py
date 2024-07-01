@@ -54,7 +54,8 @@ def add_subparsers(parser: argparse._SubParsersAction) -> None:
     )  # noqa: E501
 
     repository_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
-    fixtures_path = os.path.join(repository_path, "tests/fixtures")
+    # fixtures_path = os.path.join(repository_path, "tests/fixtures")
+    fixtures_path = os.path.join("app", "src", "server", "data")
     path_to_rxn = os.path.join(fixtures_path, "reactions.json")
     path_to_mon = os.path.join(fixtures_path, "monomers.json")
 

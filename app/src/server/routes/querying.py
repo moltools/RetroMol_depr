@@ -624,7 +624,7 @@ def query_submission() -> Response:
     
     # Unpack data.
     data = request.json
-
+    
     try:
         query = data["query"]
         query_type = data["queryType"]

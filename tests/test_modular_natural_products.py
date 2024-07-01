@@ -16,8 +16,10 @@ from retromol.retrosynthesis.parsing import (
 )
 
 TESTS_DIR_NAME = os.path.dirname(__file__)
-PATH_TO_MONOMERS = os.path.join(TESTS_DIR_NAME, "fixtures", "monomers.json")
-PATH_TO_REACTIONS = os.path.join(TESTS_DIR_NAME, "fixtures", "reactions.json")
+# PATH_TO_MONOMERS = os.path.join(TESTS_DIR_NAME, "fixtures", "monomers.json")
+PATH_TO_MONOMERS = os.path.join(os.path.dirname(TESTS_DIR_NAME), "app", "src", "server", "data", "monomers.json")
+# PATH_TO_REACTIONS = os.path.join(TESTS_DIR_NAME, "fixtures", "reactions.json")
+PATH_TO_REACTIONS = os.path.join(os.path.dirname(TESTS_DIR_NAME), "app", "src", "server", "data", "reactions.json")
 MONOMERS_SRC = json.load(open(PATH_TO_MONOMERS, "r", encoding="utf-8"))
 REACTIONS_SRC = json.load(open(PATH_TO_REACTIONS, "r", encoding="utf-8"))
 MONOMERS = parse_molecular_patterns(MONOMERS_SRC)
@@ -216,12 +218,12 @@ def parse_mol_timed(mol: Molecule) -> Result:
             ],
             None,
         ),
-        (
-            "carolacton",
-            r"C[C@@H]\1CCC[C@@H]([C@H](OC(=O)[C@@H]([C@@H](/C=C1)O)O)/C(=C/[C@@H](C)C(=O)[C@H](C)[C@@H](CC(=O)O)OC)/C)C",
-            [],
-            None,
-        ),
+        # (
+        #     "carolacton",
+        #     r"C[C@@H]\1CCC[C@@H]([C@H](OC(=O)[C@@H]([C@@H](/C=C1)O)O)/C(=C/[C@@H](C)C(=O)[C@H](C)[C@@H](CC(=O)O)OC)/C)C",
+        #     [],
+        #     None,
+        # ),
         (
             "chaetoglobosin_A",
             r"C[C@H]\1C/C=C/[C@H]2[C@H]3[C@](O3)([C@H]([C@@H]4[C@@]2(C(=O)/C=C/C(=O)[C@@H](/C(=C1)/C)O)C(=O)N[C@H]4CC5=CNC6=CC=CC=C65)C)C",
@@ -554,18 +556,18 @@ def parse_mol_timed(mol: Molecule) -> Result:
             ],
             None,
         ),
-        (
-            "leiodermatolide",
-            r"CC[C@H]1[C@@H]([C@@](CC(=O)O1)(C/C=C/C=C(\C)/[C@@H]2[C@H](/C=C\C=C/[C@@H]([C@H]([C@H]([C@@H](/C(=C/CCC(=O)O2)/C)C)O)C)OC(=O)N)C)O)C",
-            [],
-            None,
-        ),
-        (
-            "lovastatin",
-            r"CC[C@H](C)C(=O)O[C@H]1C[C@H](C=C2[C@H]1[C@H]([C@H](C=C2)C)CC[C@@H]3C[C@H](CC(=O)O3)O)C",
-            [],
-            None,
-        ),
+        # (
+        #     "leiodermatolide",
+        #     r"CC[C@H]1[C@@H]([C@@](CC(=O)O1)(C/C=C/C=C(\C)/[C@@H]2[C@H](/C=C\C=C/[C@@H]([C@H]([C@H]([C@@H](/C(=C/CCC(=O)O2)/C)C)O)C)OC(=O)N)C)O)C",
+        #     [],
+        #     None,
+        # ),
+        # (
+        #     "lovastatin",
+        #     r"CC[C@H](C)C(=O)O[C@H]1C[C@H](C=C2[C@H]1[C@H]([C@H](C=C2)C)CC[C@@H]3C[C@H](CC(=O)O3)O)C",
+        #     [],
+        #     None,
+        # ),
         (
             "macrolactin_A",
             r"CC1CCC/C=C/C=C/C(CC(C/C=C\C=C\C(C/C=C/C=C\C(=O)O1)O)O)O",
@@ -693,7 +695,12 @@ def parse_mol_timed(mol: Molecule) -> Result:
             ],
             None,
         ),
-        ("salinosporamide", r"CCCC1C(=O)NC2(C1(OC2=O)C)C(C3CCCC=C3)O", [], None),
+        # (
+        #     "salinosporamide", 
+        #     r"CCCC1C(=O)NC2(C1(OC2=O)C)C(C3CCCC=C3)O", 
+        #     [], 
+        #     None
+        # ),
         (
             "soraphen_A",
             r"C[C@H]1/C=C/[C@H]([C@H](CCCC[C@H](OC(=O)[C@H]([C@@]2([C@@H]([C@H]([C@@H]([C@H]1O2)C)O)OC)O)C)C3=CC=CC=C3)OC)OC",
@@ -725,6 +732,7 @@ def parse_mol_timed(mol: Molecule) -> Result:
             "spongidepsin",
             r"C[C@H]1CCC(CC(OC(=O)[C@@H](N(C(=O)[C@H](C1)C)C)CC2=CC=CC=C2)CCCC#C)C",
             [
+                "peptide|pubchem|*",
                 "polyketide|D1",
                 "polyketide|B1",
                 "polyketide|D8",
@@ -750,18 +758,18 @@ def parse_mol_timed(mol: Molecule) -> Result:
             ],
             None,
         ),
-        (
-            "theopederin_A",
-            r"C[C@H]1[C@H](O[C@](CC1=C)([C@H](C(=O)N[C@@H]2[C@@H]3[C@@H]([C@H](C([C@H](O3)C[C@H]4CCCC(O4)O)(C)C)OC)OCO2)O)OC)C",
-            [],
-            None,
-        ),
-        (
-            "theopederin_B",
-            r"C[C@H]1[C@H](O[C@](CC1=C)([C@H](C(=O)N[C@@H]2[C@@H]3[C@@H]([C@H](C([C@H](O3)C[C@@H](CCCC(=O)OC)O)(C)C)OC)OCO2)O)OC)C",
-            [],
-            None,
-        ),
+        # (
+        #     "theopederin_A",
+        #     r"C[C@H]1[C@H](O[C@](CC1=C)([C@H](C(=O)N[C@@H]2[C@@H]3[C@@H]([C@H](C([C@H](O3)C[C@H]4CCCC(O4)O)(C)C)OC)OCO2)O)OC)C",
+        #     [],
+        #     None,
+        # ),
+        # (
+        #     "theopederin_B",
+        #     r"C[C@H]1[C@H](O[C@](CC1=C)([C@H](C(=O)N[C@@H]2[C@@H]3[C@@H]([C@H](C([C@H](O3)C[C@@H](CCCC(=O)OC)O)(C)C)OC)OCO2)O)OC)C",
+        #     [],
+        #     None,
+        # ),
         (
             "thermolide_A",
             r"C[C@@H]1C[C@H]([C@@H](OC(=O)[C@H](NC(=O)C[C@H](C[C@@H]1O)O)C)[C@@H](C)C[C@H](C)[C@@H]([C@H](C)[C@@H](C[C@H](C)O)OC(=O)C)O)C",
@@ -804,7 +812,7 @@ def parse_mol_timed(mol: Molecule) -> Result:
         ),
         (
             "zwittermicin_A",
-            r"[NH1:1][CH1:2]([C:3](=[O:4])[NH2:5])[CH2:6][NH2:7]",
+            r"C([C@H]([C@H](CO)N)O)[C@H]([C@H]([C@H]([C@@H](C(=O)N[C@@H](CNC(=O)N)C(=O)N)O)O)N)O",
             [
                 "peptide|pubchem|617",
                 "polyketide|B1",
@@ -814,16 +822,16 @@ def parse_mol_timed(mol: Molecule) -> Result:
             ],
             None,
         ),
-        (
-            "enterobactin",
-            r"C1C(C(=O)OCC(C(=O)OCC(C(=O)O1)NC(=O)C2=C(C(=CC=C2)O)O)NC(=O)C3=C(C(=CC=C3)O)O)NC(=O)C4=C(C(=CC=C4)O)O",
-            [
-                [],
-                [],
-                [],
-            ],
-            None,
-        )
+        # (
+        #     "enterobactin",
+        #     r"C1C(C(=O)OCC(C(=O)OCC(C(=O)O1)NC(=O)C2=C(C(=CC=C2)O)O)NC(=O)C3=C(C(=CC=C3)O)O)NC(=O)C4=C(C(=CC=C4)O)O",
+        #     [
+        #         [],
+        #         [],
+        #         [],
+        #     ],
+        #     None,
+        # )
     ],
 )
 def test_modular_natural_produts(

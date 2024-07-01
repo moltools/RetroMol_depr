@@ -140,11 +140,30 @@ def draw_smiles_with_highlights() -> Response:
 
         svg_string = draw(Chem.MolFromSmiles(smiles), highlights, window_size)
 
-        message = "Successfully created SVG of substrate with highlights!"
+        message = "Successfully created SVG with highlights of SMILES!"
         payload =  {"svgString": svg_string}
         return ResponseData(ResponseStatus.Success, payload, message).jsonify()
 
     except Exception as e:
         msg = f"Failed to draw SVG: {e}"
         return ResponseData(ResponseStatus.Failure, message=msg).jsonify()
+    
 
+blueprint_draw_smiles = Blueprint("draw_smiles", __name__)
+@blueprint_draw_smiles.route("/api/draw_smiles", methods=["POST"])
+def draw_smiles() -> Response:
+    """API endpoint for drawing SMILES."""
+    data = request.get_json()
+
+    try:
+        smiles = data["smiles"]
+        dimensions = data["dimensions"]
+        window_size = (dimensions["width"], dimensions["height"])
+        svg_string = draw(Chem.MolFromSmiles(smiles), [], window_size)
+        message = "Successfully created SVG of SMILES!"
+        payload = {"svgString": svg_string}
+        return ResponseData(ResponseStatus.Success, payload, message).jsonify()
+    
+    except Exception as e:
+        msg = f"Failed to draw SVG: {e}"
+        return ResponseData(ResponseStatus.Failure, message=msg).jsonify()

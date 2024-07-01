@@ -43,6 +43,10 @@ def parse_modular_natural_product(reaction_tree, monomer_graph):
     pattern_beta_amino_acid_start = r"[C;!R](=[O])(-[OH])~[C;!R]~[C;!R]~[N;!R]"
     pattern_polyketide = r"~[C;!R]~[C;!R]"
     pattern_polyketide_after_peptide = r"~[C;!R](=[O])~[C;!R]~[C;!R]"
+    # TODO: alpha amino acid after polyketide:
+    # pattern_alpha_amino_acid_after_polyketide = r"~[C;!R]~[N;!R]"
+    # TODO: beta amino acid after polyketide
+    # pattern_beta_amino_acid_after_polyketide = r"~[C;!R]~[C;!R]~[N;!R]"
     pattern_alpha_amino_acid = r"~[C;!R]~[C;!R]~[N;!R]"
     pattern_beta_amino_acid = r"~[C;!R]~[C;!R]~[C;!R]~[N;!R]"
     pattern_wildcard = r"~[*]"
@@ -73,6 +77,8 @@ def parse_modular_natural_product(reaction_tree, monomer_graph):
         pattern_new2 = pattern_current + [pattern_polyketide_after_peptide]
         pattern_new3 = pattern_current + [pattern_alpha_amino_acid]
         pattern_new4 = pattern_current + [pattern_beta_amino_acid]
+        # pattern_new5 = pattern_current + [pattern_alpha_amino_acid_after_polyketide]
+        # pattern_new6 = pattern_current + [pattern_beta_amino_acid_after_polyketide]
         patterns_new = [pattern_new1, pattern_new2, pattern_new3, pattern_new4]
 
         for pattern_new in patterns_new:
@@ -127,6 +133,12 @@ def parse_modular_natural_product(reaction_tree, monomer_graph):
                 elif pattern_motif == pattern_beta_amino_acid:
                     motif_mapping.append([acc + 1, acc + 2, acc + 3, acc + 4])
                     acc += 4
+                # elif pattern_motif == pattern_alpha_amino_acid_after_polyketide:
+                #     motif_mapping.append([acc + 1, acc + 2])
+                #     acc += 2
+                # elif pattern_motif == pattern_beta_amino_acid_after_polyketide:
+                #     motif_mapping.append([acc + 1, acc + 2, acc + 3])
+                #     acc += 3
                 else:
                     msg = f"Unknown extender motif pattern: {pattern_motif}."
                     logger.debug(msg)
