@@ -80,6 +80,7 @@ class ProtoCluster:
 
     def __init__(
         self,
+        record_id: str,
         start: int,
         end: int,
         product: str,
@@ -87,6 +88,8 @@ class ProtoCluster:
     ) -> None:
         """Initialize a proto cluster.
         
+        :param record_id: Identifier of the proto cluster.
+        :type record_id: str
         :param start: Start of the proto cluster.
         :type start: int
         :param end: End of the proto cluster.
@@ -96,6 +99,7 @@ class ProtoCluster:
         :param category: Category of the proto cluster.
         :type category: str
         """
+        self.record_id = record_id
         self.start = start
         self.end = end
         self.product = product
@@ -261,6 +265,7 @@ class ProtoCluster:
                 raise ValueError("Could not find PKS_KS or AMP-binding in the domain.")
 
         return {   
+            "recordId": self.record_id,
             "title": f"{self.category} ({self.product})",
             "queryType": "parsed",
             "query": query,
@@ -436,6 +441,7 @@ def get_protoclusters_from_record(
                 continue
 
             cluster = ProtoCluster(
+                record_id=record["id"],
                 start=protocluster["core_start"],
                 end=protocluster["core_end"],
                 product=product,

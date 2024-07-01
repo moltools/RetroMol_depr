@@ -92,28 +92,48 @@ def main():
             raise ValueError(f"Unknown label: {label}")
         
 
-    query = Sequence("thermolide", [B(), B(), B(), D(), B(), D(), B(), B(), Pep()]) # pep = 602 (alanine)
+    # target = Sequence("target", [B(), B(), A(), D(), B(), B()])
 
+    out_file_path = os.path.join(args.out, "deorphanized.txt")
+    with open(out_file_path, "w") as out_file:
 
+        for target in tqdm(asdb4_seqs):
+            num_peptides = sum([isinstance(x, Pep) for x in target._motifs])
+            if num_peptides > 2:
+                continue
 
-    exit()
+            if len(target) < 6:
+                continue
 
-    # Align query sequence with all sequences in the database.
-    for j, query in enumerate(asdb4_seqs):
-        scores = []
-        for seq in tqdm(npatlas_seqs):
-            _, _, score = align_pairwise(
-                query, 
-                seq, 
-                score_func, 
-                PairwiseAlignment.SMITH_WATERMAN,
-                # options={"endGapPenalty": -1},
-            )
-            scores.append(score)
-        top_n = np.argsort(scores)[::-1][:10]
+            max_pairwise_score = 3.0
+            max_score = len(target) * max_pairwise_score
 
-        print(f"Query: {asdb4_identifiers[j]}")
-        for i in top_n: print(f"{npatlas_labels[i]}: {npatlas_identifiers[i]}")
+            top_scores = []
+            for i, query in enumerate(npatlas_seqs):
+                _, _, score = align_pairwise(target, query, score_func, PairwiseAlignment.SMITH_WATERMAN)
+                score /= max_score
+                # print(len(target), len(query), score)
+                if (
+                    score > ((len(target) - 2) * max_pairwise_score) / max_score
+                    and len(query) > (len(target) - 2)
+                    and len(query) < (len(target) + 2)
+                ):
+                    top_scores.append((query, score))
+
+            top_scores = sorted(top_scores, key=lambda x: x[1], reverse=True)
+
+            if len(top_scores) == 0:
+                continue
+
+            out_file.write(f"TARGET {target.identifier}: {target}\n")
+            out_file.write(f"NUM_HITS: {len(top_scores)}\n")
+            for k, (top_score, score) in enumerate(top_scores):
+                k += 1
+                out_file.write(f"HIT_{k}: {top_score.identifier} (score={round(score, 5)}): {top_score}\n")
+            out_file.write("\n")
+
+            # make sure written stuff is updated in file
+            out_file.flush()
 
 
 if __name__ == "__main__":
