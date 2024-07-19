@@ -4,13 +4,13 @@ import { Box, Button, Divider, FormControl, FormControlLabel, IconButton, InputL
     Radiogroup, Radio, RadioGroup
 } from "@mui/material";
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
-import TypographyTooltip from "../common/TypographyTooltip";
+import TypographyTooltip from "../../../components/common/TypographyTooltip";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import CloseIcon from "@mui/icons-material/Close";
 import AddIcon from "@mui/icons-material/Add";
 import SearchIcon from "@mui/icons-material/Search";
 import { toast } from "react-toastify";
-import MultiSelect from "../common/MultiSelect";
+import MultiSelect from "../../../components/common/MultiSelect";
 import { ExpandMore, ExpandLess } from "@mui/icons-material";
 
 const defaultMotif = {

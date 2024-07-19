@@ -7,7 +7,7 @@ import {
     Paper,
     Typography
 } from "@mui/material";
-import TypographyTooltip from "../common/TypographyTooltip";
+import TypographyTooltip from "../../../components/common/TypographyTooltip";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import { toast } from "react-toastify";
 

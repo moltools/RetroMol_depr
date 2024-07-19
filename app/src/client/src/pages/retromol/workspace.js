@@ -28,20 +28,20 @@ import {
     Close as CloseIcon
 } from "@mui/icons-material";
 
-import Alignment from "../components/dashboard/Alignment";
-import InputForm from "../components/dashboard/InputForm";
-import LoadingOverlay from "../components/common/LoadingOverlay";
-import Page from "../components/common/Page";
-import QueryForm from "../components/dashboard/QueryForm";
-import ResultsDisplay from "../components/dashboard/ResultsDisplay";
-import Status from "../components/common/Status";
+import Alignment from "./components/Alignment";
+import InputForm from "./components/InputForm";
+import LoadingOverlay from "../../components/common/LoadingOverlay";
+import Page from "../../components/common/Page";
+import QueryForm from "./components/QueryForm";
+import ResultsDisplay from "./components/ResultsDisplay";
+import Status from "../../components/common/Status";
 
 const SidebarButtonHome = () => {
     return (
         <ListItem 
             type="button" 
             component={Link} 
-            to="/"
+            to="/retromol"
             sx={{ textDecoration: "none", color: "#222" }}
         >
             <ListItemIcon>
