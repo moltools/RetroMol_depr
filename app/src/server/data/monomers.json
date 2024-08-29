@@ -1158,7 +1158,11 @@
     {"name": "peptide|pubchem|5463168", "pattern": "[H]OC(=O)C([H])=C([H])C([H])(C([H])([H])[H])C([H])([H])C([H])([H])[H]"},
     {"name": "peptide|pubchem|121514024", "pattern": "[H]OC(=O)C([H])(N([H])[H])C([H])([H])C([H])([H])C([H])(O[H])C([H])(N([H])[H])C([H])([H])O[H]"},
     {
-        "name": "peptide|pubchem|19",
+        "name": "other|pubchem|19",
         "pattern": "C1=CC(=C(C(=C1)O)O)C(=O)O"
+    },
+    {
+        "name": "other|pubchem|2969",
+        "pattern": "[CH3][CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH2]C(=O)O"
     }
 ]

@@ -1,4 +1,5 @@
 import json
+import itertools
 import logging
 import typing as ty
 from collections import defaultdict, deque
@@ -180,18 +181,7 @@ def apply_rules(mol: Chem.Mol, reactions: ty.List[str]) -> ty.Tuple[Chem.Mol, de
     for reaction_name in reaction_matches:
         logger.debug(f" >> {reaction_name}")
 
-    return tree, mapping
-
-
-# def invert_tree(tree: defaultdict) -> defaultdict:
-#     inverted = defaultdict(lambda: defaultdict(set))
-#     for parent, children in tree.items():
-#         for reaction, products in children.items():
-#             for product in products:
-#                 for child in product:
-#                     inverted[child][reaction].add(parent)
-
-#     return inverted
+    return mol, tree, mapping
 
 def get_routes(tree: defaultdict, node_a: int, node_b: int) -> ty.List[ty.List[int]]:
     # tree = reaction_tree_to_digraph(tree)
@@ -265,45 +255,6 @@ def find_shortest_paths(reaction_tree, root, targets, mapping):
     return shortest_paths
 
 
-def find_shortest_paths2(reaction_tree, root, targets, mapping):
-    """
-    Find the shortest path that reaches all target nodes in the reaction tree.
-
-    Parameters:
-    - reaction_tree: dict, where keys are reactants and values are dicts mapping reaction indices to sets of frozensets of products.
-    - root: The root reactant from which to start the search.
-    - targets: A set of target reactants you want to reach.
-
-    Returns:
-    A list representing the shortest sequence of reaction indices that produces all targets.
-    """
-    # Initialize a queue for BFS
-    queue = deque([(root, [])])
-    # Initialize a set to store the visited nodes
-    visited = set()
-
-    while queue:
-        current_node, path = queue.popleft()
-
-        # If the current node is a target, add it to the visited set
-        if current_node in targets:
-            visited.add(current_node)
-            # If we've found all targets, we can return the path
-            if visited == targets:
-                return path
-
-        # Get the reactions that can be applied to the current node
-        for reaction_index, products in reaction_tree.get(current_node, {}).items():
-            # For each product set, consider each product (there could be multiple in a frozenset)
-            for product_set in products:
-                for product in product_set:
-                    # Add the product to the BFS queue with the updated path
-                    queue.append((product, path + [reaction_index]))
-
-    # If no path includes all targets, return an empty list
-    return []
-
-
 def prune_tree(tree: defaultdict, mapping: dict) -> None:
     roots = find_roots(tree)
     if len(roots) != 1: raise ValueError("Tree must have exactly one root.")
@@ -349,21 +300,175 @@ def prune_tree(tree: defaultdict, mapping: dict) -> None:
 
     # Find the shortest paths to the target nodes
     shortest_paths = find_shortest_paths(new_tree, root, targets, mapping)
-    
-    for k, reaction_indices in shortest_paths.items():
-        x = deepcopy(mapping[k])
-        for atom in x.GetAtoms(): atom.SetIsotope(0)
-        print(k, reaction_indices, Chem.MolToSmiles(x))
+    shortest_paths = [(k, v[::-1]) for k, v in shortest_paths.items()]
 
-    return new_tree
+    # sort from longest to shortest path
+    shortest_paths = sorted(shortest_paths, key=lambda x: len(x[1]), reverse=True)
+
+    # Identify the monomers
+    identified = {}
+    for k, v in monomer_graph_mapping.items():
+        identified[k] = monomer_graph_mapping[k][1]
+
+    return new_tree, shortest_paths, identified
     
+
+def reverse_reaction(rxn_repr: str):
+    rxn_repr = rxn_repr.split(">>")
+    new_repr = rxn_repr[1] + ">>" + rxn_repr[0]
+    compiled = Chem.rdChemReactions.ReactionFromSmarts(new_repr)
+    return compiled
+
+
+def add_path(graph, path):
+    node = graph
+    for value in path:
+        if value not in node:
+            node[value] = {}
+        node = node[value]
+
+def merge_paths(paths):
+    if not paths:
+        return {}
+
+    graph = {}
+    for path in paths:
+        node = graph
+        for value in path:
+            if value in node:
+                node = node[value]
+            else:
+                break
+        else:
+            continue
+        add_path(node, path[len(path) - len(node):])
+
+    return graph
+
+def is_subsequence(a, b):
+    if len(a) == 0 or len(b) == 0:
+        return False
+    
+    if len(a) == len(b):
+        return False 
+
+    iter_a = iter(a)
+    return all(item in iter_a for item in b)
+
+def reconstruct_synthesis(mol, synth, pruned, mapping, rev_reactions, identified):    
+    building_blocks = []
+    for x, _ in synth:
+        y = deepcopy(mapping[x])
+        # for atom in mol.GetAtoms():
+        #     atom.SetIsotope(0)
+        building_blocks.append((x, y))
+
+    fps = {}
+    for n in pruned.keys():
+        x = deepcopy(mapping[n])
+        for atom in x.GetAtoms():
+            atom.SetIsotope(0)
+        fps[n] = mol_to_fingerprint(x, 2, 2048)
+
+    graph_nodes = []
+
+    print(building_blocks)
+    for _, path in synth:
+        for rxn_idx in path:
+            rxn = rev_reactions[rxn_idx]
+            num_inputs = len(rxn.GetReactants())
+            perms = itertools.permutations(building_blocks, num_inputs)
+            perms = [p for p in perms if len(p) == num_inputs]
+            for perm in perms:
+                out = rxn.RunReactants([p[1] for p in perm])
+                for result in out:
+                    # result needs to be 1 output
+                    if len(result) != 1: raise ValueError("Reaction must have exactly one output.")
+                    result = result[0]
+                    Chem.SanitizeMol(result)
+                    # fp = mol_to_fingerprint(result, 2, 2048)
+
+                    enc = mol_to_encoding(result, mol.GetNumAtoms(), 2, 2048)
+                    if enc in pruned:
+                        # removed used building blocks
+                        used = [p[0] for p in perm]
+                        building_blocks = [p for p in building_blocks if p[0] not in used]
+
+                        # add result as new building block
+                        building_blocks.append((enc, result))
+
+                        # print smiles of result
+                        q = deepcopy(result)
+                        for atom in q.GetAtoms():
+                            atom.SetIsotope(0)
+                        graph_nodes.append(q)
+                        smi = Chem.MolToSmiles(q)
+                        print(smi)
+
+                        break
+        
+        break
+
+
+    print(graph_nodes)  
+
+    # calculate reconstruction error (tanimoto distance final graph node and input)
+    fp_input = mol_to_fingerprint(mol, 2, 2048)
+    fp_reconstructed = mol_to_fingerprint(graph_nodes[-1], 2, 2048)
+    print("\n\nRECONSTRUCTION ERROR:", tanimoto_similarity(fp_input, fp_reconstructed))
+    print("\n\n")
+
+    # every graph node is molecule, draw as image and add to graph from left to right
+    # add edges between nodes (directed)
+
+    g = nx.DiGraph()
+    for i in range(len(graph_nodes)):
+        g.add_node(i, smiles=Chem.MolToSmiles(graph_nodes[i]))
+
+    for i in range(len(graph_nodes) - 1):
+        g.add_edge(i, i + 1)
+
+    pos = nx.spring_layout(g)
+    for node in g.nodes(): g.nodes[node]['pos'] = list(pos[node])
+    
+    edge_x, edge_y = [], []
+    for edge in g.edges():
+        x0, y0 = g.nodes[edge[0]]['pos']
+        x1, y1 = g.nodes[edge[1]]['pos']
+        edge_x.append(x0)
+        edge_x.append(x1)
+        edge_x.append(None)
+        edge_y.append(y0)
+        edge_y.append(y1)
+        edge_y.append(None)
+
+    edge_trace = go.Scatter(x=edge_x, y=edge_y, line=dict(width=0.5, color='#888'), hoverinfo='none', mode='lines')
+
+    node_x = []
+    node_y = []
+    for node in g.nodes():
+        x, y = g.nodes[node]['pos']
+        node_x.append(x)
+        node_y.append(y)
+
+    color = ["red" if node in identified else "green" for node in g.nodes]
+    node_trace = go.Scatter(x=node_x, y=node_y, mode='markers', hoverinfo='text', marker=dict(showscale=False, color=color, size=10, line_width=2))
+
+
+    node_text = []
+    for node in g.nodes():
+        node_text.append(g.nodes[node]['smiles'])
+    node_trace.text = node_text
+
+    fig = go.Figure(data=[edge_trace, node_trace], layout=go.Layout(showlegend=False, hovermode='closest', margin=dict(b=20, l=5, r=5, t=40), xaxis=dict(showgrid=False, zeroline=False, showticklabels=False), yaxis=dict(showgrid=False, zeroline=False, showticklabels=False)))
+    fig.show()
+
+
 
 
 def main() -> None:
     smi1 = r"CCC1C(C(C(C(=O)C(CC(C(C(C(C(C(=O)O1)C)OC2CC(C(C(O2)C)O)(C)OC)C)OC3C(C(CC(O3)C)N(C)C)O)(C)O)C)C)O)(C)O"
     smi2 = r"CCCCCCCCCC(=O)NC(CC1=CNC2=CC=CC=C21)C(=O)NC(CC(=O)N)C(=O)NC(CC(=O)O)C(=O)NC3C(OC(=O)C(NC(=O)C(NC(=O)C(NC(=O)CNC(=O)C(NC(=O)C(NC(=O)C(NC(=O)C(NC(=O)CNC3=O)CCCN)CC(=O)O)C)CC(=O)O)CO)C(C)CC(=O)O)CC(=O)C4=CC=CC=C4N)C"
-
-    # for smi2 (daptomycin): shouldn't be able to use reaction routes that result in contradictions (products that have overlapping atoms but are not identified from greedy set cover)
 
     rr1 = r"[C,c:1][C;!R:2]~[C;!R:3][C:4](=[O:5])[OH:6]>>[C:1]C(=O)[OH].[OH][S][C:2]~[C:3][C:4](=[O:5])[OH:6]" # pks
     rr2 = r"[C,c;R:1]-[C;R:2](=[O:3])-[O;R:4]-[C,c;R:5]>>([C,c:1]-[C:2](=[O:3])-[OH].[OH:4]-[C,c:5])" # macrocyclization 
@@ -374,14 +479,18 @@ def main() -> None:
     rr7 = r"[*:1][C:2](=[O:3])[NH1:4][C:5][C:6](=[O:7])[OH:8]>>[C:1][C:2](=[O:3])[OH].[NH2:4][C:5][C:6](=[O:7])[OH:8]"
     rr8 = r"[*:1][C:2](=[O:3])[NH0:4][C:5][C:6](=[O:7])[OH:8]>>[C:1][C:2](=[O:3])[OH].[NH1:4][C:5][C:6](=[O:7])[OH:8]"
     reactions = [rr1, rr2, rr3, rr4, rr5, rr6, rr7, rr8]
+    
+    mol, tree, mapping = apply_rules(Chem.MolFromSmiles(smi2), reactions)
+    pruned, synthesis, identified = prune_tree(tree, mapping)
 
-    print("\nerythromycin:")
-    tree, mapping = apply_rules(Chem.MolFromSmiles(smi1), reactions)
-    pruned = prune_tree(tree, mapping)
+    print("\n")
+    for n, s in synthesis:
+        print(n, s)
+    print("\n")
 
-    print("\ndaptomycin:")
-    tree, mapping = apply_rules(Chem.MolFromSmiles(smi2), reactions)
-    pruned = prune_tree(tree, mapping)
+    rev_reactions = [reverse_reaction(rr) for rr in reactions]
+    forward_synthesis = reconstruct_synthesis(mol, synthesis, pruned, mapping, rev_reactions, identified)
+    print(forward_synthesis)
 
     exit(0)
 
