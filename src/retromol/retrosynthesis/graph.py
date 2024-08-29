@@ -46,6 +46,7 @@ def reaction_tree_to_monomer_graph(
     tree: nx.DiGraph,
     mapping: ReactionTreeMapping,
     monomers: ty.List[MolecularPattern],
+    return_unmatched=False
 ) -> ty.Tuple[nx.Graph, MonomerGraphMapping]:
     """Convert reaction tree to monomer graph.
 
@@ -71,6 +72,20 @@ def reaction_tree_to_monomer_graph(
 
     logger.debug("Applying greedy maximum set cover ...")
     subgraphs = greedy_max_set_cover(mol.compiled, identified, mapping)
+
+    if return_unmatched:
+        keys = [subgraph[0] for subgraph in subgraphs]
+        matched_atoms = [atom.GetIsotope() for key in keys for atom in mapping[key].GetAtoms() if atom.GetIsotope() > 0]
+        unmatched_atoms = [atom.GetIsotope() for atom in mol.compiled.GetAtoms() if atom.GetIsotope() not in matched_atoms]
+        
+        # find all nodes from reaction tree that only contain unmatched atoms
+        unmatched_nodes = []
+        for node in tree.nodes:
+            if all([atom.GetIsotope() in unmatched_atoms for atom in mapping[node].GetAtoms() if atom.GetIsotope() > 0]):
+                unmatched_nodes.append((node, "unknown"))
+        unmatched_subgraphs = greedy_max_set_cover(mol.compiled, unmatched_nodes, mapping)
+        subgraphs += unmatched_subgraphs
+
     logger.debug(f"Applied greedy maximum set cover and found {len(subgraphs)} subgraphs.")
 
     # All atoms in the substrate have a valid atom map number as isotope.

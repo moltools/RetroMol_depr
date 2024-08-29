@@ -141,7 +141,13 @@ class Molecule:
                 else:
                     continue
 
-                for results in reaction.compiled.RunReactants([current]):
+                # Find out what substructures were matched by the reaction.
+                matches = current.GetSubstructMatches(reaction.match_pattern)
+                reaction_results = reaction.compiled.RunReactants([current])
+                if len(matches) != len(reaction_results):
+                    reaction_results = reaction_results[:len(matches)]
+
+                for results in reaction_results:
                     if len(results) > 0:
                         reaction_products = list()
                         for result in results:
@@ -239,7 +245,9 @@ def identify_mol(mol: Chem.Mol, monomers: ty.List[MolecularPattern]) -> ty.Optio
 
 
 def greedy_max_set_cover(
-    mol: Chem.Mol, identified: ty.List[ty.Tuple[int, str]], mapping: ReactionTreeMapping
+    mol: Chem.Mol, 
+    identified: ty.List[ty.Tuple[int, str]], 
+    mapping: ReactionTreeMapping,
 ) -> ty.List[ty.Tuple[int, str]]:
     """Return a greedy maximum set cover of identified monomers.
 
