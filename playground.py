@@ -9,17 +9,25 @@ import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
 import plotly.graph_objects as go
-from rdkit import Chem, DataStructs
+from rdkit import Chem, DataStructs, RDLogger
 from rdkit.Chem import AllChem
+from rdkit.Chem.MolStandardize import rdMolStandardize
 
-from retromol.retrosynthesis.parsing import parse_molecular_patterns
+from retromol.retrosynthesis.parsing import parse_molecular_patterns, parse_reaction_rules
 from retromol.retrosynthesis.chem import MolecularPattern, Molecule, ReactionRule
 from retromol.retrosynthesis.graph import reaction_tree_to_monomer_graph, reaction_tree_to_digraph
+
+
+RDLogger.DisableLog('rdApp.*')
 
 
 monomers_path = r"app/src/server/data/monomers.json"
 monomers_src = json.load(open(monomers_path, "r", encoding="utf-8"))
 monomers = parse_molecular_patterns(monomers_src)
+
+reactions_path = r"app/src/server/data/reactions.json"
+reactions_src = json.load(open(reactions_path, "r", encoding="utf-8"))
+reactions = parse_reaction_rules(reactions_src)
 
 
 def mol_to_fingerprint(mol: Chem.Mol, radius: int, num_bits: int) -> np.array:
@@ -213,7 +221,7 @@ def get_routes(tree: defaultdict, node_a: int, node_b: int) -> ty.List[ty.List[i
     return find_all_paths(tree, node_a, node_b)
 
 
-def find_shortest_paths(reaction_tree, root, targets, mapping):
+def find_shortest_paths(reaction_tree, root, targets, mapping, trans_map):
     """
     Find the shortest paths to the target nodes in the reaction tree.
 
@@ -225,6 +233,7 @@ def find_shortest_paths(reaction_tree, root, targets, mapping):
     Returns:
     A dict mapping each target to the shortest sequence of reaction indices that produces it.
     """
+
     # Initialize a queue for BFS
     queue = deque([(root, [])])
     # Initialize a dictionary to store the shortest paths
@@ -248,14 +257,19 @@ def find_shortest_paths(reaction_tree, root, targets, mapping):
             for product_set in products:
 
                 for product in product_set:
+                    
+                    # unique identifier for input->reaction->output
+                    key = (current_node, reaction_index, product_set)
+                    reaction_identifier = trans_map[key]
+
                     # Add the product to the BFS queue with the updated path
-                    queue.append((product, path + [reaction_index]))
+                    queue.append((product, path + [(reaction_index, reaction_identifier)]))
 
     # Return the shortest paths found
     return shortest_paths
 
 
-def prune_tree(tree: defaultdict, mapping: dict) -> None:
+def prune_tree(tree: defaultdict, mapping: dict, trans_map: dict) -> None:
     roots = find_roots(tree)
     if len(roots) != 1: raise ValueError("Tree must have exactly one root.")
     root = roots[0]
@@ -299,8 +313,19 @@ def prune_tree(tree: defaultdict, mapping: dict) -> None:
                         new_tree[node][reaction].add(product)
 
     # Find the shortest paths to the target nodes
-    shortest_paths = find_shortest_paths(new_tree, root, targets, mapping)
+    shortest_paths = find_shortest_paths(new_tree, root, deepcopy(targets), mapping, trans_map)
     shortest_paths = [(k, v[::-1]) for k, v in shortest_paths.items()]
+
+    # for k, v in shortest_paths:
+    #     print(k, v)
+
+    # print(targets)
+    # for target in targets:
+    #     print(target)
+    #     all_paths = get_routes(new_tree, root, target)
+    #     print(all_paths)
+
+    # exit()
 
     # sort from longest to shortest path
     shortest_paths = sorted(shortest_paths, key=lambda x: len(x[1]), reverse=True)
@@ -375,7 +400,7 @@ def reconstruct_synthesis(mol, synth, pruned, mapping, rev_reactions, identified
     print(building_blocks)
     for _, path in synth:
         for rxn_idx in path:
-            rxn = rev_reactions[rxn_idx]
+            rxn = rev_reactions[rxn_idx[0]]
             num_inputs = len(rxn.GetReactants())
             perms = itertools.permutations(building_blocks, num_inputs)
             perms = [p for p in perms if len(p) == num_inputs]
@@ -385,7 +410,19 @@ def reconstruct_synthesis(mol, synth, pruned, mapping, rev_reactions, identified
                     # result needs to be 1 output
                     if len(result) != 1: raise ValueError("Reaction must have exactly one output.")
                     result = result[0]
-                    Chem.SanitizeMol(result)
+
+                    # sanitize, but ignore valence
+                    for atom in result.GetAtoms():
+                        atom.SetNoImplicit(False)
+                        atom.SetNumExplicitHs(0)
+                        # atom.SetIsotope(0)
+                    # Chem.SanitizeMol(result)
+                    Chem.AssignStereochemistry(result, cleanIt=True)
+
+                    try:
+                        Chem.SanitizeMol(result)
+                    except Exception:
+                        continue
                     # fp = mol_to_fingerprint(result, 2, 2048)
 
                     enc = mol_to_encoding(result, mol.GetNumAtoms(), 2, 2048)
@@ -421,54 +458,74 @@ def reconstruct_synthesis(mol, synth, pruned, mapping, rev_reactions, identified
     # every graph node is molecule, draw as image and add to graph from left to right
     # add edges between nodes (directed)
 
-    g = nx.DiGraph()
-    for i in range(len(graph_nodes)):
-        g.add_node(i, smiles=Chem.MolToSmiles(graph_nodes[i]))
+    # g = nx.DiGraph()
+    # for i in range(len(graph_nodes)):
+    #     g.add_node(i, smiles=Chem.MolToSmiles(graph_nodes[i]))
 
-    for i in range(len(graph_nodes) - 1):
-        g.add_edge(i, i + 1)
+    # for i in range(len(graph_nodes) - 1):
+    #     g.add_edge(i, i + 1)
 
-    pos = nx.spring_layout(g)
-    for node in g.nodes(): g.nodes[node]['pos'] = list(pos[node])
+    # pos = nx.spring_layout(g)
+    # for node in g.nodes(): g.nodes[node]['pos'] = list(pos[node])
     
-    edge_x, edge_y = [], []
-    for edge in g.edges():
-        x0, y0 = g.nodes[edge[0]]['pos']
-        x1, y1 = g.nodes[edge[1]]['pos']
-        edge_x.append(x0)
-        edge_x.append(x1)
-        edge_x.append(None)
-        edge_y.append(y0)
-        edge_y.append(y1)
-        edge_y.append(None)
+    # edge_x, edge_y = [], []
+    # for edge in g.edges():
+    #     x0, y0 = g.nodes[edge[0]]['pos']
+    #     x1, y1 = g.nodes[edge[1]]['pos']
+    #     edge_x.append(x0)
+    #     edge_x.append(x1)
+    #     edge_x.append(None)
+    #     edge_y.append(y0)
+    #     edge_y.append(y1)
+    #     edge_y.append(None)
 
-    edge_trace = go.Scatter(x=edge_x, y=edge_y, line=dict(width=0.5, color='#888'), hoverinfo='none', mode='lines')
+    # edge_trace = go.Scatter(x=edge_x, y=edge_y, line=dict(width=0.5, color='#888'), hoverinfo='none', mode='lines')
 
-    node_x = []
-    node_y = []
-    for node in g.nodes():
-        x, y = g.nodes[node]['pos']
-        node_x.append(x)
-        node_y.append(y)
+    # node_x = []
+    # node_y = []
+    # for node in g.nodes():
+    #     x, y = g.nodes[node]['pos']
+    #     node_x.append(x)
+    #     node_y.append(y)
 
-    color = ["red" if node in identified else "green" for node in g.nodes]
-    node_trace = go.Scatter(x=node_x, y=node_y, mode='markers', hoverinfo='text', marker=dict(showscale=False, color=color, size=10, line_width=2))
-
-
-    node_text = []
-    for node in g.nodes():
-        node_text.append(g.nodes[node]['smiles'])
-    node_trace.text = node_text
-
-    fig = go.Figure(data=[edge_trace, node_trace], layout=go.Layout(showlegend=False, hovermode='closest', margin=dict(b=20, l=5, r=5, t=40), xaxis=dict(showgrid=False, zeroline=False, showticklabels=False), yaxis=dict(showgrid=False, zeroline=False, showticklabels=False)))
-    fig.show()
+    # color = ["red" if node in identified else "green" for node in g.nodes]
+    # node_trace = go.Scatter(x=node_x, y=node_y, mode='markers', hoverinfo='text', marker=dict(showscale=False, color=color, size=10, line_width=2))
 
 
+    # node_text = []
+    # for node in g.nodes():
+    #     node_text.append(g.nodes[node]['smiles'])
+    # node_trace.text = node_text
+
+    # fig = go.Figure(data=[edge_trace, node_trace], layout=go.Layout(showlegend=False, hovermode='closest', margin=dict(b=20, l=5, r=5, t=40), xaxis=dict(showgrid=False, zeroline=False, showticklabels=False), yaxis=dict(showgrid=False, zeroline=False, showticklabels=False)))
+    # fig.show()
+
+
+def merge_paths(synthesis):
+    paths = [p[1] for p in synthesis]
+    merged = "->".join([f"{x[0]}+{x[1]}" for x in paths[0]])
+    others = []
+    for path in paths[1:]:
+        others.append("->".join([f"{x[0]}+{x[1]}" for x in path]))
+    
+    unmerged = []
+    for i in range(len(others)):
+        other = others[i]
+        if other in merged:
+            continue
+        else:
+            unmerged.append(other)
+
+
+    print(merged)
+    print(unmerged)
+    print("\n\n")
 
 
 def main() -> None:
     smi1 = r"CCC1C(C(C(C(=O)C(CC(C(C(C(C(C(=O)O1)C)OC2CC(C(C(O2)C)O)(C)OC)C)OC3C(C(CC(O3)C)N(C)C)O)(C)O)C)C)O)(C)O"
     smi2 = r"CCCCCCCCCC(=O)NC(CC1=CNC2=CC=CC=C21)C(=O)NC(CC(=O)N)C(=O)NC(CC(=O)O)C(=O)NC3C(OC(=O)C(NC(=O)C(NC(=O)C(NC(=O)CNC(=O)C(NC(=O)C(NC(=O)C(NC(=O)C(NC(=O)CNC3=O)CCCN)CC(=O)O)C)CC(=O)O)CO)C(C)CC(=O)O)CC(=O)C4=CC=CC=C4N)C"
+    smi3 = r"CC1C(OC(C(C1OC)(C)C)(C(C)CC(C)C(C2(C(O2)C(C)C=C(C)C)C)O)O)CC(=O)O"
 
     rr1 = r"[C,c:1][C;!R:2]~[C;!R:3][C:4](=[O:5])[OH:6]>>[C:1]C(=O)[OH].[OH][S][C:2]~[C:3][C:4](=[O:5])[OH:6]" # pks
     rr2 = r"[C,c;R:1]-[C;R:2](=[O:3])-[O;R:4]-[C,c;R:5]>>([C,c:1]-[C:2](=[O:3])-[OH].[OH:4]-[C,c:5])" # macrocyclization 
@@ -478,15 +535,35 @@ def main() -> None:
     rr6 = r"[C:1][NH0:2]([C:4])[CH3:3]>>[C:1][NH1:2][C:4].[CH4:3]" # demethylation
     rr7 = r"[*:1][C:2](=[O:3])[NH1:4][C:5][C:6](=[O:7])[OH:8]>>[C:1][C:2](=[O:3])[OH].[NH2:4][C:5][C:6](=[O:7])[OH:8]"
     rr8 = r"[*:1][C:2](=[O:3])[NH0:4][C:5][C:6](=[O:7])[OH:8]>>[C:1][C:2](=[O:3])[OH].[NH1:4][C:5][C:6](=[O:7])[OH:8]"
-    reactions = [rr1, rr2, rr3, rr4, rr5, rr6, rr7, rr8]
+    rr9 = r"[*:1]-[CH0:2]1(-[OH:3])-[O:4]-[CH1:5](-[*:6])-[C:7][C:8][C:9]1>>([*:1]-[CH0:2]1=[OH0:3].[OH1:4]-[CH1:5](-[*:6])-[C:7][C:8][C:9]1)" # ether
+    rr10 = r"[C:1]1[O:2][C:3]1>>[C:1]=[C:3].[O:2]" # epoxidation 
+    reactions = [rr1, rr2, rr3, rr4, rr5, rr6, rr7, rr8, rr9, rr10]
     
     mol, tree, mapping = apply_rules(Chem.MolFromSmiles(smi2), reactions)
-    pruned, synthesis, identified = prune_tree(tree, mapping)
+
+
+    # map every inputKey-reaciton-outputKey to a unique identifier
+    transformation_mapping = {}
+    for inputKey in tree:
+        for reaction, outputKeys in tree[inputKey].items():
+            for outputKey in outputKeys:
+                transformation_mapping[(inputKey, reaction, outputKey)] = len(transformation_mapping)
+
+    pruned, synthesis, identified = prune_tree(tree, mapping, transformation_mapping)
 
     print("\n")
     for n, s in synthesis:
         print(n, s)
     print("\n")
+
+    # NOTE:
+    # this merging with reaction nodes is good approach, just make sure you get more
+    # than just shortest paths. Need all paths and then greedy approach for reconstruction
+    # ideally you would see with multi-mers or compounds with multiple parts that the merged
+    # pipeline would split somewhere
+    merge_paths(synthesis)
+
+    exit()
 
     rev_reactions = [reverse_reaction(rr) for rr in reactions]
     forward_synthesis = reconstruct_synthesis(mol, synthesis, pruned, mapping, rev_reactions, identified)
