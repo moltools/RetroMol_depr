@@ -12,6 +12,7 @@ import plotly.graph_objects as go
 from rdkit import Chem, DataStructs, RDLogger
 from rdkit.Chem import AllChem
 from rdkit.Chem.MolStandardize import rdMolStandardize
+from tqdm import tqdm
 
 from retromol.retrosynthesis.parsing import parse_molecular_patterns, parse_reaction_rules
 from retromol.retrosynthesis.chem import MolecularPattern, Molecule, ReactionRule
@@ -191,33 +192,50 @@ def apply_rules(mol: Chem.Mol, reactions: ty.List[str]) -> ty.Tuple[Chem.Mol, de
 
     return mol, tree, mapping
 
-def get_routes(tree: defaultdict, node_a: int, node_b: int) -> ty.List[ty.List[int]]:
-    # tree = reaction_tree_to_digraph(tree)
+
+def get_routes(tree: defaultdict, node_a: int, node_b: int, trans_map) -> ty.Dict[int, ty.List[ty.Tuple[int, int]]]:
+    """
+    Find all paths from node_a to node_b in the reaction tree.
+
+    Parameters:
+    - tree: defaultdict, where keys are reactants and values are dicts mapping reaction indices to sets of frozensets of products.
+    - node_a: The starting node (root).
+    - node_b: The target node.
+
+    Returns:
+    A dict mapping each target to a list of sequences of (reaction_index, reaction_identifier) that produce it.
+    """
 
     def find_all_paths(graph, start_node, target_node):
         def dfs(current_node, target_node, path, all_paths, visited):
-            path.append(current_node)
             visited.add(current_node)
 
-            if current_node == target_node:
-                all_paths.append(list(path))
-            else:
-                # for neighbor in graph.successors(current_node):
-                for reaction in graph[current_node]:
-                    neighbors = graph[current_node][reaction]
-                    for neighbor_set in neighbors:
-                        for neighbor in neighbor_set:
-                            if neighbor not in visited:  # Avoid cycles
-                                dfs(neighbor, target_node, path, all_paths, visited)
+            # Get the reactions that can be applied to the current node
+            for reaction_index, products in graph.get(current_node, {}).items():
+                # For each product set, consider each product (there could be multiple in a frozenset)
+                for product_set in products:
+                    for product in product_set:
+                        if product not in visited:  # Avoid cycles
+                            # unique identifier for input->reaction->output
+                            key = (current_node, reaction_index, product_set)
+                            reaction_identifier = trans_map[key]
+                            # path.append((reaction_index, reaction_identifier))
+                            path.append(reaction_identifier)
 
-            # Backtrack
-            path.pop()
+                            if product == target_node:
+                                all_paths.append(list(path))
+                            else:
+                                dfs(product, target_node, path, all_paths, visited)
+
+                            # Backtrack
+                            path.pop()
+
             visited.remove(current_node)
 
         all_paths = []
         dfs(start_node, target_node, [], all_paths, set())
         return all_paths
-    
+
     return find_all_paths(tree, node_a, node_b)
 
 
@@ -263,7 +281,8 @@ def find_shortest_paths(reaction_tree, root, targets, mapping, trans_map):
                     reaction_identifier = trans_map[key]
 
                     # Add the product to the BFS queue with the updated path
-                    queue.append((product, path + [(reaction_index, reaction_identifier)]))
+                    # queue.append((product, path + [(reaction_index, reaction_identifier)]))
+                    queue.append((product, path + [reaction_identifier]))
 
     # Return the shortest paths found
     return shortest_paths
@@ -313,29 +332,30 @@ def prune_tree(tree: defaultdict, mapping: dict, trans_map: dict) -> None:
                         new_tree[node][reaction].add(product)
 
     # Find the shortest paths to the target nodes
-    shortest_paths = find_shortest_paths(new_tree, root, deepcopy(targets), mapping, trans_map)
-    shortest_paths = [(k, v[::-1]) for k, v in shortest_paths.items()]
+    # shortest_paths = find_shortest_paths(new_tree, root, deepcopy(targets), mapping, trans_map)
+    # shortest_paths = [(k, v[::-1]) for k, v in shortest_paths.items()]
 
     # for k, v in shortest_paths:
     #     print(k, v)
 
-    # print(targets)
-    # for target in targets:
-    #     print(target)
-    #     all_paths = get_routes(new_tree, root, target)
-    #     print(all_paths)
+    all_target_paths = {}
+    for target in targets:
+        # print(target)
+        all_paths = get_routes(new_tree, root, target, trans_map)
+        all_target_paths[target] = all_paths
 
     # exit()
 
     # sort from longest to shortest path
-    shortest_paths = sorted(shortest_paths, key=lambda x: len(x[1]), reverse=True)
+    # shortest_paths = sorted(shortest_paths, key=lambda x: len(x[1]), reverse=True)
 
     # Identify the monomers
     identified = {}
     for k, v in monomer_graph_mapping.items():
         identified[k] = monomer_graph_mapping[k][1]
 
-    return new_tree, shortest_paths, identified
+    # return new_tree, shortest_paths, identified
+    return new_tree, all_target_paths, identified, trans_map
     
 
 def reverse_reaction(rxn_repr: str):
@@ -352,23 +372,23 @@ def add_path(graph, path):
             node[value] = {}
         node = node[value]
 
-def merge_paths(paths):
-    if not paths:
-        return {}
+# def merge_paths(paths):
+#     if not paths:
+#         return {}
 
-    graph = {}
-    for path in paths:
-        node = graph
-        for value in path:
-            if value in node:
-                node = node[value]
-            else:
-                break
-        else:
-            continue
-        add_path(node, path[len(path) - len(node):])
+#     graph = {}
+#     for path in paths:
+#         node = graph
+#         for value in path:
+#             if value in node:
+#                 node = node[value]
+#             else:
+#                 break
+#         else:
+#             continue
+#         add_path(node, path[len(path) - len(node):])
 
-    return graph
+#     return graph
 
 def is_subsequence(a, b):
     if len(a) == 0 or len(b) == 0:
@@ -447,7 +467,7 @@ def reconstruct_synthesis(mol, synth, pruned, mapping, rev_reactions, identified
         break
 
 
-    print(graph_nodes)  
+    # print(graph_nodes)  
 
     # calculate reconstruction error (tanimoto distance final graph node and input)
     fp_input = mol_to_fingerprint(mol, 2, 2048)
@@ -501,31 +521,72 @@ def reconstruct_synthesis(mol, synth, pruned, mapping, rev_reactions, identified
     # fig.show()
 
 
-def merge_paths(synthesis):
-    paths = [p[1] for p in synthesis]
-    merged = "->".join([f"{x[0]}+{x[1]}" for x in paths[0]])
-    others = []
-    for path in paths[1:]:
-        others.append("->".join([f"{x[0]}+{x[1]}" for x in path]))
+def is_sub(super, sub):
+    """checks if list of integers sub is in list of integers super"""
+    if len(sub) > len(super):
+        return False
+    for i in range(len(super) - len(sub) + 1):
+        if super[i:i + len(sub)] == sub:
+            return True
+    return False
+
+
+def merge_paths(synthesis, trans_map):
+    # sort all paths from shortest to longest
+    for node, paths in synthesis.items():
+        synthesis[node] = sorted(paths, key=lambda x: len(x))
     
-    unmerged = []
-    for i in range(len(others)):
-        other = others[i]
-        if other in merged:
+    # TODO: pick node with longest route available first
+    # TODO: from its paths, pick the path that has the 1-to-1 nodes as late as 
+    #       possible (in forward synthesis means as early as possible)
+    # TODO: merge in as many of the other nodes as possible, pick the shortest path every time
+    # TODO: merge other left over paths separately
+    # TODO: return merged items. 
+
+    # Found out, greedily, which node has longest shortest path
+    node_with_longest_path = None
+    longest_path_length = float("-inf")
+    for node, paths in synthesis.items():
+        length = min(len(path) for path in paths)
+        if length > longest_path_length:
+            longest_path_length = length
+            node_with_longest_path = node
+    
+    seeds = synthesis[node_with_longest_path]
+    seed_node = node_with_longest_path
+
+    # get shortest path per node 
+    shortest_paths = {}
+    for node, paths in synthesis.items():
+        shortest_paths[node] = paths[0]
+    
+    # sort the keys, longest path first
+    sorted_keys = sorted(synthesis.keys(), key=lambda x: len(shortest_paths[x]), reverse=True)
+    
+    main = shortest_paths[sorted_keys[0]]
+    other_paths = []
+    for k in sorted_keys:
+        if is_sub(main, shortest_paths[k]):
             continue
         else:
-            unmerged.append(other)
+            other_paths.append(shortest_paths[k])
+
+    # main is main synthesis, every other_path of length 1 is tailoring, rest is discarded
+    # TODO: we don't actually need al that sorting above, just take the shortest longest route as main
+    tailoring = [x for x in other_paths if len(x) == 1]
+    
+    return main[::-1], tailoring
 
 
-    print(merged)
-    print(unmerged)
-    print("\n\n")
 
 
 def main() -> None:
+    # NOTE: all reactions defined as one-to-one or one-to-many, also consider that opposite might happen
+
     smi1 = r"CCC1C(C(C(C(=O)C(CC(C(C(C(C(C(=O)O1)C)OC2CC(C(C(O2)C)O)(C)OC)C)OC3C(C(CC(O3)C)N(C)C)O)(C)O)C)C)O)(C)O"
     smi2 = r"CCCCCCCCCC(=O)NC(CC1=CNC2=CC=CC=C21)C(=O)NC(CC(=O)N)C(=O)NC(CC(=O)O)C(=O)NC3C(OC(=O)C(NC(=O)C(NC(=O)C(NC(=O)CNC(=O)C(NC(=O)C(NC(=O)C(NC(=O)C(NC(=O)CNC3=O)CCCN)CC(=O)O)C)CC(=O)O)CO)C(C)CC(=O)O)CC(=O)C4=CC=CC=C4N)C"
     smi3 = r"CC1C(OC(C(C1OC)(C)C)(C(C)CC(C)C(C2(C(O2)C(C)C=C(C)C)C)O)O)CC(=O)O"
+    smi4 = r"CC1C(OC(C(C1OC)(C)C)(C(C)CC(C)C(C2(C(O2)C(C)C=C(C)C)C)O)O)CCCCCC(=O)O" # elongated version of smi3
 
     rr1 = r"[C,c:1][C;!R:2]~[C;!R:3][C:4](=[O:5])[OH:6]>>[C:1]C(=O)[OH].[OH][S][C:2]~[C:3][C:4](=[O:5])[OH:6]" # pks
     rr2 = r"[C,c;R:1]-[C;R:2](=[O:3])-[O;R:4]-[C,c;R:5]>>([C,c:1]-[C:2](=[O:3])-[OH].[OH:4]-[C,c:5])" # macrocyclization 
@@ -537,37 +598,46 @@ def main() -> None:
     rr8 = r"[*:1][C:2](=[O:3])[NH0:4][C:5][C:6](=[O:7])[OH:8]>>[C:1][C:2](=[O:3])[OH].[NH1:4][C:5][C:6](=[O:7])[OH:8]"
     rr9 = r"[*:1]-[CH0:2]1(-[OH:3])-[O:4]-[CH1:5](-[*:6])-[C:7][C:8][C:9]1>>([*:1]-[CH0:2]1=[OH0:3].[OH1:4]-[CH1:5](-[*:6])-[C:7][C:8][C:9]1)" # ether
     rr10 = r"[C:1]1[O:2][C:3]1>>[C:1]=[C:3].[O:2]" # epoxidation 
-    reactions = [rr1, rr2, rr3, rr4, rr5, rr6, rr7, rr8, rr9, rr10]
+    rr11 = r"[CH0;!R:1]=[C;!R:2]-[CH1;!R:3][C;!R:4](=[O:5])[OH:6]>>[CH1;!R:1]-C(=O)[OH].[OH][S][C;!R:2]=[CH0;!R:3][C;!R:4](=[O:5])[OH:6]"
+    reactions = [rr1, rr2, rr3, rr4, rr5, rr6, rr7, rr8, rr9, rr10, rr11]
     
     mol, tree, mapping = apply_rules(Chem.MolFromSmiles(smi2), reactions)
 
 
     # map every inputKey-reaciton-outputKey to a unique identifier
-    transformation_mapping = {}
+    trans_map = {}
     for inputKey in tree:
         for reaction, outputKeys in tree[inputKey].items():
             for outputKey in outputKeys:
-                transformation_mapping[(inputKey, reaction, outputKey)] = len(transformation_mapping)
+                trans_map[(inputKey, reaction, outputKey)] = len(trans_map)
 
-    pruned, synthesis, identified = prune_tree(tree, mapping, transformation_mapping)
+    pruned, synthesis, identified, trans_map = prune_tree(tree, mapping, trans_map)
 
-    print("\n")
-    for n, s in synthesis:
-        print(n, s)
-    print("\n")
+    # print("\n")
+    # for n, s in synthesis:
+    #     print(n, s)
+    # print("\n")
 
-    # NOTE:
-    # this merging with reaction nodes is good approach, just make sure you get more
-    # than just shortest paths. Need all paths and then greedy approach for reconstruction
-    # ideally you would see with multi-mers or compounds with multiple parts that the merged
-    # pipeline would split somewhere
-    merge_paths(synthesis)
+    forward_synthesis, tailoring = merge_paths(synthesis, trans_map)
 
-    exit()
+    rev_trans_map = {v: k for k, v in trans_map.items()}
 
-    rev_reactions = [reverse_reaction(rr) for rr in reactions]
-    forward_synthesis = reconstruct_synthesis(mol, synthesis, pruned, mapping, rev_reactions, identified)
-    print(forward_synthesis)
+    # print(forward_synthesis)
+    rxn_forward_synthesis = [rev_trans_map[x][1] for x in forward_synthesis]
+    print(rxn_forward_synthesis)
+
+    # print(tailoring)
+    rxn_tailoring = [rev_trans_map[x[0]][1] for x in tailoring]
+    print(rxn_tailoring)
+
+    # TODO: if you do not specify the shifted double bond for PKS, reconstruction will still be good
+    #       because it things the unmapped start is just bigger for initiation, while
+    #       it is actually start+pk unit.
+
+
+    # rev_reactions = [reverse_reaction(rr) for rr in reactions]
+    # forward_synthesis = reconstruct_synthesis(mol, synthesis, pruned, mapping, rev_reactions, identified)
+    # print(forward_synthesis)
 
     exit(0)
 
