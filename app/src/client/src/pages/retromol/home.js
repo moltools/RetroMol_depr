@@ -178,7 +178,7 @@ const Home = () => {
 
     return (
         <div style={{ display: "flex", flexDirection: "column" }}>
-            <h1>RetroMol</h1>
+            {/* <h1>RetroMol</h1>
             <Link to="/">back</Link>
             <Link to="/retromol/workspace">workspace</Link>
             <div style={{ width: "200px", height: "200px" }}>
@@ -186,7 +186,8 @@ const Home = () => {
                     atoms={atoms} 
                     bonds={bonds} 
                 />
-            </div>
+            </div> */}
+            RetroMol is currently being prepared for submission. Please check back later.
         </div>
     );
 };

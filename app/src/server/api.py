@@ -5,25 +5,25 @@
 from flask import Flask, Response
 import neo4j
 
-from retromol.version import get_version
+# from retromol.version import get_version
 
 from routes.common import NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD, fail, warning, success
-from routes.fetching import blueprint_fetch_bioactivity_labels, blueprint_fetch_organism_labels
-from routes.parsing import blueprint_parse_submission
-from routes.querying import blueprint_query_submission
+# from routes.fetching import blueprint_fetch_bioactivity_labels, blueprint_fetch_organism_labels
+# from routes.parsing import blueprint_parse_submission
+# from routes.querying import blueprint_query_submission
 from routes.cinemol import blueprint_draw_model, blueprint_fetch_cinemol_version
-from routes.drawing import blueprint_draw_smiles_with_highlights, blueprint_draw_smiles
+# from routes.drawing import blueprint_draw_smiles_with_highlights, blueprint_draw_smiles
 
 
 app = Flask(__name__)
-app.register_blueprint(blueprint_fetch_bioactivity_labels)
-app.register_blueprint(blueprint_fetch_organism_labels)
-app.register_blueprint(blueprint_parse_submission)
-app.register_blueprint(blueprint_query_submission)
+# app.register_blueprint(blueprint_fetch_bioactivity_labels)
+# app.register_blueprint(blueprint_fetch_organism_labels)
+# app.register_blueprint(blueprint_parse_submission)
+# app.register_blueprint(blueprint_query_submission)
 app.register_blueprint(blueprint_draw_model)
 app.register_blueprint(blueprint_fetch_cinemol_version)
-app.register_blueprint(blueprint_draw_smiles)
-app.register_blueprint(blueprint_draw_smiles_with_highlights)
+# app.register_blueprint(blueprint_draw_smiles)
+# app.register_blueprint(blueprint_draw_smiles_with_highlights)
 
 
 @app.route("/")
@@ -46,42 +46,42 @@ def fetch_server_status() -> Response:
     return success("Server is up and running!")
 
 
-@app.route("/api/fetch_database_status", methods=["GET"])
-def fetch_database_status() -> Response:
-    """API endpoint for checking the database status.
+# @app.route("/api/fetch_database_status", methods=["GET"])
+# def fetch_database_status() -> Response:
+#     """API endpoint for checking the database status.
 
-    :return: The response to return.
-    :rtype: Response
-    """
-    try:
-        if NEO4J_USER and NEO4J_PASSWORD:
-            driver = neo4j.GraphDatabase.driver(
-                NEO4J_URI, 
-                auth=(NEO4J_USER, NEO4J_PASSWORD)
-            )
-        else:
-            driver = neo4j.GraphDatabase.driver(NEO4J_URI)
+#     :return: The response to return.
+#     :rtype: Response
+#     """
+#     try:
+#         if NEO4J_USER and NEO4J_PASSWORD:
+#             driver = neo4j.GraphDatabase.driver(
+#                 NEO4J_URI, 
+#                 auth=(NEO4J_USER, NEO4J_PASSWORD)
+#             )
+#         else:
+#             driver = neo4j.GraphDatabase.driver(NEO4J_URI)
 
-        with driver.session() as session:
-            result = session.run("MATCH (n) RETURN count(n) AS count")
-            count = result.single()["count"]
+#         with driver.session() as session:
+#             result = session.run("MATCH (n) RETURN count(n) AS count")
+#             count = result.single()["count"]
 
-        driver.close()
+#         driver.close()
 
-        return success(f"Database is up and running with {count} nodes!")
+#         return success(f"Database is up and running with {count} nodes!")
 
-    except Exception as e:
-        return fail(f"No database connection: {e}")
+#     except Exception as e:
+#         return fail(f"No database connection: {e}")
     
 
-@app.route("/api/fetch_version", methods=["GET"])
-def fetch_version() -> Response:
-    """API endpoint for fetching the version of the application.
+# @app.route("/api/fetch_version", methods=["GET"])
+# def fetch_version() -> Response:
+#     """API endpoint for fetching the version of the application.
 
-    :return: The response to return.
-    :rtype: Response
-    """
-    return success("Version fetched successfully!", {"version": get_version()})
+#     :return: The response to return.
+#     :rtype: Response
+#     """
+#     return success("Version fetched successfully!", {"version": get_version()})
 
 
 def main() -> None:
